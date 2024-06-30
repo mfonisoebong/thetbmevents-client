@@ -1,0 +1,36 @@
+.wrapper {
+  @apply overflow-x-scroll  bg-white rounded-xl md:rounded-3xl mt-9 h-max;
+}
+
+.wrapper::-webkit-scrollbar {
+  height: 0.3rem;
+  width: 0.3rem;
+}
+
+.wrapper::-webkit-scrollbar-thumb {
+  background-color: #000000;
+  border-radius: 0.4rem;
+}
+
+.tablehead {
+  @apply w-full;
+}
+
+.tablehead th {
+  @apply uppercase text-gray-500 font-bold py-3 text-sm md:text-base px-3;
+}
+
+.table {
+  @apply w-max min-w-full overflow-x-scroll;
+}
+
+.tablerow {
+   @apply relative cursor-pointer;
+}
+.tablerow td {
+  @apply text-center  font-bold py-3 md:py-8 text-xs md:text-sm lg:text-base px-6 md:px-3;
+}
+
+.tablerow:not(:last-child){
+  @apply border-b-[0.1rem] border-solid border-gray-300
+}

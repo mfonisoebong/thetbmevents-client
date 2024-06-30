@@ -1,0 +1,23 @@
+.indicator {
+  @apply flex justify-center items-center space-x-2 mt-3;
+}
+
+.indicator svg {
+  @apply cursor-pointer;
+}
+
+.wrapper {
+  @apply overflow-hidden relative;
+}
+
+.slider {
+  @apply py-8 w-10/12 md:w-11/12 flex items-center space-x-3 md:space-x-7 inset-0 top-4 mx-auto;
+}
+
+.lefticon {
+  @apply absolute top-1/2 z-30 left-0;
+}
+
+.righticon {
+  @apply absolute top-1/2 z-30  -right-2;
+}

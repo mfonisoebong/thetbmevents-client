@@ -1,0 +1,17 @@
+.form {
+
+}
+
+.form label {
+  @apply font-bold;
+}
+
+.form input,
+.form select,
+.form textarea {
+  @apply border-solid shadow-none rounded-xl;
+}
+
+.form input[type="checkbox"] {
+  @apply rounded-sm;
+}

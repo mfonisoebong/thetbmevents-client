@@ -1,0 +1,12 @@
+.contactformcontainer {
+    @apply border-[0.1rem] border-gray-300 rounded-lg py-5 px-6 space-y-6;
+}
+
+.formgrid {
+    @apply grid grid-cols-1 lg:grid-cols-2 gap-y-4 gap-x-8;
+}
+
+.formgrid input,
+.formgrid select {
+    @apply shadow-none border-solid border-[0.1rem] border-gray-300 rounded-md placeholder:text-gray-300 px-3 text-sm
+}

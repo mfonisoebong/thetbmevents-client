@@ -1,0 +1,23 @@
+.sociallinks {
+  @apply flex space-x-3 items-center justify-center;
+}
+
+.logo {
+  @apply py-4 md:py-2 flex justify-center border-solid border-b-[0.12rem] border-mainBlue;
+}
+
+.footerlink {
+  @apply block text-white text-sm md:text-base;
+}
+
+.footerlinkupper {
+  @apply block text-white uppercase text-sm md:text-base;
+}
+
+.copyright {
+  @apply mt-8 border-t-[0.1rem] border-white border-solid py-5;
+}
+
+.copyright p {
+  @apply text-center text-white text-xs md:text-sm lg:text-base;
+}

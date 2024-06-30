@@ -1,0 +1,11 @@
+.commisionheading {
+  @apply grid grid-cols-2;
+}
+
+.cardtitle {
+  @apply text-black  font-bold  text-[calc(0.7rem+0.3vw)] md:text-[calc(0.7rem+0.3vw)];
+}
+
+.blocktext {
+  @apply text-black font-bold text-[calc(1rem+1.5vw)] md:text-[calc(1rem+1.1vw)];
+}

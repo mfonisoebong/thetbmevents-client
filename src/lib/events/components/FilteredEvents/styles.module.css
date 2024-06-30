@@ -1,0 +1,3 @@
+.goback {
+  @apply stroke-main text-main font-semibold text-sm hover:text-gold;
+}

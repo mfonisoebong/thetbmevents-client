@@ -1,0 +1,11 @@
+.pageheader {
+  @apply flex items-center justify-between;
+}
+
+.pageheader h3 {
+  @apply text-base md:text-xl font-bold;
+}
+
+.pageheader a {
+  @apply text-sm md:text-lg;
+}

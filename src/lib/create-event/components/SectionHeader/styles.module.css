@@ -1,0 +1,11 @@
+.header {
+  @apply flex justify-between items-center;
+}
+
+.header h3 {
+  @apply font-semibold text-lg md:text-xl lg:text-2xl;
+}
+
+.header a {
+  @apply flex items-center space-x-2 fill-black hover:fill-gold hover:text-gold font-bold text-sm md:text-base lg:text-xl;
+}

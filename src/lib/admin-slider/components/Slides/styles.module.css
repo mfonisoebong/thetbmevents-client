@@ -1,0 +1,19 @@
+.selectevents button {
+  @apply w-full py-3 rounded-2xl justify-between px-3;
+}
+
+.nothumbnail {
+  @apply space-y-2 w-full h-32 bg-gray-200 border-dashed border-[0.1rem] border-gray-400 text-center flex flex-col items-center justify-center;
+}
+
+.nothumbnail h4 {
+  @apply font-semibold text-lg md:text-xl;
+}
+
+.nothumbnail p {
+  @apply font-normal text-base md:text-lg w-7/12 md:w-6/12;
+}
+
+.thumbnail {
+  @apply w-full h-32 object-cover;
+}

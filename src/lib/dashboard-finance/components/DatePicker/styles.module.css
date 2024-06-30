@@ -1,0 +1,39 @@
+.datepicker {
+  @apply flex flex-col space-y-2 lg:space-y-0 lg:flex-row lg:items-center;
+}
+
+.datepicker h3 {
+  @apply text-base md:text-lg lg:text-xl text-gray-600 font-bold;
+}
+.datepicker h4 {
+  @apply text-xs md:text-sm font-bold;
+}
+
+.dateselector {
+  @apply relative;
+}
+
+.dateselectorbtn {
+  @apply flex items-center space-x-3 rounded-lg border-black border-[0.13rem] px-5 py-3 fill-black text-sm hover:fill-white hover:bg-black hover:text-white;
+}
+
+.dateoptions {
+  @apply px-4 absolute w-[22rem] h-max bg-white rounded-lg top-16 py-8 space-y-5;
+  box-shadow: -2px 2px 4px 0px rgba(0, 0, 0, 0.25),
+    2px -2px 4px 0px rgba(0, 0, 0, 0.25);
+}
+
+.dateoptions button {
+  @apply w-full text-sm md:text-base;
+}
+
+.daterange {
+  @apply flex items-center justify-between w-full;
+}
+
+.daterange label {
+  @apply text-xs md:text-sm;
+}
+.daterange input {
+  @apply rounded-lg px-2 shadow-none border-[#404040] border-[0.13rem] border-solid disabled:opacity-50;
+}

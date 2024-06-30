@@ -1,0 +1,15 @@
+.alert {
+  @apply fixed flex flex-col justify-center items-center right-0 top-[10%] space-y-5 pt-6 z-50 left-0 w-full;
+}
+
+.alertbox {
+  @apply border-solid border-[0.1rem] px-4 py-2 flex items-center w-10/12 md:w-9/12 rounded-md space-x-6 md:space-x-4;
+}
+
+.alertbox h6 {
+  @apply text-sm md:text-base;
+}
+
+.alertbox p {
+  @apply text-xs md:text-sm;
+}

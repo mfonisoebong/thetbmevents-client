@@ -1,0 +1,14 @@
+.notifications{
+    @apply space-y-4 px-5;
+}
+
+.notification{
+    @apply space-y-3 font-bold border-solid border-b-[0.12rem] border-[#404040] py-4;
+}
+.notification p{
+    @apply text-sm md:text-base;
+}
+
+.notification small{
+    @apply text-xs md:text-sm text-gray-500 block;
+}

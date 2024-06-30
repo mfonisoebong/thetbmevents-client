@@ -1,0 +1,19 @@
+.card {
+  @apply rounded-xl px-5 py-4;
+}
+
+.darkcard {
+  @apply bg-black;
+}
+
+.darkcard h5 {
+  @apply text-white font-bold text-sm lg:text-base;
+}
+
+.lightcard {
+  @apply bg-white;
+}
+
+.lightcard h5 {
+  @apply text-black font-bold text-sm lg:text-base;
+}

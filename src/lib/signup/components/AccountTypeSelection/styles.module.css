@@ -1,0 +1,38 @@
+.selectionbox {
+  @apply relative rounded-[1.25rem] mt-20 mx-auto max-w-[65%] md:max-w-[80%] lg:max-w-[50%] flex flex-col md:flex-row items-center;
+  box-shadow: 2px -2px 4px rgba(0, 0, 0, 0.25), -2px 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.badge {
+  @apply hidden md:block absolute left-0 right-0 mx-auto w-max px-5 py-2 text-main text-base md:text-lg uppercase font-semibold bg-white;
+  box-shadow: 2px -2px 4px rgba(0, 0, 0, 0.25), -2px 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.card {
+  @apply w-full md:w-1/2 py-6 h-max md:h-64 lg:h-72 justify-between cursor-pointer duration-300 hover:bg-main hover:text-white;
+}
+
+.selectedcard {
+  @apply w-full md:w-1/2 py-6 h-max md:h-64 lg:h-72 justify-between cursor-pointer duration-300 bg-main text-white;
+}
+
+.card:nth-child(2),
+.selectedcard:nth-child(2) {
+  @apply rounded-tl-[1.25rem] rounded-tr-[1.25rem] md:rounded-tr-none md:rounded-bl-[1.25rem];
+}
+.card:nth-child(3),
+.selectedcard:nth-child(3) {
+  @apply md:rounded-tr-[1.25rem] rounded-br-[1.25rem] rounded-bl-[1.25rem] md:rounded-bl-none;
+}
+.selectedcard h3,
+.card h3 {
+  @apply mt-4 md:m-0 text-center text-sm md:text-base lg:text-lg font-semibold;
+}
+
+.cardimg {
+  @apply flex justify-center h-[70%];
+}
+
+.cardimg img {
+  @apply w-[45%] h-full object-contain;
+}

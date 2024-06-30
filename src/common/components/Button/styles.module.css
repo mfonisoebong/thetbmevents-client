@@ -1,0 +1,3 @@
+.button {
+  @apply flex items-center justify-center font-semibold space-x-4  rounded-xl;
+}

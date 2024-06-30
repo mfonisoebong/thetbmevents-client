@@ -1,0 +1,10 @@
+.paymentoptions {
+  @apply border-[0.1rem] border-gray-200 border-t-0 rounded-md p-4 space-y-4;
+}
+
+.paymentoptions input[type="checkbox"] {
+  @apply rounded-full checked:after:content-none checked:bg-transparent checked:border-green-500 border-[0.12rem] checked:border-[0.125rem];
+}
+
+.paymentoptions input[type="checkbox"]:checked {
+}

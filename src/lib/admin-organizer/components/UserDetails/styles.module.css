@@ -1,0 +1,23 @@
+.userdetailsgrid {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-5;
+}
+
+.card {
+  @apply relative space-y-2  bg-gray-50 py-6 px-3 border-solid border-[0.1rem] border-gray-200;
+}
+
+.card h4 {
+  @apply font-normal text-xs md:text-sm;
+}
+
+.card h6 {
+  @apply text-sm md:text-lg font-medium;
+}
+
+.card input {
+  @apply border-solid border-[0.1rem] border-gray-300;
+}
+
+.actions {
+  @apply flex justify-center space-x-4 md:space-x-8 items-center text-sm md:text-base;
+}

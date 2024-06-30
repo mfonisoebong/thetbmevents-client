@@ -1,0 +1,29 @@
+.link {
+  @apply text-black font-semibold text-base lg:text-lg block py-4 pl-8 rounded-r-full relative;
+}
+
+.disabled{
+  @apply opacity-50;
+  pointer-events: none; /* Disable mouse events */
+  text-decoration: none; /* Remove any underline or text decoration */
+  cursor: not-allowed;
+}
+
+.activelink {
+  @apply relative  font-semibold text-base lg:text-lg block py-4 pl-8 rounded-r-full;
+}
+
+.activelink,
+.link:hover {
+  @apply bg-black text-white;
+}
+
+.activelink::before,
+.link:hover::before {
+  content: "";
+  @apply absolute left-1 bg-white h-full w-1 top-0;
+}
+
+.authlink {
+  @apply flex items-center space-x-2 font-semibold;
+}

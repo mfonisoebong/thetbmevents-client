@@ -1,0 +1,7 @@
+.dateandloc {
+    @apply lg:w-3/12 lg:pt-16 space-y-2;
+}
+
+.dateandloc p {
+    @apply flex space-x-2 items-center text-xs lg:text-sm;
+}

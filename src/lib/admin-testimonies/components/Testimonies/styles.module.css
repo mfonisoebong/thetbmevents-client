@@ -1,0 +1,32 @@
+.testimony{
+    @apply space-y-3
+}
+
+
+/*
+Remove default styles for form inputs
+*/
+
+
+.formfield {
+    @apply border-solid border-[0.1rem] border-gray-300 rounded-xl py-2 px-3;
+}
+
+.formfield label,
+.formfield input,
+.formfield textarea{
+    @apply font-normal text-sm;
+}
+
+.formfield label{
+    @apply text-gray-700;
+}
+
+.formfield input,
+.formfield textarea{
+    @apply shadow-none px-0 h-max rounded-none outline-none;
+}
+
+.formfield textarea{
+    @apply max-h-32 min-h-[8rem]
+}
