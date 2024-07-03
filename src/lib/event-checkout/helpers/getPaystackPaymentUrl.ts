@@ -18,6 +18,7 @@ export const getPaystackPaymentUrl = async (
     method: "POST",
     data: {
       ...data,
+      coupon_code: data.couponCode,
       attendees: data.attendees.map((a) => ({
         first_name: a.firstName,
         last_name: a.lastName,

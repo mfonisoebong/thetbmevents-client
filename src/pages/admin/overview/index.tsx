@@ -18,7 +18,7 @@ export default function OverviewPage() {
         <Header />
         <MainSection>
           <RenderHydrated>
-            <RedirectUser page={"admin"} admin={"manager"} />
+            {/*<RedirectUser page={"admin"} admin={"manager"} />*/}
 
             <div className="space-y-5">
               <RevenueEventOverview />

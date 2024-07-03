@@ -32,6 +32,7 @@ export const CustomerSchema = z
 export const ContactInformationSchema = z.object({
   customer: CustomerSchema,
   attendees: z.array(AttendeeSchema).min(0),
+  couponCode: z.string().nullable().default(null),
 });
 
 export type ContactInformationFormType = z.infer<

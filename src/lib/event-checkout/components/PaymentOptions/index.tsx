@@ -73,6 +73,10 @@ const PaymentOptions: FC = () => {
       customer_phone_dial_code: formValues.customer.phone.dialCode,
       attendees: formValues.attendees,
       tickets: selectedTickets,
+      couponCode:
+        !formValues.couponCode || formValues.couponCode?.trim() === ""
+          ? undefined
+          : formValues.couponCode,
       customer_phone_number: formValues.customer.phone.number,
     };
 

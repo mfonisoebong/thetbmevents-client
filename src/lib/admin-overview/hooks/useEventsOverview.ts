@@ -4,18 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 
 export default function useEventsOverview() {
   const router = useRouter();
-  const month = router.query.event_overview_month as string;
-  const fetcher = () => getEventsOverview(month);
+  const date = new Date();
 
-  if (!month) {
-    const date = new Date();
-    router.push({
-      query: {
-        ...router.query,
-        event_overview_month: date.getMonth() + 1,
-      },
-    });
-  }
+  const month =
+    (router.query.event_overview_month as string) ??
+    (date.getMonth() + 1).toString();
+  const fetcher = () => getEventsOverview(month);
 
   const eventsOverview = useQuery(["event_overview", month], fetcher);
 

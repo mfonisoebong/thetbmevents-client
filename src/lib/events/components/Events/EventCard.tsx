@@ -46,7 +46,7 @@ const EventCard: FC<EventCardProps> = (props) => {
             <span>{props.location}</span>
           </p>
           <div className={styles.link}>
-            <Link href={`/events/${props.id}`}>Get Tickets</Link>
+            <Link href={`/events/${props.alias}/checkout`}>Get Tickets</Link>
           </div>
         </div>
       </div>

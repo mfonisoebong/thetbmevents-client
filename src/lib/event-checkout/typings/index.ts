@@ -69,6 +69,7 @@ export type PaymentData = {
   customer_phone_number: string;
   attendees: AttendeeFormType[];
   tickets: SelectedTicket[];
+  couponCode?: string;
 };
 
 export interface QuantitySelectProps {

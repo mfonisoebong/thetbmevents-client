@@ -9,6 +9,9 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
     "/signup/organizer",
     "/organizer/dashboard",
     "/organizer/dashboard/events",
+    "/organizer/dashboard/coupons",
+    "/organizer/dashboard/coupons/[id]",
+    "/organizer/dashboard/coupons/create",
     "/organizer/dashboard/sales",
     "/organizer/dashboard/finance",
     "/organizer/dashboard/events/create",
@@ -28,7 +31,6 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
     "/admin/testimonies",
     "/admin/newsletters",
     "/admin/categories",
-
     "/admin/finances",
     "/admin/payment-method",
     "/admin/order-history",

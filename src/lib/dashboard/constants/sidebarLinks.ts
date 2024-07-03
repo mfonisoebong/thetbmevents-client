@@ -16,6 +16,10 @@ export const organizerLinks: SidebarLinkProps[] = [
     text: "Events",
   },
   {
+    href: "/organizer/dashboard/coupons",
+    text: "Coupons",
+  },
+  {
     href: "/organizer/dashboard/sales",
     text: "Sales",
   },
@@ -40,6 +44,10 @@ export const allAdminLinks: SidebarLinkProps[] = [
   {
     href: "/admin/overview",
     text: "Overview",
+  },
+  {
+    href: "/organizer/dashboard/coupons",
+    text: "Coupons",
   },
   {
     href: "/admin/users",
@@ -135,10 +143,14 @@ export const managerAdminLinks: SidebarLinkProps[] = [
     href: "/admin/features",
     text: "Features",
   },
+  {
+    href: "/organizer/dashboard/coupons",
+    text: "Coupons",
+  },
 ];
 
 export const sidebarLinks = (
-  user?: IndividualUser | OrganizerUser | AdminUser,
+  user?: IndividualUser | OrganizerUser | AdminUser
 ): SidebarLinkProps[] => {
   if (!user) return [];
 
