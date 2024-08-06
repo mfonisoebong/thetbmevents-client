@@ -12,6 +12,8 @@ export interface Coupon {
   event: string;
   status: "active" | "inactive";
   event_id: string;
+  limit: number | null;
+  referral_name: string | null;
 }
 
 export interface CouponsData extends PaginationData {

@@ -20,6 +20,13 @@ export const CouponFormSchema = z.object({
       required_error: "Value is required",
     })
     .min(0, "Value cannot be less than 0"),
+  limit: z
+    .number({
+      invalid_type_error: "Invalid number",
+      required_error: "Limit is required",
+    })
+    .nullable(),
+  referralName: z.string().nullable(),
 });
 
 export type CouponSchemaType = z.infer<typeof CouponFormSchema>;

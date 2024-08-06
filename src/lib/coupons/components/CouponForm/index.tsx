@@ -39,6 +39,7 @@ export const CouponForm: FC<ICouponFormProps> = ({ coupon }) => {
       name: coupon?.name,
       eventId: coupon?.event_id,
       status: coupon?.status,
+      limit: coupon?.limit,
     },
   });
 
@@ -150,6 +151,22 @@ export const CouponForm: FC<ICouponFormProps> = ({ coupon }) => {
         <option value="active">Active</option>
         <option value="inactive">Inactive</option>
       </FormSelectField>
+
+      <FormField
+        type="number"
+        error={errors.limit?.message}
+        label={"Limit"}
+        {...register("limit", {
+          valueAsNumber: true,
+        })}
+      />
+
+      <FormField
+        error={errors.referralName?.message}
+        label={"Referral name"}
+        {...register("referralName")}
+      />
+
       <Button loading={isLoading}>Save</Button>
     </form>
   );
