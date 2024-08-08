@@ -14,6 +14,7 @@ export interface Coupon {
   event_id: string;
   limit: number | null;
   referral_name: string | null;
+  invoices_count: number;
 }
 
 export interface CouponsData extends PaginationData {

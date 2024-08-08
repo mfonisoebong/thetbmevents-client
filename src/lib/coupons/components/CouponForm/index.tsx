@@ -39,7 +39,7 @@ export const CouponForm: FC<ICouponFormProps> = ({ coupon }) => {
       name: coupon?.name,
       eventId: coupon?.event_id,
       status: coupon?.status,
-      limit: coupon?.limit,
+      limit: coupon?.limit ?? null,
     },
   });
 

@@ -10,6 +10,7 @@ const TableHead: FC = () => {
         <th>Type</th>
         <th>Event</th>
         <th>Status</th>
+        <th>Invoices used</th>
         <th></th>
       </tr>
     </thead>

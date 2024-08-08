@@ -57,6 +57,9 @@ const TableRow: FC<ITableRowProps> = ({ coupon }) => {
       <td onClick={editCoupon} className="w-max whitespace-nowrap capitalize">
         {coupon.status}
       </td>
+      <td onClick={editCoupon} className="w-max whitespace-nowrap capitalize">
+        {coupon.invoices_count}
+      </td>
       <td className="w-max whitespace-nowrap capitalize">
         <IconButton
           onClick={removeCoupon}

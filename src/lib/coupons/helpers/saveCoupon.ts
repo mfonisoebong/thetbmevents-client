@@ -19,6 +19,8 @@ export const saveCoupon = async (data: Params) => {
       end_date_time: data.endDateTime,
       type: data.type,
       value: data.value,
+      limit: data.limit,
+      referral_name: data.referralName,
     },
   }).then((res) => res.data);
 };
