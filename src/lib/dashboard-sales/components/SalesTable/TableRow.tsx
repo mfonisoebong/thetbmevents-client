@@ -3,8 +3,36 @@ import styles from "@lib/create-event/components/TicketForm/TicketsDisplay/style
 import { TableRowProps } from "@lib/dashboard-sales/typings";
 import { numberFormatter } from "@common/utils/numberFormatter";
 import moment from "moment";
+import { useMutation } from "@tanstack/react-query";
+import Button from "@common/components/Button";
+import { resendPurchasedTickets } from "@lib/dashboard-sales/helpers/resendPurchasedTickets";
+import useAlertContext from "@common/hooks/useAlertContext";
 const TableRow: FC<TableRowProps> = (props) => {
   const boughtAt = moment(props.created_at).format("DD/MM/YYYY");
+
+  const { handleOpenAlert } = useAlertContext();
+
+  const { mutate, isLoading } = useMutation({
+    mutationFn: resendPurchasedTickets,
+    onSuccess() {
+      handleOpenAlert({
+        body: "Invoice sent successfully",
+        title: "Success",
+        type: "success",
+      });
+    },
+    onError() {
+      handleOpenAlert({
+        body: "An error occurred while sending invoice",
+        title: "Error",
+        type: "error",
+      });
+    },
+  });
+
+  const handleSendInvoice = () => {
+    mutate(props.id);
+  };
 
   return (
     <tr className={styles.tablerow}>
@@ -14,6 +42,16 @@ const TableRow: FC<TableRowProps> = (props) => {
       <td>₦{numberFormatter(props.price)}</td>
       <td>{props.tickets_bought}</td>
       <td>{boughtAt}</td>
+      <td>
+        <Button
+          onClick={handleSendInvoice}
+          loading={isLoading}
+          size="sm"
+          className="text-xs"
+        >
+          Send invoice
+        </Button>
+      </td>
     </tr>
   );
 };
