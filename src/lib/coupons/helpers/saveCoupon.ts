@@ -21,6 +21,7 @@ export const saveCoupon = async (data: Params) => {
       value: data.value,
       limit: data.limit,
       referral_name: data.referralName,
+      referral_email: data.referralEmail,
     },
   }).then((res) => res.data);
 };

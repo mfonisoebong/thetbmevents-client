@@ -40,6 +40,8 @@ export const CouponForm: FC<ICouponFormProps> = ({ coupon }) => {
       eventId: coupon?.event_id,
       status: coupon?.status,
       limit: coupon?.limit ?? null,
+      referralEmail: coupon?.referral_email,
+      referralName: coupon?.referral_name,
     },
   });
 
@@ -165,6 +167,11 @@ export const CouponForm: FC<ICouponFormProps> = ({ coupon }) => {
         error={errors.referralName?.message}
         label={"Referral name"}
         {...register("referralName")}
+      />
+      <FormField
+        error={errors.referralEmail?.message}
+        label={"Referral email"}
+        {...register("referralEmail")}
       />
 
       <Button loading={isLoading}>Save</Button>

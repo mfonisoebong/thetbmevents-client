@@ -27,6 +27,7 @@ export const CouponFormSchema = z.object({
     })
     .nullable(),
   referralName: z.string().nullable(),
+  referralEmail: z.string().nullable(),
 });
 
 export type CouponSchemaType = z.infer<typeof CouponFormSchema>;
