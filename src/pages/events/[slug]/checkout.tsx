@@ -1,7 +1,6 @@
 import useEvent from "@lib/event/hooks/useEvent";
 import Head from "next/head";
 import TicketsProvider from "@lib/event-checkout/contexts/Tickets/Provider";
-import Tickets from "@lib/event-checkout/components/Tickets";
 import Container from "@common/components/Container";
 import Summary from "@lib/event-checkout/components/Summary";
 import MainContent from "@lib/event-checkout/components/MainContent";

@@ -36,9 +36,20 @@ export default function Home(props: HomePageData) {
 }
 
 export const getStaticProps: GetStaticProps<HomePageData> = async () => {
-  const homepageData = await getHomepageData();
-  return {
-    props: homepageData,
-    revalidate: 10,
-  };
+  try {
+    const homepageData = await getHomepageData();
+    return {
+      props: homepageData,
+      revalidate: 10,
+    };
+  } catch (err: any) {
+    console.log(err.response.data);
+    return {
+      props: {
+        features: { heading: "", items: [], sub_heading: "" },
+        testimonies: { heading: "", items: [], sub_heading: "" },
+        upcoming_events: [],
+      },
+    };
+  }
 };
