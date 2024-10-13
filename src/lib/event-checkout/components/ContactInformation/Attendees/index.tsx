@@ -21,6 +21,7 @@ const Attendees: FC = () => {
 
             return (
               <AttendeeForm
+                key={i}
                 index={i}
                 ticket={{
                   id: ticket.id,
