@@ -80,7 +80,9 @@ const OrganizationForm: FC = () => {
         {...register("country")}
         icon={inputIcon}
       >
-        <option value="">--Select a country--</option>
+        <option key={"NG"} value={"Nigeria"}>
+          Nigeria
+        </option>
         {countries.data?.map((c) => (
           <option key={c.code + c.name} value={c.name}>
             {c.name}
@@ -101,6 +103,7 @@ const OrganizationForm: FC = () => {
           className="w-4/12 md:w-3/12"
           icon={inputIcon}
         >
+          <option value="+234">NG (+234)</option>
           {countries.data?.map((c) => (
             <option key={c.code} value={c.dial_code}>
               {c.code} ({c.dial_code})
