@@ -43,7 +43,6 @@ export const getStaticProps: GetStaticProps<HomePageData> = async () => {
       revalidate: 10,
     };
   } catch (err: any) {
-    console.log(err.response.data);
     return {
       props: {
         features: { heading: "", items: [], sub_heading: "" },
