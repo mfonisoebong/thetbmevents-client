@@ -9,9 +9,12 @@ const Details: FC = () => {
       <h1 className={"text-xl md:text-3xl lg:text-5xl font-bold"}>
         {event.event.title}
       </h1>
-      <p className={"text-sm md:text-base lg:text-2xl"}>
-        {event.event.description}
-      </p>
+      <div
+        className={"text-sm md:text-base lg:text-2xl"}
+        dangerouslySetInnerHTML={{
+          __html: event.event.description,
+        }}
+      />
     </div>
   );
 };
