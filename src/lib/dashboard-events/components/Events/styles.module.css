@@ -10,6 +10,6 @@
     @apply block text-left font-normal text-sm
 }
 
-.optionscontainer button{
+.optionscontainer button:last-child{
     @apply text-red-500;
 }

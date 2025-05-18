@@ -6,6 +6,7 @@ export interface UserEvent {
   id: string;
   title: string;
   logo: string;
+  alias: string;
   created_at: string;
   ticket_price: number;
 }

@@ -8,7 +8,13 @@ interface EventResponseData {
   event_id: string;
 }
 
-export const createEvent = async (data: EventFormType) => {
+export const createEvent = async (
+  data: EventFormType,
+): Promise<{
+  event: {
+    alias: string;
+  };
+}> => {
   const { AppAxios } = axiosInstance();
   const formData = new FormData();
   formData.append("logo", dataURLtoFile(data.about.image, "logo"));
@@ -25,7 +31,7 @@ export const createEvent = async (data: EventFormType) => {
   data.about.eventLink && formData.append("event_link", data.about.eventLink);
   formData.append(
     "undisclose_location",
-    JSON.stringify(data.about.undiscloseLocation)
+    JSON.stringify(data.about.undiscloseLocation),
   );
   data.about.social.facebook &&
     formData.append("links_facebook", data.about.social.facebook);
@@ -53,15 +59,15 @@ export const createEvent = async (data: EventFormType) => {
     formData.append(`tickets[${i}][unlimited]`, ticket.unlimited.toString());
     formData.append(
       `tickets[${i}][selling_start_date_time]`,
-      ticket.selling_start_date_time
+      ticket.selling_start_date_time,
     );
     formData.append(
       `tickets[${i}][selling_end_date_time]`,
-      ticket.selling_end_date_time
+      ticket.selling_end_date_time,
     );
   }
 
-  await AppAxios({
+  return await AppAxios({
     url: "/events/store",
     method: "POST",
     data: formData,

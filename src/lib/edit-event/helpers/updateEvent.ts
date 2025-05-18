@@ -11,7 +11,13 @@ interface EventResponseData {
 type Data = EventFormType & {
   id?: string;
 };
-export const updateEvent = async (data: Data) => {
+export const updateEvent = async (
+  data: Data,
+): Promise<{
+  event: {
+    alias: string;
+  };
+}> => {
   const { AppAxios } = axiosInstance();
   const formData = new FormData();
   if (isBase64(data.about.image)) {
@@ -32,7 +38,7 @@ export const updateEvent = async (data: Data) => {
 
   formData.append(
     "undisclose_location",
-    JSON.stringify(data.about.undiscloseLocation)
+    JSON.stringify(data.about.undiscloseLocation),
   );
   data.about.social.facebook &&
     formData.append("links_facebook", data.about.social.facebook);
@@ -63,15 +69,15 @@ export const updateEvent = async (data: Data) => {
     formData.append(`tickets[${i}][unlimited]`, ticket.unlimited.toString());
     formData.append(
       `tickets[${i}][selling_start_date_time]`,
-      ticket.selling_start_date_time
+      ticket.selling_start_date_time,
     );
     formData.append(
       `tickets[${i}][selling_end_date_time]`,
-      ticket.selling_end_date_time
+      ticket.selling_end_date_time,
     );
   }
 
-  await AppAxios({
+  return await AppAxios({
     url: `/events/${data.id}`,
     method: "POST",
     data: formData,

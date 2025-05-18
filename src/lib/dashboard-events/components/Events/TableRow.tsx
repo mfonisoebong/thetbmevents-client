@@ -8,6 +8,8 @@ import { Device } from "@common/typings";
 import { noCacheImage } from "@common/utils/noCacheImage";
 import { numberFormatter } from "@common/utils/numberFormatter";
 import { useRouter } from "next/router";
+import Clipboard from "@common/components/Icons/Clipboard";
+import useAlertContext from "@common/hooks/useAlertContext";
 
 const TableRow: FC<TableRowProps> = (props) => {
   const [showOptions, setShowOptions] = useState(false);
@@ -16,9 +18,22 @@ const TableRow: FC<TableRowProps> = (props) => {
   const toggleShowOptions = () => {
     setShowOptions((state) => !state);
   };
+  const { handleOpenAlert } = useAlertContext();
 
   const toEditPage = () => {
     router.push(`/organizer/dashboard/events/edit/${props.id}`);
+  };
+
+  const copyEventLink = () => {
+    navigator.clipboard.writeText(
+      `${process.env.NEXT_PUBLIC_CLIENT_URL}/events/${props.alias}`,
+    );
+
+    handleOpenAlert({
+      type: "success",
+      body: "Event link copied to clipboard",
+      title: "Success",
+    });
   };
 
   return (
@@ -52,6 +67,14 @@ const TableRow: FC<TableRowProps> = (props) => {
         toggleShowOptions={toggleShowOptions}
         id={props.id}
       />
+      <td>
+        <button
+          title="Copy event link"
+          className="active:scale-75 duration-300"
+        >
+          <Clipboard onClick={copyEventLink} />
+        </button>
+      </td>
     </tr>
   );
 };

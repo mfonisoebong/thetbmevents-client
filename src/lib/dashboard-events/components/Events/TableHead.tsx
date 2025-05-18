@@ -17,6 +17,7 @@ const TableHead: FC = () => {
             <th>Date created</th>
           </>
         )}
+        <th />
       </tr>
     </thead>
   );

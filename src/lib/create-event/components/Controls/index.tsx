@@ -34,12 +34,16 @@ const Controls: FC<ControlsProps> = ({ onNext, moveToMext = true }) => {
 
   const { mutate, isLoading } = useMutation({
     mutationFn: isEdit ? updateEvent : createEvent,
-    onSuccess() {
+    onSuccess(data) {
+      navigator.clipboard.writeText(
+        `${process.env.NEXT_PUBLIC_CLIENT_URL}/events/${data.event.alias}`,
+      );
       handleOpenAlert({
-        body: "Event created successfully",
+        body: "Event created successfully, link copied to clipboard",
         title: "Success",
         type: "success",
       });
+
       userEvents.refetch();
       event.refetch();
       router.push("/organizer/dashboard/events");
