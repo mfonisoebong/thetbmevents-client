@@ -21,6 +21,10 @@ const TicketDetails: FC<TicketDetailsProps> = (props) => {
         <ErrorText>Ticket sales have stopped since {salesEndDate}</ErrorText>
       );
     }
+    if (props.isSoldOut) {
+      return <ErrorText>Tickets have been sold out</ErrorText>;
+    }
+
     return null;
   };
 

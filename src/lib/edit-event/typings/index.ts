@@ -36,6 +36,8 @@ export interface Ticket {
   selling_end_date_time: string;
   is_early: boolean;
   is_late: boolean;
+  is_sold_out: boolean;
+  sold: number;
   updated_at: string;
 }
 

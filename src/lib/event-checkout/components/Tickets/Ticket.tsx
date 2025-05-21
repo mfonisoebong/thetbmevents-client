@@ -22,8 +22,11 @@ const Ticket: FC<TicketProps> = ({ ticket }) => {
   return (
     <div className={styles.card}>
       <TicketDetails
+        isSoldOut={ticket.is_sold_out}
         description={ticket.description}
         name={ticket.name}
+        quantity={ticket.quantity}
+        sold={ticket.sold}
         price={ticket.price}
         isEarly={ticket.is_early}
         isLate={ticket.is_late}
@@ -32,7 +35,7 @@ const Ticket: FC<TicketProps> = ({ ticket }) => {
       />
 
       <QuantitySelect
-        disabled={ticket.is_early || ticket.is_late}
+        disabled={ticket.is_early || ticket.is_late || ticket.is_sold_out}
         quantity={ticketQuantity}
         increment={increment}
         decrement={decrement}

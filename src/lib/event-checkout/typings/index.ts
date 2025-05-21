@@ -38,6 +38,9 @@ export interface TicketDetailsProps {
   isLate: boolean;
   salesStart: string;
   salesEnd: string;
+  isSoldOut: boolean;
+  sold: number;
+  quantity: number;
 }
 
 export interface ContinueProps {
