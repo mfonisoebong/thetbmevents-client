@@ -28,3 +28,8 @@ export interface EventFormProps {
 export type FormContainerProps = PropsWithChildren<{
   className?: string;
 }>;
+
+export type SectionHeaderProps = {
+  heading: string;
+  closeLink: string;
+};

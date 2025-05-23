@@ -28,7 +28,10 @@ export default function EditEvent() {
         <SidebarProvider>
           <Header />
           <MainSection>
-            <SectionHeader />
+            <SectionHeader
+              heading={`Edit ${event.data?.event.title}`}
+              closeLink="/organizer/dashboard/events"
+            />
             <DashboardTabsProvider tabs={TABS}>
               {event.data && (
                 <EventForms

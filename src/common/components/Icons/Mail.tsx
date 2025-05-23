@@ -1,11 +1,11 @@
-import { iconSizes } from "@common/constants/iconSizes"
-import { IconProps } from "@common/typings"
-import { FC } from "react"
+import { iconSizes } from "@common/constants/iconSizes";
+import { IconProps } from "@common/typings";
+import { FC } from "react";
 
 const Mail: FC<IconProps> = (props) => {
-  const { color, size = 19, ...restProps } = props
+  const { color = "currentColor", size = 19, ...restProps } = props;
 
-  const iconSize = typeof size === "string" ? iconSizes[size] : size
+  const iconSize = typeof size === "string" ? iconSizes[size] : size;
 
   return (
     <svg
@@ -20,7 +20,7 @@ const Mail: FC<IconProps> = (props) => {
         fill={color}
       />
     </svg>
-  )
-}
+  );
+};
 
-export default Mail
+export default Mail;

@@ -40,6 +40,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
     "/admin/event-organizers/[id]",
     "/admin/login-as/[id]",
     "/auth/reset-password/[id]",
+    "/organizer/dashboard/events/blast-email",
     "/events/scan",
   ];
 

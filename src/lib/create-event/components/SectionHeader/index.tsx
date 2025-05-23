@@ -6,22 +6,18 @@ import styles from "./styles.module.css";
 import useMediaQuery from "@common/hooks/useMediaQuery";
 import { Device } from "@common/typings";
 import { useRouter } from "next/router";
+import { SectionHeaderProps } from "@lib/create-event/typings";
 
-const SectionHeader: FC = () => {
+const SectionHeader: FC<SectionHeaderProps> = ({ heading, closeLink }) => {
   const isMediumDevice = useMediaQuery(Device.medium);
   const iconSize = isMediumDevice ? 19 : 15;
   const { pathname } = useRouter();
 
-  const headiing =
-    pathname === "/organizer/dashboard/events/create"
-      ? "Create an event"
-      : "Edit event";
-
   return (
     <OverviewCard theme="light">
       <div className={styles.header}>
-        <h3>{headiing}</h3>
-        <Link href="/organizer/dashboard/events">
+        <h3>{heading}</h3>
+        <Link href={closeLink}>
           <Close size={iconSize} />
           <span>Close</span>
         </Link>

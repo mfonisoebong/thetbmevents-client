@@ -12,6 +12,8 @@ import { errorParser } from "@common/utils/errorParser";
 import { downloadCSVFile } from "@common/utils/downloadCSVFile";
 import useToggle from "@common/hooks/useToggle";
 import ExportAttendees from "@lib/dashboard-events/components/EventsHeader/ExportAttendees";
+import Mail from "@common/components/Icons/Mail";
+import ButtonLink from "@common/components/ButtonLink";
 
 const HeaderActions: FC = () => {
   const { toggle: showEventType, handleToggle: toggleShowEventType } =
@@ -62,9 +64,18 @@ const HeaderActions: FC = () => {
       >
         Export
       </Button>
+      <ButtonLink
+        href={"/organizer/dashboard/events/blast-email"}
+        variant={"outline"}
+        size={buttonSize}
+      >
+        <span>Blast mail</span>
+        <Mail />
+      </ButtonLink>
       <Button onClick={toggleExportForm} size={buttonSize}>
         Export Attedees
       </Button>
+
       {showExportForm && <ExportAttendees closeModal={toggleExportForm} />}
       {showEventType && <SelectEventType closeModal={toggleShowEventType} />}
     </div>
