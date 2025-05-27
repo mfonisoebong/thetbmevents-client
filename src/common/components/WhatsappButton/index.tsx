@@ -5,7 +5,7 @@ const WhatsappButton: FC = () => {
   return (
     <a
       href={
-        "https://wa.me/+2349020113715?text=Hi, please I would like to inquire about something"
+        "https://wa.me/+2349110191505?text=Hi, I would like to inquire about something from TBM events"
       }
       target={"_blank"}
       className={
