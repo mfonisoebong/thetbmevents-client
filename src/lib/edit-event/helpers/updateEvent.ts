@@ -84,5 +84,5 @@ export const updateEvent = async (
     headers: {
       "Content-Type": "multipart/form-data",
     },
-  }).then((res) => res.data);
+  }).then((res) => res.data.data);
 };

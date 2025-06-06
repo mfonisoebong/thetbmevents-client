@@ -49,6 +49,8 @@ const Controls: FC<ControlsProps> = ({ onNext, moveToMext = true }) => {
       router.push("/organizer/dashboard/events");
     },
     onError(err) {
+      console.log(err);
+
       handleOpenAlert({
         body: errorParser(err),
         title: "Error",
