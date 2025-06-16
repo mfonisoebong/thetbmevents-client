@@ -5,9 +5,6 @@ import EventLink from "./EventLink";
 import { AttendAnEventProps } from "@lib/home/typings";
 
 const AttendAnEvent: FC<AttendAnEventProps> = ({ event }) => {
-
-    console.log(event)
-
   return (
     <div
       className={styles.attend}

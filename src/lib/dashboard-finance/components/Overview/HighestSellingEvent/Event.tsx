@@ -3,8 +3,6 @@ import { EventProps } from "@lib/dashboard-finance/typings";
 import Avatar from "@common/components/Avatar";
 
 const Event: FC<EventProps> = ({ image, name, tickets }) => {
-  console.log(image);
-
   return (
     <div className={"flex space-x-5"}>
       <Avatar image={image} size={52} />

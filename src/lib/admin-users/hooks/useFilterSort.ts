@@ -36,7 +36,6 @@ export default function useFilterSort() {
         return 0;
       });
 
-      // console.log("Email", sorted);
       setUsers(() => sorted);
     }
   }, [sort, usersData?.data]);
