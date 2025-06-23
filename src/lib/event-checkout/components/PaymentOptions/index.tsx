@@ -14,7 +14,6 @@ import { useRouter } from "next/router";
 import useAlertContext from "@common/hooks/useAlertContext";
 import { errorParser } from "@common/utils/errorParser";
 import { freePayment } from "@lib/event-checkout/helpers/freePayment";
-import useVellaCheckout from "@common/hooks/useVellaCheckout";
 import { getPaystackPaymentUrl } from "@lib/event-checkout/helpers/getPaystackPaymentUrl";
 
 const PaymentOptions: FC = () => {
@@ -51,7 +50,6 @@ const PaymentOptions: FC = () => {
     },
   });
 
-  const { initializePayment } = useVellaCheckout();
   const [gateway, setGateway] = useState<PaymentGateway>(null);
 
   const payBtnDisabled = !gateway;
@@ -85,11 +83,6 @@ const PaymentOptions: FC = () => {
       return;
     }
 
-    if (gateway === "vella") {
-      await initializePayment();
-      return;
-    }
-
     if (gateway === "paystack") {
       payStackPayment.mutate(data);
     }
@@ -102,13 +95,6 @@ const PaymentOptions: FC = () => {
     <LayoutContainer className={"lg:w-8/12"} title="Payment Options">
       <CommonCard title={"Select your preffered payment method"}>
         <div className={styles.paymentoptions}>
-          <FormCheck
-            checked={isChecked("vella")}
-            onChange={handleGatewayChange}
-            name={"vella"}
-          >
-            Vella
-          </FormCheck>
           <FormCheck
             checked={isChecked("paystack")}
             onChange={handleGatewayChange}

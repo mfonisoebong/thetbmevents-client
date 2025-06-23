@@ -104,9 +104,6 @@ importers:
       uuid:
         specifier: ^9.0.0
         version: 9.0.1
-      vella-pay:
-        specifier: ^1.1.2
-        version: 1.1.2
       zod:
         specifier: ^3.21.4
         version: 3.23.8
@@ -1811,9 +1808,6 @@ packages:
   uuid@9.0.1:
     resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
     hasBin: true
-
-  vella-pay@1.1.2:
-    resolution: {integrity: sha512-s+le9uc8ulX5VWItLj+HKPymEe5D8jDiLFiuDA7a1VhhxtV0wtz90tibs2MiMv8L20PK7eU7YP/N73MbkbOlUA==}
 
   which-boxed-primitive@1.0.2:
     resolution: {integrity: sha512-bwZdv0AKLpplFY2KZRX6TvyuN7ojjr7lwkg6ml0roIy9YeuSr7JS372qlNW18UQYzgYK9ziGcerWqZOmEn9VNg==}
@@ -3773,8 +3767,6 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   uuid@9.0.1: {}
-
-  vella-pay@1.1.2: {}
 
   which-boxed-primitive@1.0.2:
     dependencies:
