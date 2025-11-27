@@ -11,6 +11,3 @@
   @apply h-12 rounded-xl shadow-none border-solid border-[0.15rem] border-main px-4;
 }
 
-.form button {
-  @apply w-full;
-}

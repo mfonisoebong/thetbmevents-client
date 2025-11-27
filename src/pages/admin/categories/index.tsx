@@ -19,7 +19,6 @@ export default function EventCategories() {
       <DashboardHead title="Categories" />
       <SidebarProvider>
         <Header />
-
         <MainSection>
           <CategoriesHeader />
           <CategoriesTable />

@@ -1,24 +1,25 @@
-import { PaginationData } from "@common/typings"
+import { PaginationData } from "@common/typings";
 
 export interface Category {
-  id: number
-  category: string
-  slug: string
-  created_at: string
+  id: string;
+  category: string;
+  slug: string;
+  icon: string | null;
+  created_at: string;
 }
 
 export interface CategoriesData extends PaginationData {
-  data: Category[]
+  data: Category[];
 }
 
-export type SortFilter = "Category" | "Slug"
+export type SortFilter = "Category" | "Slug";
 
 export interface CategoriesPaginationProps {
-  data: CategoriesData
+  data: CategoriesData;
 }
 
 export interface TableRowProps extends Category {}
 
 export interface CategoryFormProps {
-  category?: Category
+  category?: Category;
 }
