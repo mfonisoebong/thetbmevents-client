@@ -65,3 +65,4 @@ jobs:
           script: |
             cd /var/www/thetbmevents-client
             npm install --force
+            pm2 restart thetbmevents-client
