@@ -1,16 +1,13 @@
 import Button from "@common/components/Button"
 import FormField from "@common/components/FormControls/FormField"
-import FormSelectField from "@common/components/FormControls/FormSelectField"
 import useAlertContext from "@common/hooks/useAlertContext"
 import { compareObjects } from "@common/utils/compareObjects"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { storeBankDetails } from "@lib/dashboard-edit-profile/helpers/storeBankDetails"
 import { updateBankDetails } from "@lib/dashboard-edit-profile/helpers/updateBankDetails"
-import useBanks from "@lib/dashboard-edit-profile/hooks/useBanks"
 import { BankDetailsFormProps } from "@lib/dashboard-edit-profile/typings"
 import OverviewCard from "@lib/dashboard-overview/components/OverviewCard"
 import useBankDetails from "@lib/dashboard-profile/hooks/useBankDetails"
-import { BankDetails } from "@lib/dashboard-profile/typings"
 import {
   BankDetailsFormType,
   BankDetailsSchema,

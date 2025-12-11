@@ -3,8 +3,6 @@ import { PaymentMethodForm } from "@lib/admin-payment-method/typings";
 import {
   PaystackFormType,
   PaystackSchema,
-  VellaFormType,
-  VellaSchema,
 } from "@lib/admin-payment-method/utils/paymentMethodSchema";
 import { FC } from "react";
 import { useForm } from "react-hook-form";

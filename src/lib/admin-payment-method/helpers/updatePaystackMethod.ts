@@ -1,5 +1,5 @@
 import { axiosInstance } from "@common/utils/axiosInstance"
-import { PaystackFormType, VellaFormType } from "../utils/paymentMethodSchema"
+import { PaystackFormType } from "../utils/paymentMethodSchema"
 
 export const updatePaystackMethod = async (data: PaystackFormType) => {
   const { AppAxios } = axiosInstance()
@@ -8,7 +8,6 @@ export const updatePaystackMethod = async (data: PaystackFormType) => {
     url: "/admin/payment-methods/paystack",
     method: "PATCH",
     data: {
-      webhook_url: data.webhookUrl,
       live_key: data.liveKey,
       test_key: data.testKey,
     },
