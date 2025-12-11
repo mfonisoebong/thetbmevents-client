@@ -1,8 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PaymentMethodForm } from "@lib/admin-payment-method/typings";
 import {
-  VellaFormType,
-  VellaSchema,
+    FlutterwaveFormType,
+    FlutterwaveSchema,
 } from "@lib/admin-payment-method/utils/paymentMethodSchema";
 import { FC } from "react";
 import { useForm } from "react-hook-form";
@@ -12,30 +12,28 @@ import styles from "./styles.module.css";
 import Button from "@common/components/Button";
 import useAlertContext from "@common/hooks/useAlertContext";
 import { useMutation } from "@tanstack/react-query";
-import { updateVellaMethod } from "@lib/admin-payment-method/helpers/updateVellaMethod";
+import { updateFlwMethod } from "@lib/admin-payment-method/helpers/updateFlwMethod";
 import usePaymentMethods from "@lib/admin-payment-method/hooks/usePaymentMethods";
 
-const VellaForm: FC<PaymentMethodForm> = ({ method }) => {
+const FlutterwaveForm: FC<PaymentMethodForm> = ({ method }) => {
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<VellaFormType>({
-    resolver: zodResolver(VellaSchema),
+  } = useForm<FlutterwaveFormType>({
+    resolver: zodResolver(FlutterwaveSchema),
     defaultValues: {
-      liveKey: method?.vella_live_key,
-      testKey: method?.vella_test_key,
-      vellaTag: method?.vella_tag,
-      webhookUrl: method?.vella_webhook_url,
+      liveKey: method?.flutterwave_live_key,
+      testKey: method?.flutterwave_test_key,
     },
   });
-  const { refetch } = usePaymentMethods("vella");
+  const { refetch } = usePaymentMethods("flutterwave");
   const { handleOpenAlert } = useAlertContext();
   const { mutate, isLoading } = useMutation({
-    mutationFn: updateVellaMethod,
+    mutationFn: updateFlwMethod,
     onSuccess() {
       handleOpenAlert({
-        body: "Vella payment method updated",
+        body: "Flutterwave payment method updated",
         title: "Success",
         type: "success",
       });
@@ -43,35 +41,19 @@ const VellaForm: FC<PaymentMethodForm> = ({ method }) => {
     },
     onError() {
       handleOpenAlert({
-        body: "An error occured",
+        body: "An error occurred",
         title: "Error",
         type: "error",
       });
     },
   });
 
-  const onSubmit = (data: VellaFormType) => {
+  const onSubmit = (data: FlutterwaveFormType) => {
     mutate(data);
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
-      <FormInput title="Vella tag">
-        <FormField
-          {...register("vellaTag")}
-          error={errors.vellaTag?.message}
-          placeholder="Type in your Vella Tag"
-          className="w-full"
-        />
-      </FormInput>
-      <FormInput title="Webhook URL">
-        <FormField
-          {...register("webhookUrl")}
-          error={errors.webhookUrl?.message}
-          placeholder="Type in your webhook URL"
-          className="w-full"
-        />
-      </FormInput>
       <FormInput title="Live API key">
         <FormField
           {...register("liveKey")}
@@ -97,4 +79,4 @@ const VellaForm: FC<PaymentMethodForm> = ({ method }) => {
     </form>
   );
 };
-export default VellaForm;
+export default FlutterwaveForm;

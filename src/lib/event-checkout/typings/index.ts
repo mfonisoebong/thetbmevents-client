@@ -62,7 +62,7 @@ export interface AttendeeMainForm {
   index: number;
 }
 
-export type PaymentGateway = "vella" | "paystack" | null;
+export type PaymentGateway = "vella" | "paystack" | "flutterwave" | null;
 
 export type PaymentData = {
   customer_first_name: string;

@@ -7,7 +7,7 @@
   @apply absolute w-4 h-4 rounded-full bg-white top-1 mx-1;
 }
 
-.toggle[data-select="vella"]::before {
+.toggle[data-select="flutterwave"]::before {
   content: "";
   @apply absolute w-4 h-4 rounded-full bg-white top-1 mx-1 left-0;
 }

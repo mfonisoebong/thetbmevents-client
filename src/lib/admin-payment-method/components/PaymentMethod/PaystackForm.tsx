@@ -27,7 +27,6 @@ const PaystackForm: FC<PaymentMethodForm> = ({ method }) => {
     defaultValues: {
       liveKey: method?.paystack_live_key,
       testKey: method?.paystack_test_key,
-      webhookUrl: method?.paystack_webhook_url,
     },
   });
   const { refetch } = usePaymentMethods("paystack");
@@ -57,14 +56,6 @@ const PaystackForm: FC<PaymentMethodForm> = ({ method }) => {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
-      <FormInput title="Webhook URL">
-        <FormField
-          {...register("webhookUrl")}
-          error={errors.webhookUrl?.message}
-          placeholder="Type in your webhook URL"
-          className="w-full"
-        />
-      </FormInput>
       <FormInput title="Live API key">
         <FormField
           {...register("liveKey")}
