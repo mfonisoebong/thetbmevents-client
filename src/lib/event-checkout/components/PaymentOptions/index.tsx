@@ -113,18 +113,18 @@ const PaymentOptions: FC = () => {
             <CommonCard title={"Select your preffered payment method"}>
                 <div className={styles.paymentoptions}>
                     <FormCheck
-                        checked={isChecked("paystack")}
-                        onChange={handleGatewayChange}
-                        name={"paystack"}
-                    >
-                        Paystack
-                    </FormCheck>
-                    <FormCheck
                         checked={isChecked("flutterwave")}
                         onChange={handleGatewayChange}
                         name={"flutterwave"}
                     >
                         Flutterwave
+                    </FormCheck>
+                    <FormCheck
+                        checked={isChecked("paystack")}
+                        onChange={handleGatewayChange}
+                        name={"paystack"}
+                    >
+                        Paystack
                     </FormCheck>
                     <Button
                         onClick={handlePay}
