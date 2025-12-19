@@ -65,6 +65,8 @@ const PaymentOptions: FC = () => {
     });
 
     const [gateway, setGateway] = useState<PaymentGateway>(null);
+    // show/hide the "see more" dropdown that includes less-common payment options
+    const [showMore, setShowMore] = useState(false);
 
     const payBtnDisabled = !gateway;
     const formValues = getValues();
@@ -119,13 +121,30 @@ const PaymentOptions: FC = () => {
                     >
                         Flutterwave
                     </FormCheck>
-                    <FormCheck
-                        checked={isChecked("paystack")}
-                        onChange={handleGatewayChange}
-                        name={"paystack"}
-                    >
-                        Paystack
-                    </FormCheck>
+
+                    {/* Move Paystack into a "See more" dropdown */}
+                    <div className="mt-2">
+                        <button
+                            type="button"
+                            className="text-sm text-blue-600 underline"
+                            onClick={() => setShowMore(s => !s)}
+                        >
+                            {showMore ? "Hide" : "See more"}
+                        </button>
+
+                        {showMore && (
+                            <div className="mt-2">
+                                <FormCheck
+                                    checked={isChecked("paystack")}
+                                    onChange={handleGatewayChange}
+                                    name={"paystack"}
+                                >
+                                    Paystack
+                                </FormCheck>
+                            </div>
+                        )}
+                    </div>
+
                     <Button
                         onClick={handlePay}
                         disabled={payBtnDisabled}
