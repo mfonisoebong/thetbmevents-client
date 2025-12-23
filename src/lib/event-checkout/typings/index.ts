@@ -1,4 +1,4 @@
-import { PropsWithChildren } from "react";
+import {Dispatch, PropsWithChildren, SetStateAction} from "react";
 import { Ticket } from "@lib/edit-event/typings";
 import { AttendeeFormType } from "@lib/event-checkout/utils/contactInformationSchema";
 
@@ -15,6 +15,8 @@ export interface TicketsContextValues {
   selectedTickets: SelectedTicket[];
   incrementQuantity: (id: string, maxQuantity?: number) => void;
   decrementQuantity: (id: string) => void;
+  paymentGateway: PaymentGateway;
+  setPaymentGateway:  Dispatch<SetStateAction<PaymentGateway>>
 }
 
 export interface CommonCardProps extends PropsWithChildren {

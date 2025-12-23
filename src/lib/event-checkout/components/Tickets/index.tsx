@@ -12,7 +12,6 @@ import moment from "moment/moment";
 
 const Tickets: FC = () => {
   const { data: eventsData } = useEvent();
-  const { totalAmount } = useTotalAmount();
   const router = useRouter();
   const { selectedTickets } = useTicketsContext();
   const canContinue = selectedTickets.length > 0;

@@ -18,9 +18,9 @@ import {getFlutterwavePaymentUrl, getPaystackPaymentUrl} from "@lib/event-checko
 
 const PaymentOptions: FC = () => {
     const {getValues} = useFormContext<ContactInformationFormType>();
-    const {selectedTickets} = useTicketsContext();
+    const {selectedTickets, paymentGateway, setPaymentGateway} = useTicketsContext();
     const {handleOpenAlert} = useAlertContext();
-    const {totalAmount} = useTotalAmount();
+    const {amount} = useTotalAmount();
     const router = useRouter();
     const freePaymentMutate = useMutation({
         mutationFn: freePayment,
@@ -64,19 +64,18 @@ const PaymentOptions: FC = () => {
         },
     });
 
-    const [gateway, setGateway] = useState<PaymentGateway>(null);
     // show/hide the "see more" dropdown that includes less-common payment options
     const [showMore, setShowMore] = useState(false);
 
-    const payBtnDisabled = !gateway;
+    const payBtnDisabled = !paymentGateway;
     const formValues = getValues();
 
     const handleGatewayChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setGateway(e.target.name as PaymentGateway);
+        setPaymentGateway(e.target.name as PaymentGateway);
     };
 
     const isChecked = (name: PaymentGateway) => {
-        return gateway === name;
+        return paymentGateway === name;
     };
 
     const handlePay = async () => {
@@ -94,16 +93,16 @@ const PaymentOptions: FC = () => {
             customer_phone_number: formValues.customer.phone.number,
         };
 
-        if (totalAmount === 0) {
+        if (amount === 0) {
             freePaymentMutate.mutate(data);
             return;
         }
 
-        if (gateway === "paystack") {
+        if (paymentGateway === "paystack") {
             payStackPayment.mutate(data);
         }
 
-        if (gateway === "flutterwave") {
+        if (paymentGateway === "flutterwave") {
             flutterwavePayment.mutate(data);
         }
     };
@@ -112,7 +111,7 @@ const PaymentOptions: FC = () => {
 
     return (
         <LayoutContainer className={"lg:w-8/12"} title="Payment Options">
-            <CommonCard title={"Select your preffered payment method"}>
+            <CommonCard title={"Select your preferred payment method"}>
                 <div className={styles.paymentoptions}>
                     <FormCheck
                         checked={isChecked("flutterwave")}
