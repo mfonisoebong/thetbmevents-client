@@ -1,3 +1,7 @@
 .title {
     @apply text-sm md:text-2xl font-bold grid place-items-center py-8 rounded-tl-lg rounded-tr-lg bg-[#C6C4C4] border-solid border-black border-b-2
 }
+
+.desc {
+    @apply text-xs md:text-lg font-normal p-2 bg-green-50 text-center
+}

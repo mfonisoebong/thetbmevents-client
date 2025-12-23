@@ -64,9 +64,6 @@ const PaymentOptions: FC = () => {
         },
     });
 
-    // show/hide the "see more" dropdown that includes less-common payment options
-    const [showMore, setShowMore] = useState(false);
-
     const payBtnDisabled = !paymentGateway;
     const formValues = getValues();
 
@@ -111,7 +108,11 @@ const PaymentOptions: FC = () => {
 
     return (
         <LayoutContainer className={"lg:w-8/12"} title="Payment Options">
-            <CommonCard title={"Select your preferred payment method"}>
+            <CommonCard
+                title={"Select your preferred payment method"}
+                desc={"Choose the cheapest gateway for this transaction."}
+            >
+
                 <div className={styles.paymentoptions}>
                     <FormCheck
                         checked={isChecked("flutterwave")}
@@ -120,30 +121,13 @@ const PaymentOptions: FC = () => {
                     >
                         Flutterwave
                     </FormCheck>
-
-                    {/* Move Paystack into a "See more" dropdown */}
-                    <div className="mt-2">
-                        <button
-                            type="button"
-                            className="text-sm text-blue-600 underline"
-                            onClick={() => setShowMore(s => !s)}
-                        >
-                            {showMore ? "Hide" : "See more"}
-                        </button>
-
-                        {showMore && (
-                            <div className="mt-2">
-                                <FormCheck
-                                    checked={isChecked("paystack")}
-                                    onChange={handleGatewayChange}
-                                    name={"paystack"}
-                                >
-                                    Paystack
-                                </FormCheck>
-                            </div>
-                        )}
-                    </div>
-
+                    <FormCheck
+                        checked={isChecked("paystack")}
+                        onChange={handleGatewayChange}
+                        name={"paystack"}
+                    >
+                        Paystack
+                    </FormCheck>
                     <Button
                         onClick={handlePay}
                         disabled={payBtnDisabled}

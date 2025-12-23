@@ -21,6 +21,7 @@ export interface TicketsContextValues {
 
 export interface CommonCardProps extends PropsWithChildren {
   title: string;
+  desc?: string;
 }
 
 export interface LayoutContainerProps extends PropsWithChildren {
