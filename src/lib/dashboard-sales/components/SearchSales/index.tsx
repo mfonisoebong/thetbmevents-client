@@ -131,15 +131,6 @@ const SearchSales: FC = () => {
         <div className="w-fullflex flex-col gap-2 bg-white border border-slate-200 rounded-lg shadow-sm p-3">
 
             <div className="w-full md:w-5/12 flex flex-col sm:flex-row items-center gap-2 ">
-                <input
-                    type="email"
-                    value={email}
-                    onChange={handleEmailChange}
-                    placeholder="Verify customer by email"
-                    className="w-full sm:w-48 rounded-md border px-3 py-2 text-sm"
-                    aria-label="Verify customer by email"
-                />
-
                 <select
                     value={selectedEventId ?? ""}
                     onChange={(e) => setSelectedEventId(e.target.value || null)}
@@ -152,6 +143,15 @@ const SearchSales: FC = () => {
                         <option key={ev.id} value={ev.id}>{ev.title}</option>
                     ))}
                 </select>
+
+                <input
+                    type="email"
+                    value={email}
+                    onChange={handleEmailChange}
+                    placeholder="Verify customer by email"
+                    className="w-full sm:w-48 rounded-md border px-3 py-2 text-sm"
+                    aria-label="Verify customer by email"
+                />
 
                 <button
                     onClick={handleVerify}
@@ -169,7 +169,7 @@ const SearchSales: FC = () => {
                     Verify
                 </button>
 
-                <button
+                {/*<button
                     onClick={handleDownloadCSV}
                     disabled={csvLoading}
                     className={`inline-flex items-center justify-center whitespace-nowrap rounded-md border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50 ${
@@ -187,7 +187,7 @@ const SearchSales: FC = () => {
                         </svg>
                     ) : null}
                     Download CSV
-                </button>
+                </button>*/}
             </div>
 
             {/* Status messages */}
@@ -233,7 +233,7 @@ const SearchSales: FC = () => {
                                   <li>
                                     <strong>amount:</strong>{" "}
                                     {typeof a.invoice?.amount_paid === "number"
-                                      ? `$${a.invoice.amount_paid.toFixed(2)}`
+                                      ? `₦${a.invoice.amount_paid.toFixed(2)}`
                                       : "—"}
                                   </li>
                                   <li>
