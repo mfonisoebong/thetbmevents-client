@@ -19,11 +19,11 @@ export default function Sales() {
       <DashboardHead title={"Sales"} />
       <SidebarProvider>
         <Header>
-          <SearchSales />
         </Header>
-        <MainSection>
-          <SalesHeader />
-          <SalesTable />
+          <MainSection>
+              <SalesHeader />
+              <SearchSales />
+              <SalesTable />
           {sales && <SalesPagination data={sales} />}
         </MainSection>
       </SidebarProvider>
