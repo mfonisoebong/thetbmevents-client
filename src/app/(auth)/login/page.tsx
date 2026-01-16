@@ -65,7 +65,7 @@ export default function LoginPage() {
 								className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 focus:ring-offset-0 shadow-sm"
 								placeholder="you@example.com"
 								aria-required
-								required={true}
+								required
 							/>
 						</div>
 
@@ -74,6 +74,7 @@ export default function LoginPage() {
 								Password
 							</label>
 							<div className="relative">
+								{/*TODO: password rules*/}
 								<input
 									id="password"
 									type={showPassword ? 'text' : 'password'}
@@ -82,6 +83,7 @@ export default function LoginPage() {
 									className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 focus:ring-offset-0 shadow-sm"
 									placeholder="Your password"
 									aria-required
+									required
 								/>
 								<button
 									type="button"

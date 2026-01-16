@@ -22,17 +22,18 @@
     "react-dropzone": "^14.2.3",
     "react-hot-toast": "^2.6.0",
     "react-quill": "^2.0.0",
+    "react-select": "^5.10.2",
     "tailwind-merge": "^1.13.2"
   },
   "devDependencies": {
-    "postcss": "8.5.6",
     "@types/js-cookie": "^3.0.3",
     "@types/node": "18.16.3",
     "@types/react": "18.2.0",
     "@types/react-dom": "18.2.1",
-    "typescript": "5.0.4",
     "eslint": "8.39.0",
     "eslint-config-next": "13.3.4",
-    "tailwindcss": "3.4.17"
+    "postcss": "8.5.6",
+    "tailwindcss": "3.4.17",
+    "typescript": "5.0.4"
   }
 }
