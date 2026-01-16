@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import React from "react";
 
+// todo: put explore events link when available
 export default function NotFound() {
     return (
         <main
             className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-sky-50 p-6">
             <section className="w-full max-w-4xl mx-auto items-center">
-                <div
-                    className="p-8 md:p-12 bg-white/80 dark:bg-slate-900/60 rounded-2xl backdrop-blur-sm border border-slate-200">
+                <div className="p-8 md:p-12 bg-white/80 dark:bg-slate-900/60 rounded-2xl backdrop-blur-sm border border-slate-200">
                     <div className="mb-6 mx-auto text-6xl text-brand-yellow font-bold flex justify-center items-center gap-2">
                         <span>4</span>
                         <div className="flex items-center justify-center gap-4 w-16 h-16 rounded-full bg-brand-yellow">
@@ -40,6 +40,11 @@ export default function NotFound() {
                         errors and try again.</p>
                 </div>
             </section>
+            <div className="absolute bottom-10 left-10 hidden xl:block opacity-20 pointer-events-none">
+                <img alt="Abstract minimalist map pattern" className="w-64 h-64 object-cover rounded-xl grayscale"
+                     data-alt="A minimalist abstract map layout of a city" data-location="London"
+                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-nrbiCLJsXY5a9iSp9_PUFk_QUW1a98XnD2mfoGV7ZBC-Z8S88zmCSVIc9I5GgBPbINyGzL7Sg2zUZW-iYRdkIUAeGDTyMaUIB6p5FZS3cbeWBjk0QWz3R4C3UJ-xZgLi6tNnTuYw2zlkDyj5xGpWS1WiQhhV0QIxfPUQb50TYnuZNZfTkOV3pvUkNQYN6Qm8PT2w5r74aYVuo6EQZNuxs4BjzQ7m2L3088e33ybb2xZtGHx_nXdaWsoczbMDwkZ23gaJeqXptyo"/>
+            </div>
         </main>
     );
 }
