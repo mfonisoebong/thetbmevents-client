@@ -48,21 +48,15 @@ export default function Index(): ReactElement {
         </div>
       </nav>
 
-      <main className="relative z-10 w-full max-w-7xl mx-auto px-6 pb-32">
+      <main className="lg:grid lg:grid-cols-2 relative z-10 w-full max-w-7xl mx-auto px-6 pt-16 pb-32">
         <div className="max-w-3xl">
-          <div className="flex items-center gap-2 mb-8 opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
-            <h2 className="text-2xl font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1">
-              tbm
-              <span className="text-[#FBBC05] text-xl">✦</span>
-            </h2>
-          </div>
-          <h1 className="text-4xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-gray-900 dark:text-white mb-6 leading-[1.1]">
-            Delightful <br className="hidden sm:block"/>
-            events
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#E8B025] to-[#4F8A92] text-gradient-animate"> start here.</span>
+          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-gray-900 dark:text-white mb-6 leading-[1.1]">
+            Unforgettable <br className="hidden sm:block"/>
+            experiences
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#E8B025] to-[#4F8A92] text-gradient-animate"> await you.</span>
           </h1>
           <p className="sm:text-2xl text-text-muted-light dark:text-text-muted-dark mb-10 max-w-2xl leading-relaxed font-light">
-            Set up an event page, invite friends and sell tickets. Host a memorable event today.
+            Create stunning events page, invite guests, and sell tickets — bring your gathering to life.
           </p>
           <div className="flex flex-wrap gap-4 items-center">
             <button
@@ -77,35 +71,69 @@ export default function Index(): ReactElement {
           </div>
         </div>
 
-        <div className="hidden lg:block absolute top-32 right-0 w-[400px] h-[500px]">
-          <div
-              className="absolute top-10 right-10 w-64 h-80 bg-white/40 dark:bg-surface-dark/40 rounded-3xl border border-white/50 dark:border-white/10 shadow-xl backdrop-blur-md rotate-6 transform transition hover:rotate-0 duration-500 z-10 flex flex-col p-4">
-            <div
-                className="w-full h-32 rounded-2xl bg-gradient-to-br from-gray-400 to-gray-900 mb-4 overflow-hidden relative">
-              <img
-                alt="Event preview"
-                className="object-cover w-full h-full mix-blend-overlay opacity-50"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuA33vd_mmN6utK5PJl_Yiy83qGma9dWOzp2F_ciYKdXVmWdG_kdctF3rgsi3ASZ8b1NOQOQ2D671wYVj7hFNPEbnxM_S_gbBtx1AudVJCEMgHG1kLG9uju2NMHFfbTVukhDUYmzCWJ9fyMb-k_aQu9vZGz7-Re2iNG5NariWLspSjhXF4sjOd5xpjWkn4Sc3jlcP8JJP6JuJnXcgn-18TyipGRKDJ6-QzMl0BHjPZUjmWmt4UmKu7JSo6MJxDi7P9dD2tPHnm96jX0"
-              />
+
+        {/* Visual Showcase */}
+        <div className="hidden lg:block relative justify-self-end w-[400px] h-[500px]">
+          {/* Back Card */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-96 bg-brand-teal rounded-3xl rotate-[-6deg] opacity-20 blur-sm"></div>
+
+          {/* Middle Card */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-[45%] -translate-y-[55%] w-80 h-96 bg-brand-yellow rounded-3xl rotate-[6deg] opacity-20 blur-sm"></div>
+
+          {/* Main Glass Card */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] h-[520px] bg-white/10 dark:bg-slate-900/40 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-3xl shadow-2xl p-6 flex flex-col justify-between overflow-hidden">
+
+            {/* Decorative Header inside card */}
+            <div className="flex justify-between items-center mb-6">
+              <div className="w-8 h-8 rounded-full bg-brand-yellow/80"></div>
+              <div className="h-2 w-20 bg-slate-200/50 rounded-full"></div>
             </div>
-            <div className="h-2 w-16 bg-gray-200 dark:bg-gray-600 rounded-full mb-2"></div>
-            <div className="h-2 w-32 bg-gray-200 dark:bg-gray-600 rounded-full mb-4"></div>
-            <div className="mt-auto flex justify-between items-center">
-              <div className="flex -space-x-2">
-                <div className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white dark:border-gray-800"></div>
-                <div className="w-8 h-8 rounded-full bg-gray-400 border-2 border-white dark:border-gray-800"></div>
+
+            {/* Content Simulation */}
+            <div className="space-y-4">
+              <div className="h-32 rounded-2xl bg-brand-gradient w-full relative overflow-hidden group">
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
+                <div className="absolute bottom-4 left-4 text-white font-bold">Upcoming Event</div>
               </div>
-              <div className="px-3 py-1 bg-primary text-white text-xs font-bold rounded-full">Going</div>
+
+              <div className="flex gap-2">
+                <div className="h-24 flex-1 rounded-2xl bg-white/5 border border-white/10 p-3">
+                  <div className="w-8 h-8 rounded-full bg-brand-teal/20 mb-2"></div>
+                  <div className="h-2 w-16 bg-slate-400/30 rounded-full"></div>
+                </div>
+                <div className="h-24 flex-1 rounded-2xl bg-white/5 border border-white/10 p-3">
+                  <div className="w-8 h-8 rounded-full bg-brand-yellow/20 mb-2"></div>
+                  <div className="h-2 w-16 bg-slate-400/30 rounded-full"></div>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-4">
+                <div className="h-3 w-full bg-slate-400/20 rounded-full"></div>
+                <div className="h-3 w-3/4 bg-slate-400/20 rounded-full"></div>
+                <div className="h-3 w-1/2 bg-slate-400/20 rounded-full"></div>
+              </div>
+            </div>
+
+            {/* Bottom Action */}
+            <div className="mt-6">
+              <div className="w-full h-12 bg-white text-brand-teal font-bold rounded-xl flex items-center justify-center shadow-lg">
+                Book Ticket
+              </div>
             </div>
           </div>
-          <div className="absolute top-40 right-48 w-64 h-80 bg-white/60 dark:bg-surface-dark/60 rounded-3xl border border-white/50 dark:border-white/10 shadow-2xl backdrop-blur-lg -rotate-3 transform transition hover:rotate-0 duration-500 z-20 flex flex-col p-4">
-            <div className="w-full h-32 rounded-2xl bg-gradient-to-br from-[#E8B025] to-[#4F8A92] mb-4 overflow-hidden relative">
-              <div className="absolute top-2 right-2 bg-black/20 text-white text-xs px-2 py-1 rounded backdrop-blur-md">Nov 24</div>
+
+          {/* Floating Element 1 */}
+          <div className="absolute top-[20%] right-[10%] p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-xl animate-bounce duration-[3000ms]">
+            <div className="flex items-center gap-3">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span className="text-xs font-bold dark:text-white">RSVP now</span>
             </div>
-            <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-1">Product Launch</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">San Francisco, CA</p>
-            <div className="mt-auto">
-              <button className="w-full py-2 rounded-lg bg-black text-white text-xs font-medium">Get Tickets</button>
+          </div>
+
+          {/* Floating Element 2 */}
+          <div className="absolute bottom-[20%] left-[5%] p-4 py-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-2xl shadow-xl border border-brand-yellow/30">
+            <div className="text-center">
+              <span className="material-icons-outlined block text-2xl text-brand-yellow">language</span>
             </div>
           </div>
         </div>
@@ -122,12 +150,6 @@ export default function Index(): ReactElement {
           </div>
         </div>
       </footer>
-
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden>
-        <div className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] bg-blue-100/40 dark:bg-blue-900/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen animate-pulse duration-1000"></div>
-        <div className="absolute top-[10%] -right-[10%] w-[50vw] h-[50vw] bg-pink-100/40 dark:bg-purple-900/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen opacity-70"></div>
-        <div className="absolute top-[30%] left-[20%] w-[40vw] h-[40vw] bg-[#FBBC05]/10 dark:bg-[#FBBC05]/5 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen opacity-60"></div>
-      </div>
     </>
   )
 }
