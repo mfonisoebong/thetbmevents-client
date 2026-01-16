@@ -25,7 +25,8 @@ module.exports = {
           teal: '#4F8A92',
           dark: '#0F172A', // Slate 900
           light: '#F8FAFC', // Slate 50
-        }
+        },
+        'black-1c': "#1C1C1C",
       },
       fontFamily: {
         // prototype 2
