@@ -1,7 +1,8 @@
 name: TBM Deployment
 
 on:
-  push:
+#  replace below with push
+  pull_request_review:
     branches:
       - main
 
@@ -12,7 +13,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-        
+
       - name: Create .env.local file
         run: echo "${{ secrets.ENV }}" > .env
 
