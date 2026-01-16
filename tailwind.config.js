@@ -45,5 +45,13 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    function ({ addVariant }) {
+      // 1) media-query based light: -> uses prefers-color-scheme
+      addVariant('light', '@media (prefers-color-scheme: light)')
+
+      // 2) [unused] class-based light-class: -> use a parent .light on the root
+      addVariant('light-class', '.light &')
+    },
+  ],
 }

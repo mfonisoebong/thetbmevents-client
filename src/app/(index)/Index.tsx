@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react'
 import type { ReactElement } from 'react'
+import Link from "next/link";
 
 export default function Index(): ReactElement {
   useEffect(() => {
@@ -42,9 +43,11 @@ export default function Index(): ReactElement {
             Explore Events
             <span className="material-icons-outlined text-sm transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform duration-200">north_east</span>
           </a>
-          <button className="px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-            Sign In
-          </button>
+          <Link href='/login'>
+            <button className="px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+              Sign In
+            </button>
+          </Link>
         </div>
       </nav>
 
