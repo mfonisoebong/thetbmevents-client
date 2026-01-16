@@ -1,7 +1,0 @@
-.tab {
-  @apply w-[33%] border-[#F3F3F3] border-b-[0.2rem] text-base md:text-xl lg:text-2xl font-bold hover:border-black duration-200 pb-2;
-}
-
-.activetab {
-  @apply w-[33%] border-black border-b-[0.2rem] text-base md:text-xl lg:text-2xl font-bold pb-2;
-}

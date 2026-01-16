@@ -35,7 +35,7 @@ export default function Index(): ReactElement {
     <>
       <nav className="relative z-10 w-full px-6 py-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img alt="TBM Events Logo" className="h-8 w-auto" src="/img/tbm-logo.png" />
+          <img alt="TBM Events Logo" className="h-8 w-auto" src="/images/tbm-logo.png" />
         </div>
         <div className="flex items-center gap-6">
           <a className="group flex items-center gap-1 text-sm font-medium text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-white transition-colors" href="#">

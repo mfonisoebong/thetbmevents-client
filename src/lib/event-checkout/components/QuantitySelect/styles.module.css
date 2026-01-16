@@ -1,7 +1,0 @@
-.counter {
-    @apply h-11 flex items-center py-3 px-2 border-[0.1rem] justify-between border-solid border-gray-500 w-28 rounded-lg
-}
-
-.counter button {
-    /*@apply w-full*/
-}

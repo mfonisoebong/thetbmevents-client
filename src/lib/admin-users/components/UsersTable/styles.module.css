@@ -1,7 +1,0 @@
-.menuoptions{
-    @apply -left-20 font-normal text-xs md:text-sm overflow-hidden
-}
-
-.menuoptions a{
-    @apply px-5
-}
