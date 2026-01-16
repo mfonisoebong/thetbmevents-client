@@ -1,13 +1,19 @@
 import SignupForm from '../../../components/auth/SignupForm';
 import Link from "next/link";
+import {Metadata} from "next";
 
-export const metadata = {
+export const metadata: Metadata = {
 	title: 'Sign Up',
 }
 
 export default function SignupPage() {
 	return (
-		<main className="min-h-screen flex items-center justify-center light:bg-gradient-to-br light:from-slate-100 light:via-white light:to-sky-50 p-6">
+		<main className="min-h-screen flex flex-col items-center justify-center light:bg-gradient-to-br light:from-slate-100 light:via-white light:to-sky-50 p-6">
+			<div className="flex items-center gap-1">
+				<img src="/images/tbm-logo.png" alt="logo" className="w-20 inline-block"/>
+				<span className="font-bold text-xl">TBM <span className="text-brand-yellow">EVENTS</span></span>
+			</div>
+
 			<div className="w-full max-w-md relative">
 				{/* organic blob glass shape behind the card */}
 				<div className="absolute -left-12 -top-10 w-80 h-80 z-0 pointer-events-none">
