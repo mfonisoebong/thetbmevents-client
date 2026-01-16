@@ -1,8 +1,11 @@
 "use client";
 
 import React from 'react';
-import Select from 'react-select';
 import useCountries, {CountryOption} from '../../hooks/useCountries';
+
+// https://github.com/JedWatson/react-select/issues/5991
+import dynamic from "next/dynamic";
+const CreatableSelect = dynamic(() => import("react-select/creatable"), { ssr: false });
 
 type Props = {
 	value?: CountryOption | null;
@@ -20,17 +23,19 @@ export default function CountrySelect({ value, onChangeAction, id, className }: 
 				Country
 			</label>
 			<div className="mt-1">
-				<Select
+				<CreatableSelect
 					inputId={id}
 					isDisabled={loading}
-					options={countries as any}
-					value={value as any}
-					onChange={(v: any) => onChangeAction(v as CountryOption | null)}
-					placeholder={loading ? 'Loading countries...' : 'Select country'}
-					styles={{
-						control: (base: any) => ({ ...base, background: 'transparent', borderRadius: 8 }),
-						menu: (base: any) => ({ ...base, zIndex: 9999 }),
-					}}
+					isSearchable={true}
+					options={countries}
+					value={value}
+					onChange={(v: CountryOption) => onChangeAction(v)}
+					formatOptionLabel={(country : CountryOption )=> (
+						<div className="flex gap-2 items-center">
+							<img src={'/images/flags/' + country.code?.toLowerCase() + '.svg'} alt="" className="w-7 h-5 inline-block"/>
+							<span>{country.name}</span>
+						</div>
+					)}
 				/>
 			</div>
 		</div>

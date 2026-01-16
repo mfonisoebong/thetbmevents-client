@@ -3,27 +3,32 @@
 import { useEffect, useState, useMemo } from "react";
 
 export type CountryOption = {
-	value: string; // ISO code
-	label: string; // display label
+	value: string; // ISO code. needed by react-select
+	label: string; // needed by react-select
 	name: string;
 	dial_code: string;
 	code: string;
 };
 
+type RawCountry = {
+	name: string;
+	dial_code: string;
+	code: string;
+}
+
 export default function useCountries() {
-	// Store the raw JSON array and memoize the expensive mapping separately.
-	const [raw, setRaw] = useState<any[] | null>(null);
+	const [raw, setRaw] = useState<RawCountry[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	// Memoize the transformation so it only runs when `raw` changes.
 	const countries = useMemo<CountryOption[]>(() => {
 		if (!raw) return [];
-		return raw.map((c: any) => ({
+		return raw.map((c: RawCountry) => ({
 			value: c.code,
 			label: `${c.name} (${c.dial_code})`,
 			name: c.name,
-			dial_code: (c.dial_code || "").trim(),
+			dial_code: c.dial_code,
 			code: c.code,
 		}));
 	}, [raw]);
@@ -51,7 +56,6 @@ export default function useCountries() {
 
 				if (!mounted) return;
 
-				// Ensure we only store an array to keep the mapping stable and safe.
 				setRaw(Array.isArray(data) ? data : []);
 			} catch (err: any) {
 				console.error('Failed to load countries', err);

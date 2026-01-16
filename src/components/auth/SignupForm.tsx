@@ -1,25 +1,26 @@
 "use client";
 
 import React, { FormEvent, useState } from 'react';
-import CountrySelect from './CountrySelect';
 import PhoneInput from './PhoneInput';
 import { validateAll } from '../../hooks/useFormValidation';
-import type { CountryOption } from '../../hooks/useCountries';
+import useCountries, { CountryOption } from '../../hooks/useCountries';
+import {SelectOption} from "../../types";
+import {Dropdown} from "../Dropdown";
 
 export default function SignupForm() {
 	// todo: use reducer
 	const [businessName, setBusinessName] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
-	const [country, setCountry] = useState<CountryOption | null>(null);
 	const [phone, setPhone] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [errors, setErrors] = useState<Record<string, string>>({});
 	const [showPassword, setShowPassword] = useState(false);
+	const [selectedCountry, setSelectedCountry] = useState<SelectOption>({label: "Nigeria (+234)", value: "NG"});
 
 	async function onSubmit(e: FormEvent) {
 		e.preventDefault();
-		const vals = { businessName, email, password, phone, country: country?.value };
+		const vals = { businessName, email, password, phone, country: selectedCountry.value.toString() };
 		const errs = validateAll(vals);
 		setErrors(errs as Record<string, string>);
 		if (Object.keys(errs).length) return;
@@ -29,8 +30,11 @@ export default function SignupForm() {
 		await new Promise((res) => setTimeout(res, 700));
 		setLoading(false);
 
-		console.log('signup:', { businessName, email, password, phone, country });
+		console.log('signup:', { businessName, email, password, phone, country: vals.country });
 	}
+
+
+	const { countries, loading: countriesLoading } = useCountries();
 
 	return (
 		<form onSubmit={onSubmit} className="space-y-6">
@@ -39,7 +43,7 @@ export default function SignupForm() {
 				<input
 					value={businessName}
 					onChange={(e) => setBusinessName(e.target.value)}
-					className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-yellow shadow-sm"
+					className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 shadow-sm"
 					placeholder="Your business name"
 				/>
 				{errors.businessName && <p className="text-sm text-red-600 mt-1">{errors.businessName}</p>}
@@ -51,15 +55,34 @@ export default function SignupForm() {
 					value={email}
 					onChange={(e) => setEmail(e.target.value)}
 					type="email"
-					className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-yellow shadow-sm"
+					className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 shadow-sm"
 					placeholder="you@example.com"
 				/>
 				{errors.email && <p className="text-sm text-red-600 mt-1">{errors.email}</p>}
 			</div>
 
 			<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-				<CountrySelect value={country as any} onChangeAction={(c) => setCountry(c)} />
-				<PhoneInput country={country} value={phone} onChangeAction={setPhone} />
+				<div>
+					<label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+						Country
+					</label>
+					<div className="mt-1">
+						<Dropdown
+							isDisabled={countriesLoading}
+							data={countries}
+							selected={selectedCountry}
+							onChange={setSelectedCountry}
+							customEl={(option) => (
+								<div className="flex gap-2 items-center p-2 text-sm text-black-1c dark:text-white hover:bg-gray-300 dark:hover:bg-white/10 cursor-pointer" key={option.value} onClick={option.onClick}>
+									<img src={'/images/flags/' + option.code?.toLowerCase() + '.svg'} alt="" className="w-7 h-5 inline-block"/>
+									<span>{option.name}</span>
+								</div>
+							)}
+						/>
+					</div>
+				</div>
+
+				<PhoneInput id="phone" value={phone} onChangeAction={setPhone} />
 			</div>
 			{errors.phone && <p className="text-sm text-red-600 mt-1">{errors.phone}</p>}
 
@@ -70,7 +93,7 @@ export default function SignupForm() {
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
 						type={showPassword ? 'text' : 'password'}
-						className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-yellow shadow-sm"
+						className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 shadow-sm"
 						placeholder="Choose a strong password"
 					/>
 					<button type="button" onClick={() => setShowPassword(s => !s)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute inset-y-0 right-2 flex items-center text-slate-600 hover:text-slate-800">

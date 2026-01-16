@@ -27,6 +27,10 @@
     }
 }
 
+label {
+    @apply cursor-pointer;
+}
+
 /* Custom Scrollbar */
 /*::-webkit-scrollbar {
     width: 8px;
