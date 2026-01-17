@@ -55,7 +55,7 @@ export default function EventDetails({ event }: Props) {
       if (t.id) meta[t.id] = { name: t.name, price: t.price, currency: t.currency }
     }
     setTicketMeta(meta)
-    router.push(`/events/${event.id}/checkout`)
+    router.push(`/events/${event.id}/checkout?step=2`)
   }
 
   return (

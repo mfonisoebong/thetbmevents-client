@@ -33,3 +33,6 @@ export interface EventItem {
     isOnline?: boolean;
     tickets: Ticket[]; // optional array of tickets for the event
 }
+
+export type PaymentGateway = "paystack" | "flutterwave" | "chainpal";
+
