@@ -59,7 +59,7 @@ export function TicketProvider({ children }: { children: ReactNode }) {
   const [customer, setCustomer] = useState<CustomerInfo>({ fullname: '', email: '', phone: '' })
   const [attendees, setAttendees] = useState<AttendeeInfo[]>([])
 
-  // load persisted state from sessionStorage once on mount
+  // load persisted state from sessionStorage
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY)
@@ -75,7 +75,7 @@ export function TicketProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // persist to sessionStorage whenever relevant state changes
+  // persist to sessionStorage on changes
   useEffect(() => {
     try {
       const payload = JSON.stringify({ selectedQuantities, ticketMeta, customer, attendees })
