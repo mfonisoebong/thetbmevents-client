@@ -3,11 +3,14 @@
 import React, { useMemo, useState } from 'react'
 import type { EventItem, Ticket } from '../../types'
 import { formatDate, currencySymbol } from '../../utils'
+import { useRouter } from 'next/navigation'
+import { useTicketContext } from '../../contexts/TicketContext'
 
 interface Props {
   event: EventItem
 }
 
+// todo: Other Events You May Like section (idea from tix.africa)
 export default function EventDetails({ event }: Props) {
   // store per-ticket selected quantities (0 = not selected)
   const initialSelectedQuantities: Record<string, number> = (() => {
@@ -40,6 +43,20 @@ export default function EventDetails({ event }: Props) {
     const prices = tickets.map(t => (t.price ?? Infinity)).filter(p => p !== Infinity)
     return prices.length ? Math.min(...prices) : 0
   })()
+
+  const router = useRouter()
+  const { setSelectedQuantities: ctxSetSelected, setTicketMeta } = useTicketContext()
+
+  function onContinue() {
+    // set context quantities and metadata then navigate to checkout
+    ctxSetSelected(selectedQuantities)
+    const meta: Record<string, { name?: string; price?: number; currency?: string }> = {}
+    for (const t of (event.tickets ?? []) as Ticket[]) {
+      if (t.id) meta[t.id] = { name: t.name, price: t.price, currency: t.currency }
+    }
+    setTicketMeta(meta)
+    router.push(`/events/${event.id}/checkout`)
+  }
 
   return (
     <div className="w-full max-w-7xl mx-auto px-6 py-12">
@@ -151,6 +168,7 @@ export default function EventDetails({ event }: Props) {
               <div className="mt-6">
                 <button
                   disabled={totalSelected === 0}
+                  onClick={onContinue}
                   className="w-full px-4 py-3 rounded-lg bg-brand-teal text-white font-medium disabled:opacity-60"
                 >
                   {totalSelected > 0 ? `Continue · ${totalPrice === 0 ? 'Free' : `${currencySymbol((event.tickets ?? [])[0]?.currency)}${totalPrice.toLocaleString()}`}` : 'Continue'}
