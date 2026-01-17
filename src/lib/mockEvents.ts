@@ -21,6 +21,28 @@ export const events: EventItem[] = [
     category: 'Music',
     image: '/images/event-synth.webp',
     tags: ['music', 'nightlife'],
+    tickets: [
+      {
+        id: 't1-1',
+        name: 'General Admission',
+        price: 2000,
+        currency: 'NGN',
+        start_selling_date: '2026-01-01',
+        end_selling_date: '2026-02-12',
+        description: 'Access to the main floor and bar area.',
+        quantity: 250,
+      },
+      {
+        id: 't1-2',
+        name: 'VIP',
+        price: 5000,
+        currency: 'NGN',
+        start_selling_date: '2026-01-01',
+        end_selling_date: '2026-02-12',
+        description: 'Includes VIP seating and complimentary drink.',
+        quantity: 50,
+      },
+    ],
   },
   {
     id: '2',
@@ -32,6 +54,37 @@ export const events: EventItem[] = [
     category: 'Tech',
     image: '/images/event-design.webp',
     tags: ['design', 'workshop'],
+    tickets: [
+      {
+        id: 't2-1',
+        name: 'Early Bird',
+        price: 15000,
+        currency: 'NGN',
+        start_selling_date: '2026-01-05',
+        end_selling_date: '2026-02-10',
+        description: 'Discounted ticket for early registrants.',
+        quantity: 40,
+      },
+      {
+        id: 't2-2',
+        name: 'Standard',
+        price: 20000,
+        currency: 'NGN',
+        start_selling_date: '2026-02-11',
+        end_selling_date: '2026-03-05',
+        quantity: 100,
+      },
+      {
+        id: 't2-3',
+        name: 'Student (Free)',
+        price: 0,
+        currency: 'NGN',
+        start_selling_date: '2026-01-05',
+        end_selling_date: '2026-03-05',
+        description: 'Free ticket for students with valid ID.',
+        quantity: 30,
+      },
+    ],
   },
   {
     id: '3',
@@ -43,6 +96,17 @@ export const events: EventItem[] = [
     category: 'Art',
     image: '/images/event-poetry.webp',
     tags: ['poetry', 'open-mic'],
+    tickets: [
+      {
+        id: 't3-1',
+        name: 'General Admission',
+        price: 0,
+        currency: 'NGN',
+        start_selling_date: '2026-01-15',
+        end_selling_date: '2026-02-20',
+        quantity: 0, // unlimited
+      },
+    ],
   },
   {
     id: '4',
@@ -54,6 +118,27 @@ export const events: EventItem[] = [
     category: 'Food & Drink',
     image: '/images/event-market.webp',
     tags: ['market', 'family'],
+    tickets: [
+      {
+        id: 't4-1',
+        name: 'Entry Pass',
+        price: 0,
+        currency: 'NGN',
+        start_selling_date: '2025-12-01',
+        end_selling_date: '2026-01-31',
+        quantity: 0,
+      },
+      {
+        id: 't4-2',
+        name: 'Vendor Stall (per day)',
+        price: 5000,
+        currency: 'NGN',
+        start_selling_date: '2025-12-01',
+        end_selling_date: '2026-01-30',
+        description: 'Reserve a stall space for vendors.',
+        quantity: 20,
+      },
+    ],
   },
   {
     id: '5',
@@ -65,6 +150,27 @@ export const events: EventItem[] = [
     category: 'Business',
     image: '/images/event-pitch.webp',
     tags: ['startups', 'networking'],
+    tickets: [
+      {
+        id: 't5-1',
+        name: 'Pitch Attendee',
+        price: 2500,
+        currency: 'NGN',
+        start_selling_date: '2026-01-10',
+        end_selling_date: '2026-02-28',
+        quantity: 150,
+      },
+      {
+        id: 't5-2',
+        name: 'Founder (Free)',
+        price: 0,
+        currency: 'NGN',
+        start_selling_date: '2026-01-10',
+        end_selling_date: '2026-02-28',
+        description: 'Free tickets for presenting founders (application required).',
+        quantity: 10,
+      },
+    ],
   },
   {
     id: '6',
@@ -76,6 +182,26 @@ export const events: EventItem[] = [
     category: 'Health',
     image: '/images/event-yoga.webp',
     tags: ['wellness', 'outdoors'],
+    tickets: [
+      {
+        id: 't6-1',
+        name: 'Class + Breakfast',
+        price: 3000,
+        currency: 'NGN',
+        start_selling_date: '2026-01-01',
+        end_selling_date: '2026-02-06',
+        quantity: 40,
+      },
+      {
+        id: 't6-2',
+        name: 'Walk-in (On the day)',
+        price: 3500,
+        currency: 'NGN',
+        start_selling_date: '2026-01-01',
+        end_selling_date: '2026-02-07',
+        quantity: 0, // unlimited
+      },
+    ],
   },
 ];
 

@@ -35,7 +35,7 @@ export default function NavBar(): JSX.Element {
   }, [])
 
   return (
-    <nav className={`sticky top-0 z-50 backdrop-blur-md transition-all ${showBorder ? 'border-b border-gray-200 dark:border-gray-800' : ''}`}>
+    <nav className={`sticky top-0 z-50 backdrop-blur-md transition-all ${showBorder ? 'dark:border-gray-800' : ''}`}>
       <div className="relative z-10 w-full px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-2">
           <img alt="TBM Events Logo" className="h-8 w-auto" src="/images/tbm-logo.png" />
