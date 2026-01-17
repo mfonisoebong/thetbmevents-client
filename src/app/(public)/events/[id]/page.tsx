@@ -1,9 +1,13 @@
+import type { Metadata } from 'next';
 import type { ReactElement } from 'react'
 import EventDetails from '../../../../components/events/EventDetails'
 import { events as mockEvents } from '../../../../lib/mockEvents'
 import type { EventItem } from '../../../../types'
 
-// Use a permissive params type to avoid Next's generated PageProps type mismatch
+export const metadata: Metadata = {
+    title: 'Event Details',
+}
+
 type Props = {
   params: any
 }
@@ -21,6 +25,9 @@ export default function EventPage({ params }: Props): ReactElement {
       </div>
     )
   }
+
+  metadata.title = event.title
+    metadata.description = event.description ?? 'View details and book tickets for the selected event.'
 
   return <EventDetails event={event} />
 }
