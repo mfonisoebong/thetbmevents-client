@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -22,7 +22,6 @@
     "react-dropzone": "^14.2.3",
     "react-hot-toast": "^2.6.0",
     "react-quill": "^2.0.0",
-    "react-select": "^5.10.2",
     "tailwind-merge": "^1.13.2"
   },
   "devDependencies": {

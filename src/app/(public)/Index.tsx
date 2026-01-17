@@ -34,23 +34,6 @@ export default function Index(): ReactElement {
 
   return (
     <>
-      <nav className="relative z-10 w-full px-6 py-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <img alt="TBM Events Logo" className="h-8 w-auto" src="/images/tbm-logo.png" />
-        </div>
-        <div className="flex items-center gap-6">
-          <a className="group flex items-center gap-1 text-sm font-medium text-text-muted-light dark:text-text-muted-dark hover:text-text-light dark:hover:text-white transition-colors" href="#">
-            Explore Events
-            <span className="material-icons-outlined text-sm transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform duration-200">north_east</span>
-          </a>
-          <Link href='/login'>
-            <button className="px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-              Sign In
-            </button>
-          </Link>
-        </div>
-      </nav>
-
       <main className="lg:grid lg:grid-cols-2 relative z-10 w-full max-w-7xl mx-auto px-6 pt-16 pb-32">
         <div className="max-w-3xl">
           <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-gray-900 dark:text-white mb-6 leading-[1.1]">
@@ -62,10 +45,12 @@ export default function Index(): ReactElement {
             Create stunning events page, invite guests, and sell tickets — bring your gathering to life.
           </p>
           <div className="flex flex-wrap gap-4 items-center">
-            <button
-                className="bg-[#1C1C1C] dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-gray-100 px-8 py-4 rounded-xl text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-              Create Your First Event
-            </button>
+            <Link href="/signup">
+              <button
+                  className="bg-[#1C1C1C] dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-gray-100 px-8 py-4 rounded-xl text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                Create Your First Event
+              </button>
+            </Link>
             <button
                 className="px-6 py-4 rounded-xl text-text-muted-light dark:text-text-muted-dark font-medium hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-2">
               <span className="material-icons-outlined">play_circle</span>
@@ -141,18 +126,6 @@ export default function Index(): ReactElement {
           </div>
         </div>
       </main>
-
-      <footer className="relative z-10 w-full max-w-7xl mx-auto px-6 py-8 border-t border-gray-200 dark:border-gray-800 mt-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-text-muted-light dark:text-text-muted-dark">
-          <p>© {new Date().getFullYear()} TBM Events Ltd.</p>
-          <div className="flex gap-6">
-            <a className="hover:text-text-light dark:hover:text-white transition-colors" href="https://x.com/EventwithTBM" target="_blank">Twitter</a>
-            <a className="hover:text-text-light dark:hover:text-white transition-colors" href="https://www.instagram.com/eventswithtbm" target="_blank">Instagram</a>
-            <a className="hover:text-text-light dark:hover:text-white transition-colors" href="#">Terms</a>
-            <a className="hover:text-text-light dark:hover:text-white transition-colors" href="#">Privacy</a>
-          </div>
-        </div>
-      </footer>
     </>
   )
 }

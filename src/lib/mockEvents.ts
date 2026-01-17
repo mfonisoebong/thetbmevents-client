@@ -1,0 +1,82 @@
+import { EventItem } from '../types';
+
+export const categories = [
+  'All',
+  'Music',
+  'Tech',
+  'Art',
+  'Food & Drink',
+  'Business',
+  'Health',
+];
+
+export const events: EventItem[] = [
+  {
+    id: '1',
+    title: 'Synthwave Night: Neon Beats',
+    description: 'A retro-futuristic music night featuring synth artists and immersive visuals.',
+    date: '2026-02-12',
+    time: '19:00',
+    location: 'The Warehouse, Lagos',
+    category: 'Music',
+    image: '/images/event-synth.webp',
+    tags: ['music', 'nightlife'],
+  },
+  {
+    id: '2',
+    title: 'Design Systems Workshop',
+    description: 'Hands-on workshop on building scalable design systems for teams.',
+    date: '2026-03-05',
+    time: '09:30',
+    location: 'Tech Hub, Abuja',
+    category: 'Tech',
+    image: '/images/event-design.webp',
+    tags: ['design', 'workshop'],
+  },
+  {
+    id: '3',
+    title: 'Open Mic & Poetry',
+    description: 'An intimate evening of storytelling, poetry, and acoustic performances.',
+    date: '2026-02-20',
+    time: '18:00',
+    location: 'Cafe Culture, Enugu',
+    category: 'Art',
+    image: '/images/event-poetry.webp',
+    tags: ['poetry', 'open-mic'],
+  },
+  {
+    id: '4',
+    title: 'Weekend Farmers Market',
+    description: 'Local vendors, fresh produce, and artisanal foods.',
+    date: '2026-01-31',
+    time: '08:00',
+    location: 'Riverside Park, Port Harcourt',
+    category: 'Food & Drink',
+    image: '/images/event-market.webp',
+    tags: ['market', 'family'],
+  },
+  {
+    id: '5',
+    title: 'Startup Pitch Night',
+    description: 'Early-stage founders pitch to investors and mentors.',
+    date: '2026-02-28',
+    time: '18:30',
+    location: 'Innovation Centre, Ibadan',
+    category: 'Business',
+    image: '/images/event-pitch.webp',
+    tags: ['startups', 'networking'],
+  },
+  {
+    id: '6',
+    title: 'Sunrise Yoga & Wellness',
+    description: 'Start your day with a guided yoga session and healthy breakfast.',
+    date: '2026-02-07',
+    time: '06:30',
+    location: 'Seaside Lawn, Lagos',
+    category: 'Health',
+    image: '/images/event-yoga.webp',
+    tags: ['wellness', 'outdoors'],
+  },
+];
+
+export default events;
