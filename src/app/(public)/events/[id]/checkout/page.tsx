@@ -382,7 +382,7 @@ export default function CheckoutPage() {
                                             setCoupon(e.target.value);
                                             setCouponApplied(false)
                                         }}
-                                               className="w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                                               className="w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-teal dark:border dark:border-white/50 focus:border-none"
                                                placeholder="Enter coupon code"/>
                                         <button type="button" onClick={() => {
                                             if (coupon.trim()) setCouponApplied(true)
