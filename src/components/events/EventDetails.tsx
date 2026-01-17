@@ -43,7 +43,7 @@ export default function EventDetails({ event }: Props) {
 
   return (
     <div className="w-full max-w-7xl mx-auto px-6 py-12">
-      <div className="bg-white/10 dark:bg-slate-900/40 border border-white/10 dark:border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 rounded-xl overflow-hidden">
         <div className="relative w-full h-72 sm:h-96 lg:h-[420px]">
           <img
             src={event.image ?? '/images/placeholder-event.svg'}
@@ -51,7 +51,7 @@ export default function EventDetails({ event }: Props) {
             className="w-full h-full object-cover"
           />
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-black/50" />
 
           <div className="absolute left-6 bottom-6 right-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -66,10 +66,10 @@ export default function EventDetails({ event }: Props) {
               </div>
             </div>
 
-            <div className="md:ml-6">
-              <div className="bg-white/5 dark:bg-black/30 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-3 text-right">
-                <div className="text-xs text-text-muted-light dark:text-text-muted-dark">From</div>
-                <div className="text-lg font-semibold text-gray-900 dark:text-white">{minPrice === 0 ? 'Free' : `${currencySymbol((event.tickets ?? [])[0]?.currency)}${minPrice.toLocaleString()}`}</div>
+            <div className="w-fit ml-auto">
+              <div className="text-white bg-white/5 dark:bg-black/30 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-3 text-right">
+                <div className="text-xs">From</div>
+                <div className="text-lg font-semibold">{minPrice === 0 ? 'Free' : `${currencySymbol((event.tickets ?? [])[0]?.currency)}${minPrice.toLocaleString()}`}</div>
               </div>
             </div>
           </div>
@@ -83,7 +83,7 @@ export default function EventDetails({ event }: Props) {
 
               <div className="mt-4 flex flex-wrap gap-2">
                 {(event.tags ?? []).map((t) => (
-                  <div key={t} className="text-xs px-3 py-1 rounded-full bg-white/5 dark:bg-black/30 text-text-muted-light">#{t}</div>
+                  <div key={t} className="text-xs px-3 py-1 rounded-full bg-white/50 dark:bg-black/30 text-text-muted-light">#{t}</div>
                 ))}
               </div>
             </section>
@@ -96,19 +96,19 @@ export default function EventDetails({ event }: Props) {
                    const qty = selectedQuantities[id] ?? 0
                   const price = ticket.price ?? 0
                    return (
-                    <div key={id} className="flex items-center justify-between bg-white/5 dark:bg-black/30 border border-white/5 rounded-2xl p-4">
+                    <div key={id} className="flex flex-col sm:flex-row sm:items-center justify-between max-sm:gap-4 bg-black/5 dark:bg-black/30 border border-black/5 dark:border-white/5 rounded-2xl p-4">
                       <div>
                         <div className="font-medium text-gray-900 dark:text-white">{ticket.name}</div>
                         <div className="text-sm text-text-muted-light">{ticket.description ?? ''}</div>
                       </div>
 
-                      <div className="flex items-center gap-4">
-                        <div className="text-sm text-text-muted-light">{price === 0 ? 'Free' : `${currencySymbol(ticket.currency)}${price.toLocaleString()}`}</div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div className="text-sm text-text-muted-light dark:text-text-muted-dark">{price === 0 ? 'Free' : `${currencySymbol(ticket.currency)}${price.toLocaleString()}`}</div>
                         <div className="inline-flex items-center gap-2">
                           <button
                             aria-label={`Remove one ${ticket.name}`}
                             onClick={() => setSelectedQuantities(s => ({ ...s, [id]: Math.max(0, (s[id] ?? 0) - 1) }))}
-                            className="px-3 py-1 rounded-full bg-black/5"
+                            className="px-3 py-1 rounded-full bg-black/5 dark:bg-white/5"
                           >
                             -
                           </button>
@@ -116,7 +116,7 @@ export default function EventDetails({ event }: Props) {
                           <button
                             aria-label={`Add one ${ticket.name}`}
                             onClick={() => setSelectedQuantities(s => ({ ...s, [id]: (s[id] ?? 0) + 1 }))}
-                            className="px-3 py-1 rounded-full bg-black/5"
+                            className="px-3 py-1 rounded-full bg-black/5 dark:bg-white/5"
                           >
                             +
                           </button>

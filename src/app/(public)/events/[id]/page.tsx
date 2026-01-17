@@ -3,8 +3,9 @@ import EventDetails from '../../../../components/events/EventDetails'
 import { events as mockEvents } from '../../../../lib/mockEvents'
 import type { EventItem } from '../../../../types'
 
+// Use a permissive params type to avoid Next's generated PageProps type mismatch
 type Props = {
-  params: { id: string }
+  params: any
 }
 
 export default function EventPage({ params }: Props): ReactElement {
