@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import React from "react";
 
-// todo: put explore events link when available
 export default function NotFound() {
     return (
         <main
@@ -31,7 +30,7 @@ export default function NotFound() {
                         <Link href="/" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-black-1c text-white font-medium shadow">
                             Go back home
                         </Link>
-                        <Link href="#" aria-disabled className="inline-flex items-center gap-2 px-4 py-3 rounded-lg text-slate-700 bg-black/5 dark:bg-white/5">
+                        <Link href="/explore" aria-disabled className="inline-flex items-center gap-2 px-4 py-3 rounded-lg text-slate-700 bg-black/5 dark:bg-white/5">
                             <span className="material-icons-outlined">search</span>
                             Explore Events
                         </Link>

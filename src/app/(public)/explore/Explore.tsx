@@ -13,19 +13,23 @@ export default function Explore(): ReactElement {
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined)
 
   const [debounced, setDebounced] = useState(query)
+
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query), 250)
+
     return () => clearTimeout(t)
   }, [query])
 
   const filtered = useMemo(() => {
     const q = debounced.trim().toLowerCase()
+
     return mockEvents.filter((e: EventItem) => {
-      if (selectedCategory && selectedCategory !== 'All') {
-        if (e.category !== selectedCategory) return false
-      }
+      if (selectedCategory && selectedCategory !== 'All' && e.category !== selectedCategory) return false
+
       if (!q) return true
+
       const hay = `${e.title} ${e.description ?? ''} ${e.location ?? ''} ${(e.tags ?? []).join(' ')}`.toLowerCase()
+
       return hay.includes(q)
     })
   }, [debounced, selectedCategory])
@@ -63,11 +67,7 @@ export default function Explore(): ReactElement {
                 <h4 className="text-lg font-semibold dark:text-white">No events found</h4>
                 <p className="text-text-muted-light dark:text-text-muted-dark mt-2">Try adjusting your search or choose a different category.</p>
               </div>
-            ) : (
-              filtered.map((ev: EventItem) => (
-                <EventCard key={ev.id} event={ev} />
-              ))
-            )}
+            ) : filtered.map((ev: EventItem) => <EventCard key={ev.id} event={ev} />)}
           </div>
         </div>
       </section>

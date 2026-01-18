@@ -19,16 +19,12 @@ export default function CheckoutPage() {
     const router = useRouter()
     const params = useParams()
     const searchParams = useSearchParams()
+    const {ticketInstances, customer, attendees, setCustomer, setAttendees} = useTicketContext()
+
     const id = (params as any)?.id as string | undefined
+
     const stepParam = searchParams?.get('step') ?? '2'
     const step = stepParam === '3' ? 3 : 2
-
-    const {ticketInstances, customer, attendees, setCustomer, setAttendees} = useTicketContext()
-    // todo: use reducer
-    const [fullname, setFullname] = useState('')
-    const [email, setEmail] = useState('')
-    const [phone, setPhone] = useState('')
-    const [sendToSomeoneElse, setSendToSomeoneElse] = useState(false)
 
     const initialAttendees: AttendeeLocal[] = ticketInstances.map(() => ({
         fullname: '',
@@ -36,15 +32,18 @@ export default function CheckoutPage() {
         phone: '',
         sendToMe: false
     }))
-    const [localAttendees, setLocalAttendees] = useState<AttendeeLocal[]>(initialAttendees)
 
+    // todo: use reducer
+    const [fullname, setFullname] = useState('')
+    const [email, setEmail] = useState('')
+    const [phone, setPhone] = useState('')
+    const [sendToSomeoneElse, setSendToSomeoneElse] = useState(false)
+    const [localAttendees, setLocalAttendees] = useState<AttendeeLocal[]>(initialAttendees)
     const [purchaserErrors, setPurchaserErrors] = useState<PurchaserErrors>({})
     const [attendeeErrors, setAttendeeErrors] = useState<AttendeeErrors>(ticketInstances.map(() => ({})))
     const [touchedAny, setTouchedAny] = useState(false)
-
     const [coupon, setCoupon] = useState('')
     const [couponApplied, setCouponApplied] = useState(false)
-
     const [gateway, setGateway] = useState<PaymentGateway | null>(null)
 
     const subtotal = useMemo(() => ticketInstances.reduce((s, t) => s + (t.price ?? 0), 0), [ticketInstances])
@@ -58,6 +57,7 @@ export default function CheckoutPage() {
         setFullname(customer.fullname)
         setEmail(customer.email)
         setPhone(customer.phone ?? '')
+
         if (attendees.length === ticketInstances.length) {
             const nextAttendees: AttendeeLocal[] = attendees.map((a) => ({
                 fullname: a.fullname,
@@ -72,37 +72,48 @@ export default function CheckoutPage() {
     // validation effect (existing) kept — run on relevant deps
     useEffect(() => {
         const pErrs: PurchaserErrors = {}
+
         const fullErr = getPurchaserError('fullname', fullname)
         if (fullErr) pErrs.fullname = fullErr
+
         const emailErr = getPurchaserError('email', email)
         if (emailErr) pErrs.email = emailErr
+
         const phoneErr = getPurchaserError('phone', phone)
         if (phoneErr) pErrs.phone = phoneErr
+
         setPurchaserErrors(prev => {
             try {
                 if (JSON.stringify(prev) === JSON.stringify(pErrs)) return prev
             } catch (_) {
             }
+
             return pErrs
         })
 
         const aErrs: AttendeeErrors = localAttendees.map((a) => {
             const obj: { fullname?: string; email?: string } = {}
+
             if (sendToSomeoneElse && !a.sendToMe) {
                 const nameErr = getAttendeeError('fullname', a.fullname ?? '')
                 if (nameErr) obj.fullname = nameErr
+
                 const emailErrA = getAttendeeError('email', a.email ?? '')
                 if (emailErrA) obj.email = emailErrA
             }
+
             return obj
         })
+
         setAttendeeErrors(prev => {
             try {
                 if (JSON.stringify(prev) === JSON.stringify(aErrs)) return prev
             } catch (_) {
             }
+
             return aErrs
         })
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fullname, email, phone, localAttendees, sendToSomeoneElse])
 
@@ -124,6 +135,7 @@ export default function CheckoutPage() {
     function onToggleSendToMe(idx: number, checked: boolean) {
         const next = [...localAttendees]
         next[idx] = {...next[idx], sendToMe: checked}
+
         if (checked) {
             next[idx].fullname = fullname
             next[idx].email = email
@@ -137,6 +149,7 @@ export default function CheckoutPage() {
     function onChangeAttendee(idx: number, field: 'fullname' | 'email' | 'phone', value: string) {
         const next = [...localAttendees]
         next[idx] = {...next[idx], [field]: value}
+
         setLocalAttendees(next)
         setTouchedAny(true)
     }
@@ -146,12 +159,15 @@ export default function CheckoutPage() {
             if (!value.trim()) return 'Full name is required'
             return ''
         }
+
         if (field === 'email') {
             return validateEmail(value) || ''
         }
+
         if (field === 'phone') {
             return validatePhone(value) || ''
         }
+
         return ''
     }
 
@@ -160,9 +176,11 @@ export default function CheckoutPage() {
             if (!value.trim()) return 'Full name is required'
             return ''
         }
+
         if (field === 'email') {
             return validateEmail(value) || ''
         }
+
         return ''
     }
 
@@ -171,16 +189,23 @@ export default function CheckoutPage() {
         const fullErr = getPurchaserError('fullname', fullname)
         const emailErr = getPurchaserError('email', email)
         const phoneErr = getPurchaserError('phone', phone)
+
         if (fullErr || emailErr || phoneErr) return false
+
         if (sendToSomeoneElse) {
             for (let i = 0; i < localAttendees.length; i++) {
                 const a = localAttendees[i]
+
                 if (a.sendToMe) continue
+
                 const nameOk = a.fullname && a.fullname.trim().length > 0
+
                 const emailErrA = getAttendeeError('email', a.email ?? '')
+
                 if (!nameOk || emailErrA) return false
             }
         }
+
         return true
     }
 
@@ -202,6 +227,7 @@ export default function CheckoutPage() {
 
         const sp = new URLSearchParams(Array.from(searchParams ?? []))
         sp.set('step', '3')
+
         router.push(`${pathname}?${sp.toString()}`)
     }
 
@@ -215,6 +241,7 @@ export default function CheckoutPage() {
             setTouchedAny(true);
             return
         }
+
         if (!gateway) return
 
         // For now, simulate payment and navigate to a success page or show result

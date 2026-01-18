@@ -15,10 +15,13 @@ export default function EventDetails({ event }: Props) {
   // store per-ticket selected quantities (0 = not selected)
   const initialSelectedQuantities: Record<string, number> = (() => {
     const init: Record<string, number> = {}
+
     const tickets: Ticket[] = (event.tickets ?? []) as Ticket[]
+
     for (const t of tickets) {
       init[t.id ?? ''] = 0
     }
+
     return init
   })()
 
@@ -30,30 +33,39 @@ export default function EventDetails({ event }: Props) {
 
   const totalPrice = useMemo(() => {
     const tickets: Ticket[] = (event.tickets ?? []) as Ticket[]
+
     return tickets.reduce((sum, t) => {
       const id = t.id ?? ''
       const q = selectedQuantities[id] ?? 0
       const p = t.price ?? 0
+
       return sum + p * q
     }, 0)
   }, [event.tickets, selectedQuantities])
 
   const minPrice = (() => {
     const tickets: Ticket[] = (event.tickets ?? []) as Ticket[]
+
     const prices = tickets.map(t => (t.price ?? Infinity)).filter(p => p !== Infinity)
+
     return prices.length ? Math.min(...prices) : 0
   })()
 
   const router = useRouter()
+
   const { setSelectedQuantities: ctxSetSelected, setTicketMeta } = useTicketContext()
 
   function onContinue() {
     ctxSetSelected(selectedQuantities)
+
     const meta: Record<string, { name?: string; price?: number; currency?: string }> = {}
+
     for (const t of (event.tickets ?? []) as Ticket[]) {
       if (t.id) meta[t.id] = { name: t.name, price: t.price, currency: t.currency }
     }
+
     setTicketMeta(meta)
+
     router.push(`/events/${event.id}/checkout?step=2`)
   }
 
@@ -108,10 +120,11 @@ export default function EventDetails({ event }: Props) {
               <h3 className="text-lg font-semibold dark:text-white mb-3">Tickets</h3>
               <div className="space-y-3">
                 {(event.tickets ?? []).map((ticket: Ticket) => {
-                   const id = ticket.id ?? ''
-                   const qty = selectedQuantities[id] ?? 0
+                  const id = ticket.id ?? ''
+                  const qty = selectedQuantities[id] ?? 0
                   const price = ticket.price ?? 0
-                   return (
+
+                  return (
                     <div key={id} className="flex flex-col sm:flex-row sm:items-center justify-between max-sm:gap-4 bg-black/5 dark:bg-black/30 border border-black/5 dark:border-white/5 rounded-2xl p-4">
                       <div>
                         <div className="font-medium text-gray-900 dark:text-white">{ticket.name}</div>

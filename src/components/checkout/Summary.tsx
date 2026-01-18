@@ -28,11 +28,15 @@ export default function Summary(
         step: number;
     }) {
     const grouped: Record<string, Group> = {}
+
     ticketInstances.forEach((t) => {
         const key = t.name ?? t.id
+
         if (!grouped[key]) grouped[key] = {qty: 0, name: t.name, price: t.price, currency: t.currency}
+
         grouped[key].qty += 1
     })
+
     const subtotal = ticketInstances.reduce((s, t) => s + (t.price ?? 0), 0)
 
     return (
@@ -43,8 +47,7 @@ export default function Summary(
                 {Object.entries(grouped).map(([k, v]) => (
                     <div key={k} className="flex items-center justify-between">
                         <div className="text-sm text-slate-600 dark:text-slate-300">{v.qty} x {v.name}</div>
-                        <div
-                            className="font-medium">{v.price === 0 ? 'Free' : `${currencySymbol(v.currency)}${(v.price ?? 0).toLocaleString()}`}</div>
+                        <div className="font-medium">{v.price === 0 ? 'Free' : `${currencySymbol(v.currency)}${(v.price ?? 0).toLocaleString()}`}</div>
                     </div>
                 ))}
             </div>
@@ -52,8 +55,7 @@ export default function Summary(
             <div className="mt-4 border-t border-black/10 dark:border-white/10 pt-3 text-sm space-y-2">
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                     <div>Subtotal</div>
-                    <div
-                        className="font-medium">{currencySymbol(ticketInstances[0]?.currency)}{subtotal.toLocaleString()}</div>
+                    <div className="font-medium">{currencySymbol(ticketInstances[0]?.currency)}{subtotal.toLocaleString()}</div>
                 </div>
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                     <div>Fees</div>
@@ -63,17 +65,14 @@ export default function Summary(
                     <div>Discount</div>
                     <div className="font-medium">{couponApplied ? `-₦${couponAmount.toLocaleString()}` : '—'}</div>
                 </div>
-                <div
-                    className="flex items-center justify-between text-slate-600 dark:text-slate-300 pt-2 border-t border-black/10 dark:border-white/10">
+                <div className="flex items-center justify-between text-slate-600 dark:text-slate-300 pt-2 border-t border-black/10 dark:border-white/10">
                     <div className="text-sm">Total</div>
-                    <div
-                        className="text-lg font-semibold">{currencySymbol(ticketInstances[0]?.currency)}{(total ?? Math.max(0, subtotal - (couponApplied ? couponAmount : 0) + (gatewayFee ?? 0))).toLocaleString()}</div>
+                    <div className="text-lg font-semibold">{currencySymbol(ticketInstances[0]?.currency)}{(total ?? Math.max(0, subtotal - (couponApplied ? couponAmount : 0) + (gatewayFee ?? 0))).toLocaleString()}</div>
                 </div>
             </div>
 
             <div className="mt-4">
-                <button onClick={onContinueAction} disabled={disabled} aria-disabled={disabled}
-                        className={`w-full inline-flex items-center justify-center gap-2 rounded-lg ${disabled ? 'bg-gray-400/60 cursor-not-allowed' : 'bg-brand-teal'} text-white px-6 py-2 font-medium`}>{buttonText ?? 'Continue'}</button>
+                <button onClick={onContinueAction} disabled={disabled} aria-disabled={disabled} className={`w-full inline-flex items-center justify-center gap-2 rounded-lg ${disabled ? 'bg-gray-400/60 cursor-not-allowed' : 'bg-brand-teal'} text-white px-6 py-2 font-medium`}>{buttonText ?? 'Continue'}</button>
             </div>
         </div>
     )

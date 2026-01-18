@@ -20,19 +20,24 @@ export default function SignupForm() {
 
 	async function onSubmit(e: FormEvent) {
 		e.preventDefault();
+
 		const vals = { businessName, email, password, phone, country: selectedCountry.value.toString() };
+
 		const errs = validateAll(vals);
+
 		setErrors(errs as Record<string, string>);
+
 		if (Object.keys(errs).length) return;
 
 		setLoading(true);
+
 		// placeholder: replace with API call
 		await new Promise((res) => setTimeout(res, 700));
+
 		setLoading(false);
 
 		console.log('signup:', { businessName, email, password, phone, country: vals.country });
 	}
-
 
 	const { countries, loading: countriesLoading } = useCountries();
 

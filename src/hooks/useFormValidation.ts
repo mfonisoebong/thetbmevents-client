@@ -36,13 +36,18 @@ export function validatePhone(phone?: string) {
 
 export function validateAll(values: FormValues): FormErrors {
 	const e: FormErrors = {};
+
 	const be = validateBusinessName(values.businessName);
 	if (be) e.businessName = be;
+
 	const ee = validateEmail(values.email);
 	if (ee) e.email = ee;
+
 	const pe = validatePassword(values.password);
 	if (pe) e.password = pe;
+
 	const pho = validatePhone(values.phone);
 	if (pho) e.phone = pho;
+
 	return e;
 }

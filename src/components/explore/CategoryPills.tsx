@@ -13,6 +13,7 @@ export default function CategoryPills({ categories, selected, onSelect }: Props)
     <div className="flex flex-wrap gap-3">
       {categories.map((c) => {
         const isSelected = selected === c || (selected == null && c === 'All')
+
         return (
           <button
             key={c}

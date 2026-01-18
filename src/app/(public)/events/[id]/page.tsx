@@ -27,7 +27,7 @@ export default function EventPage({ params }: Props): ReactElement {
   }
 
   metadata.title = event.title
-    metadata.description = event.description ?? 'View details and book tickets for the selected event.'
+  metadata.description = event.description ?? 'View details and book tickets for the selected event.'
 
   return <EventDetails event={event} />
 }

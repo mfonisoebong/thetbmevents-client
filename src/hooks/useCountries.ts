@@ -23,6 +23,7 @@ export default function useCountries() {
 
 	const countries = useMemo<CountryOption[]>(() => {
 		if (!raw) return [];
+
 		return raw.map((c: RawCountry) => ({
 			value: c.code,
 			label: `${c.name} (${c.dial_code})`,
@@ -46,11 +47,15 @@ export default function useCountries() {
 		async function load() {
 			try {
 				const res = await fetch('/data/countries.json');
+
 				if (!res.ok) {
 					const msg = `HTTP ${res.status}`;
+
 					if (mounted) setError(msg);
+
 					return;
 				}
+
 				const data = await res.json();
 
 				if (!mounted) return;
@@ -58,7 +63,9 @@ export default function useCountries() {
 				setRaw(Array.isArray(data) ? data : []);
 			} catch (err: any) {
 				console.error('Failed to load countries', err);
+
 				if (!mounted) return;
+
 				setError(err?.message ?? String(err));
 			} finally {
 				if (mounted) setLoading(false);

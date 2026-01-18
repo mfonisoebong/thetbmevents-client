@@ -15,11 +15,15 @@ export default function Index(): ReactElement {
 
     try {
       const mql = window.matchMedia('(prefers-color-scheme: dark)')
+
       applyPreference(mql.matches)
+
       const listener = (e: MediaQueryListEvent) => applyPreference(e.matches)
+
       // Older browsers use addListener; modern use addEventListener
       if (typeof mql.addEventListener === 'function') {
         mql.addEventListener('change', listener)
+
         return () => mql.removeEventListener('change', listener)
       } else if (typeof mql.addListener === 'function') {
         // @ts-ignore -- legacy API
