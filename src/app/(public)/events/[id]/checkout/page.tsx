@@ -6,8 +6,8 @@ import {useTicketContext} from '../../../../../contexts/TicketContext'
 import Stepper from '../../../../../components/checkout/Stepper'
 import Summary from '../../../../../components/checkout/Summary'
 import {validateEmail, validatePhone} from '../../../../../hooks/useFormValidation'
-import {getGatewayFee} from "../../../../../utils";
-import {PaymentGateway} from "../../../../../types";
+import {getGatewayFee} from "@lib/utils";
+import {PaymentGateway} from "@lib/types";
 
 type TicketInstanceLocal = { id: string; name?: string; price?: number; currency?: string }
 type AttendeeLocal = { fullname: string; email: string; phone?: string; sendToMe?: boolean }

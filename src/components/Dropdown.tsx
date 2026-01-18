@@ -1,5 +1,5 @@
 import React, {useState, useRef, useEffect, useMemo, FC} from 'react';
-import { SelectOption } from '../types';
+import { SelectOption } from '@lib/types';
 
 interface DropdownProps {
   data: SelectOption[];

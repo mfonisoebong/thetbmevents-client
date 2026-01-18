@@ -6,7 +6,7 @@ import SearchBar from '../../../components/explore/SearchBar'
 import CategoryPills from '../../../components/explore/CategoryPills'
 import EventCard from '../../../components/explore/EventCard'
 import { events as mockEvents, categories as mockCategories } from '@lib/mockEvents'
-import type { EventItem } from '../../../types'
+import type { EventItem } from '@lib/types'
 
 export default function Explore(): ReactElement {
   const [query, setQuery] = useState('')

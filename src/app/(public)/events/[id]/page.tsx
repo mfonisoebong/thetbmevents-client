@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactElement } from 'react'
 import EventDetails from '../../../../components/events/EventDetails'
 import { events as mockEvents } from '../../../../lib/mockEvents'
-import type { EventItem } from '../../../../types'
+import type { EventItem } from '@lib/types'
 
 export const metadata: Metadata = {
     title: 'Event Details',

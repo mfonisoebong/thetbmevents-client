@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useMemo, useState } from 'react'
-import type { EventItem, Ticket } from '../../types'
-import { formatDate, currencySymbol } from '../../utils'
+import type { EventItem, Ticket } from '@lib/types'
+import { formatDate, currencySymbol } from '@lib/utils'
 import { useRouter } from 'next/navigation'
 import { useTicketContext } from '../../contexts/TicketContext'
 

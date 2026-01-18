@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react'
-import {currencySymbol} from '../../utils'
+import {currencySymbol} from '@lib/utils'
 
 type Group = { qty: number; name?: string; price?: number; currency?: string }
 

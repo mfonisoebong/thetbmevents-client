@@ -4,7 +4,7 @@ import React, { FormEvent, useState } from 'react';
 import PhoneInput from './PhoneInput';
 import { validateAll } from '../../hooks/useFormValidation';
 import useCountries, { CountryOption } from '../../hooks/useCountries';
-import {SelectOption} from "../../types";
+import {SelectOption} from "@lib/types";
 import {Dropdown} from "../Dropdown";
 
 export default function SignupForm() {

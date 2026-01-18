@@ -1,9 +1,9 @@
 'use client'
 
 import React from 'react'
-import { EventItem } from '../../types'
+import { EventItem } from '@lib/types'
 import Link from 'next/link'
-import {formatDate} from "../../utils";
+import {formatDate} from "@lib/utils";
 
 interface Props {
   event: EventItem

@@ -1,4 +1,4 @@
-import { EventItem } from '../types';
+import { EventItem } from './types';
 
 export const categories = [
   'All',
