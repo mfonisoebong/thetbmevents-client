@@ -1,4 +1,3 @@
-// Explanation: New client component that contains all client-side hooks and UI previously in app/explore/page.tsx
 'use client'
 
 import React, { useMemo, useState, useEffect } from 'react'
@@ -13,7 +12,6 @@ export default function Explore(): ReactElement {
   const [query, setQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined)
 
-  // Debounced search state
   const [debounced, setDebounced] = useState(query)
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query), 250)

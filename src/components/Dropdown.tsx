@@ -47,7 +47,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
-        setSearchTerm(''); // Reset search on close
+        setSearchTerm('');
       }
     };
 

@@ -24,11 +24,10 @@ export default function Index(): ReactElement {
       } else if (typeof mql.addListener === 'function') {
         // @ts-ignore -- legacy API
         mql.addListener(listener)
-        // cleanup
+
         return () => mql.removeListener(listener)
       }
     } catch (err) {
-      // no-op
     }
   }, [])
 

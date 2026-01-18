@@ -1,4 +1,3 @@
-// Wrap PublicLayout with TicketProvider for checkout flow
 import React from 'react'
 import type {ReactNode} from 'react'
 import NavBar from '../../components/NavBar'

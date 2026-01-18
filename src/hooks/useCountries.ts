@@ -21,7 +21,6 @@ export default function useCountries() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
-	// Memoize the transformation so it only runs when `raw` changes.
 	const countries = useMemo<CountryOption[]>(() => {
 		if (!raw) return [];
 		return raw.map((c: RawCountry) => ({

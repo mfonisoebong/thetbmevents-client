@@ -48,7 +48,6 @@ export default function EventDetails({ event }: Props) {
   const { setSelectedQuantities: ctxSetSelected, setTicketMeta } = useTicketContext()
 
   function onContinue() {
-    // set context quantities and metadata then navigate to checkout
     ctxSetSelected(selectedQuantities)
     const meta: Record<string, { name?: string; price?: number; currency?: string }> = {}
     for (const t of (event.tickets ?? []) as Ticket[]) {
