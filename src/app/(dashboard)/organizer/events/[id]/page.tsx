@@ -11,6 +11,7 @@ import { computeEventStats, eventStatus } from '@lib/eventStats'
 import { exportToCsv } from '@lib/csv'
 import { useTableSearch } from "../../../../../hooks/useTableSearch"
 import DataTable from "../../../../../components/DataTable";
+import {ClipboardIcon} from "@heroicons/react/24/outline";
 
 type TabKey = 'overview' | 'tickets' | 'orders' | 'attendees' | 'settings'
 
@@ -260,10 +261,8 @@ export default function OrganizerEventDetailsPage() {
               <Link target="_blank" href={`/events/${event.id}`} className="inline-flex items-center rounded-lg bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-white/20">
                 View public
               </Link>
-              <Link href={`/dashboard/organizer/events/${event.id}/edit`} className="inline-flex items-center rounded-lg bg-brand-teal px-3 py-2 text-sm font-medium text-white hover:opacity-95">
-                Edit event
-              </Link>
               <button onClick={onCopyPublicLink} className="inline-flex items-center rounded-lg bg-brand-yellow px-3 py-2 text-sm font-medium text-white">
+                <ClipboardIcon className="w-4 h-4 mr-1"/>
                 {copied ? 'Copied' : 'Copy link'}
               </button>
             </div>
@@ -320,12 +319,13 @@ export default function OrganizerEventDetailsPage() {
                       <div className="text-sm text-text-muted-light dark:text-text-muted-dark">No sales yet.</div>
                     ) : (
                       topCustomers.map((c) => (
-                        <div key={c.email} className="flex items-center justify-between rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-3">
+                        <div key={c.email} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-3 overflow-hidden">
                           <div>
                             <div className="font-semibold text-gray-900 dark:text-white">{c.name}</div>
                             <div className="text-sm text-text-muted-light dark:text-text-muted-dark">{c.email}</div>
                           </div>
-                          <div className="text-right">
+
+                          <div className="max-sm:mt-4 sm:text-right">
                             <div className="text-xs text-text-muted-light dark:text-text-muted-dark">Tickets</div>
                             <div className="text-lg font-bold text-gray-900 dark:text-white">{c.tickets}</div>
                           </div>

@@ -6,6 +6,7 @@ import SidebarLayout from "../../../../components/layouts/SidebarLayout"
 import { events as mockEvents } from '../../../../lib/mockEvents'
 import { formatDate, currencySymbol, formatNumber } from '@lib/utils'
 import { computeEventStats, eventStatus } from '@lib/eventStats'
+import {ClipboardIcon} from "@heroicons/react/24/outline";
 
 export default function OrganizerEventsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -135,7 +136,10 @@ export default function OrganizerEventsPage() {
                         <Link href={`/dashboard/organizer/events/${event.id}/edit`} className="text-sm text-text-muted-light hover:underline">Edit</Link>
                       </div>
 
-                      <button onClick={() => onCopyLink(event.id)} className="inline-flex items-center gap-2 rounded-lg bg-brand-yellow px-3 py-2 text-sm font-medium  text-white">{copiedId === event.id ? 'Copied' : 'Copy link'}</button>
+                      <button onClick={() => onCopyLink(event.id)} className="inline-flex items-center gap-2 rounded-lg bg-brand-yellow px-3 py-2 text-sm font-medium  text-white">
+                        <ClipboardIcon className="w-4 h-4 -mr-1"/>
+                        {copiedId === event.id ? 'Copied' : 'Copy link'}
+                      </button>
                     </div>
                   </div>
                 </div>
