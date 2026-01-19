@@ -15,6 +15,7 @@ import {
   QrCodeIcon,
   TicketIcon,
   GlobeAltIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline'
 import TextLogo from "../TextLogo";
 import Link from "next/link";
@@ -33,7 +34,7 @@ const roleBasedNavigation = {
     {name: 'Dashboard', href: '/dashboard', icon: HomeIcon},
     {name: 'Events', href: '/events', icon: GlobeAltIcon},
     {name: 'Coupons', href: '/coupons', icon: TicketIcon},
-    {name: 'Marketing', href: '/marketing', icon: ShoppingCartIcon},
+    {name: 'Analytics', href: '/finance-and-analytics', icon: ChartBarIcon},
     {name: 'Scan QR', href: '/scan-qr', icon: QrCodeIcon},
   ]
 };

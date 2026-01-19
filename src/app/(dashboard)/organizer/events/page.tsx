@@ -5,57 +5,7 @@ import Link from 'next/link'
 import SidebarLayout from "../../../../components/layouts/SidebarLayout"
 import { events as mockEvents } from '../../../../lib/mockEvents'
 import { formatDate, currencySymbol, formatNumber } from '@lib/utils'
-import type { EventItem } from '@lib/types'
-
-function hashStringToNumber(s: string) {
-  let h = 0
-  for (let i = 0; i < s.length; i++) {
-    h = (h << 5) - h + s.charCodeAt(i)
-    h |= 0
-  }
-  return Math.abs(h)
-}
-
-function computeEventStats(event: EventItem) {
-  // Deterministic sold counts for demo purposes based on ids
-  let totalSold = 0
-  let totalRevenue = 0
-  let totalAvailable = 0
-  let hasUnlimited = false
-
-  for (const t of event.tickets ?? []) {
-    const seed = hashStringToNumber(`${event.id}:${t.id}`)
-    // if quantity === 0 treat as unlimited; show a modest sold number
-    let sold = 0
-    if ((t.quantity ?? 0) === 0) {
-      hasUnlimited = true
-      sold = (seed % 50) + 5 // small deterministic number for unlimited tickets
-    } else {
-      // sold between 0 and quantity
-      sold = Math.min(t.quantity, Math.round(((seed % 70) / 100) * t.quantity))
-    }
-
-    totalSold += sold
-    totalAvailable += (t.quantity ?? 0)
-    totalRevenue += sold * (t.price ?? 0)
-  }
-
-  return { totalSold, totalAvailable, totalRevenue, hasUnlimited }
-}
-
-function eventStatus(event: EventItem, stats: { totalSold: number; totalAvailable: number; hasUnlimited: boolean }) {
-  const today = new Date()
-  const evDate = new Date(event.date)
-  if (evDate.getTime() < new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()) {
-    return 'Ended'
-  }
-
-  if (!event.tickets || event.tickets.length === 0) return 'Draft'
-
-  if (!stats.hasUnlimited && stats.totalAvailable > 0 && stats.totalSold >= stats.totalAvailable) return 'Sold Out'
-
-  return 'Published'
-}
+import { computeEventStats, eventStatus } from '@lib/eventStats'
 
 export default function OrganizerEventsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -128,17 +78,18 @@ export default function OrganizerEventsPage() {
           {events.map((event) => {
             const stats = computeEventStats(event)
             const status = eventStatus(event, stats)
+            const detailsLink = `/organizer/events/${event.id}`
 
             return (
               <article key={event.id} className="bg-white/10 dark:bg-slate-900/40 backdrop-blur-sm border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
                 <div className="flex flex-col sm:flex-row">
-                  <Link href="#" className="relative w-full sm:w-48 h-44 sm:h-auto flex-shrink-0">
+                  <Link href={detailsLink} className="relative w-full sm:w-48 h-44 sm:h-auto flex-shrink-0">
                     <img src={event.image ?? '/images/placeholder-event.svg'} alt={event.title} className="w-full h-full object-cover" />
                     <div className="absolute top-3 left-3 bg-black/40 text-white text-xs px-2 py-1 rounded-md">{event.category}</div>
                   </Link>
 
                   <div className="p-4 flex-1 flex flex-col justify-between">
-                    <Link href="#" className="cursor-pointer">
+                    <Link href={detailsLink} className="cursor-pointer">
                       <div className="flex items-start justify-between gap-4">
                         <div className="hover:underline">
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{event.title}</h3>
