@@ -1,7 +1,7 @@
 "use client"
 
 import {useEffect, useState} from "react";
-import {classNames} from "../../lib/utils";
+import {classNames} from "@lib/utils";
 import {usePathname} from "next/navigation";
 import HTTP from "../../lib/HTTP";
 
@@ -32,9 +32,9 @@ const roleBasedNavigation = {
   organizer: [
     {name: 'Dashboard', href: '/dashboard', icon: HomeIcon},
     {name: 'Events', href: '/events', icon: GlobeAltIcon},
-    {name: 'Coupons', href: '/events', icon: TicketIcon},
+    {name: 'Coupons', href: '/coupons', icon: TicketIcon},
     {name: 'Marketing', href: '/marketing', icon: ShoppingCartIcon},
-    {name: 'Scan QR', href: '/marketing', icon: QrCodeIcon},
+    {name: 'Scan QR', href: '/scan-qr', icon: QrCodeIcon},
   ]
 };
 

@@ -100,7 +100,7 @@ export function getEndpoint(endpoint: string, prefix: string = '/v2') {
     return getBaseURL() + prefix + endpoint;
 }
 
-export function cn(...inputs: string[]) {
+export function cn(...inputs: any[]) {
     return twMerge(clsx(inputs))
 }
 

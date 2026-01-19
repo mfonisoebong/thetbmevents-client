@@ -10,11 +10,11 @@ export interface SelectOption {
 export interface Ticket {
     id: string;
     name: string;
+    description?: string;
     price: number;
-    currency?: string;
+    currency: string;
     start_selling_date: string;
     end_selling_date: string;
-    description?: string;
     quantity: number;
 }
 
