@@ -1,11 +1,16 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import SidebarLayout from '../../../../../components/layouts/SidebarLayout'
 import type { EventItem, Ticket } from '@lib/types'
 import { cn } from '@lib/utils'
 import EventDetails from '../../../../../components/events/EventDetails'
 import { PhotoIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { categories as mockCategories } from '@lib/mockEvents'
+import dynamic from 'next/dynamic'
+import 'react-quill-new/dist/quill.snow.css';
+
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false })
 
 type StepKey = 1 | 2 | 3 | 4
 
@@ -182,44 +187,122 @@ function randomId(prefix: string) {
   return `${prefix}-${Math.random().toString(16).slice(2)}-${Date.now()}`
 }
 
+const STORAGE_KEY = 'tbm:create-event:draft:v1'
+
+function sanitizeLoadedDraft(d: any, fallback: DraftEvent): DraftEvent {
+  if (!d || typeof d !== 'object') return fallback
+
+  const safeTickets: DraftTicket[] = Array.isArray(d.tickets)
+    ? d.tickets.map((t: any) => ({
+        id: typeof t?.id === 'string' ? t.id : randomId('t'),
+        name: typeof t?.name === 'string' ? t.name : '',
+        description: typeof t?.description === 'string' ? t.description : '',
+        price: Number.isFinite(t?.price) ? Number(t.price) : 0,
+        currency: (t?.currency === 'USD' ? 'USD' : 'NGN') as 'NGN' | 'USD',
+        start_selling_date: typeof t?.start_selling_date === 'string' ? t.start_selling_date : fallback.tickets[0]?.start_selling_date,
+        end_selling_date: typeof t?.end_selling_date === 'string' ? t.end_selling_date : fallback.tickets[0]?.end_selling_date,
+        quantity: Number.isFinite(t?.quantity) ? Number(t.quantity) : 0,
+      }))
+    : fallback.tickets
+
+  return {
+    title: typeof d.title === 'string' ? d.title : fallback.title,
+    description: typeof d.description === 'string' ? d.description : fallback.description,
+    category: typeof d.category === 'string' ? d.category : fallback.category,
+    tags: Array.isArray(d.tags) ? d.tags.filter((x: any) => typeof x === 'string') : fallback.tags,
+    image: typeof d.image === 'string' ? d.image : fallback.image,
+    type: d.type === 'virtual' ? 'virtual' : 'physical',
+    eventLink: typeof d.eventLink === 'string' ? d.eventLink : fallback.eventLink,
+
+    date: typeof d.date === 'string' ? d.date : fallback.date,
+    time: typeof d.time === 'string' ? d.time : fallback.time,
+    timezone: typeof d.timezone === 'string' ? d.timezone : fallback.timezone,
+    venueName: typeof d.venueName === 'string' ? d.venueName : fallback.venueName,
+    address: typeof d.address === 'string' ? d.address : fallback.address,
+
+    tickets: safeTickets.length > 0 ? safeTickets : fallback.tickets,
+  }
+}
+
 export default function CreateEventPage() {
   const now = new Date()
   const later = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
 
+  const defaultDraft: DraftEvent = useMemo(
+    () => ({
+      title: '',
+      description: '',
+      category: 'Tech',
+      tags: [],
+      image: '/images/placeholder-event.svg',
+      type: 'physical',
+      eventLink: '',
+
+      date: later.toISOString().slice(0, 10),
+      time: '18:00',
+      timezone: 'Africa/Lagos',
+      venueName: '',
+      address: '',
+
+      tickets: [
+        {
+          id: randomId('t'),
+          name: 'General Admission',
+          description: '',
+          price: 0,
+          currency: 'NGN',
+          start_selling_date: formatLocalDateTimeForInput(now),
+          end_selling_date: formatLocalDateTimeForInput(later),
+          quantity: 0,
+        },
+      ],
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  )
+
   const [step, setStep] = useState<StepKey>(1)
-  const [draft, setDraft] = useState<DraftEvent>({
-    title: '',
-    description: '',
-    category: 'Tech',
-    tags: [],
-    image: '/images/placeholder-event.svg',
-    type: 'physical',
-    eventLink: '',
+  const [draft, setDraft] = useState<DraftEvent>(defaultDraft)
 
-    date: later.toISOString().slice(0, 10),
-    time: '18:00',
-    timezone: 'Africa/Lagos',
-    venueName: '',
-    address: '',
+  // Restore from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw)
 
-    tickets: [
-      {
-        id: randomId('t'),
-        name: 'General Admission',
-        description: '',
-        price: 0,
-        currency: 'NGN',
-        start_selling_date: formatLocalDateTimeForInput(now),
-        end_selling_date: formatLocalDateTimeForInput(later),
-        quantity: 0,
-      },
-    ],
-  })
+      const loadedStep = parsed?.step
+      if (loadedStep === 1 || loadedStep === 2 || loadedStep === 3 || loadedStep === 4) setStep(loadedStep)
+
+      const loadedDraft = sanitizeLoadedDraft(parsed?.draft, defaultDraft)
+      setDraft(loadedDraft)
+    } catch {
+      // ignore
+    }
+  }, [defaultDraft])
+
+  // Persist to localStorage (light debounce)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ step, draft }))
+      } catch {
+        // ignore
+      }
+    }, 250)
+
+    return () => clearTimeout(t)
+  }, [draft, step])
+
+  const categories = useMemo(() => (mockCategories ?? []).filter((c) => c !== 'All'), [])
 
   const previewEvent: EventItem = useMemo(() => {
-    const location = draft.type === 'virtual'
-      ? (draft.eventLink ? `Online • ${draft.eventLink}` : 'Online')
-      : [draft.venueName, draft.address].filter(Boolean).join(' • ') || 'TBA'
+    const location =
+      draft.type === 'virtual'
+        ? draft.eventLink
+          ? `Online • ${draft.eventLink}`
+          : 'Online'
+        : [draft.venueName, draft.address].filter(Boolean).join(' • ') || 'TBA'
 
     const tickets: Ticket[] = draft.tickets
       .filter((t) => t.name.trim().length > 0)
@@ -344,7 +427,7 @@ export default function CreateEventPage() {
             <GlassCard className="p-6">
               <SectionTitle title="Basic info" subtitle="Tell people what your event is about." />
 
-              <div className="mt-6 grid grid-cols-1 gap-8">
+              <div className="mt-6 grid grid-cols-1 gap-4">
                 <Input
                   label="Event title"
                   value={draft.title}
@@ -352,21 +435,29 @@ export default function CreateEventPage() {
                   placeholder="e.g. Synthwave Night: Neon Beats"
                 />
 
-                <TextArea
-                  label="Description (rich text later)"
-                  value={draft.description}
-                  onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
-                  rows={6}
-                  placeholder="Describe your event…"
-                />
+                <div>
+                  <div className="block text-sm font-semibold text-gray-900 dark:text-white">Description (rich text)</div>
+                  <div className="mt-1">
+                    <ReactQuill
+                      theme="snow"
+                      value={draft.description}
+                      onChange={(value) => setDraft((d) => ({ ...d, description: value }))}
+                    />
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
+                  <Select
                     label="Category"
                     value={draft.category}
                     onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
-                    placeholder="e.g. Tech"
-                  />
+                  >
+                    {categories.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </Select>
 
                   <Select
                     label="Type"
@@ -387,10 +478,7 @@ export default function CreateEventPage() {
                   />
                 ) : null}
 
-                <TagInput
-                  tags={draft.tags}
-                  onChange={(tags) => setDraft((d) => ({ ...d, tags }))}
-                />
+                <TagInput tags={draft.tags} onChange={(tags) => setDraft((d) => ({ ...d, tags }))} />
 
                 <div>
                   <div className="text-sm font-semibold text-gray-900 dark:text-white">Event banner image</div>
@@ -659,13 +747,34 @@ export default function CreateEventPage() {
             <div className="space-y-4">
               <GlassCard className="p-6">
                 <SectionTitle title="Preview" subtitle="This is how your event page will look." />
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('Clear saved draft?')) {
+                        try {
+                          localStorage.removeItem(STORAGE_KEY)
+                        } catch {
+                          // ignore
+                        }
+                        setDraft(defaultDraft)
+                        setStep(1)
+                      }
+                    }}
+                    className="rounded-xl bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-white/20"
+                  >
+                    Reset draft
+                  </button>
+                </div>
+
                 <div className="mt-4 rounded-2xl overflow-hidden pointer-events-none">
                   <EventDetails event={previewEvent} />
                 </div>
               </GlassCard>
 
               <GlassCard className="p-6">
-                <SectionTitle title="Publish" subtitle="Ready to go live?" />
+                <SectionTitle title="Publish" subtitle="For now, publishing just logs the payload." />
 
                 <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="text-sm text-text-muted-light dark:text-text-muted-dark">

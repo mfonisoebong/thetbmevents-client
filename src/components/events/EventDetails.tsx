@@ -5,6 +5,7 @@ import type { EventItem, Ticket } from '@lib/types'
 import { formatDate, currencySymbol } from '@lib/utils'
 import { useRouter } from 'next/navigation'
 import { useTicketContext } from '../../contexts/TicketContext'
+import SafeHtml from '../SafeHtml'
 
 interface Props {
   event: EventItem
@@ -107,7 +108,10 @@ export default function EventDetails({ event }: Props) {
           <main className="lg:col-span-2">
             <section className="mb-6">
               <h2 className="text-lg font-semibold dark:text-white">About this event</h2>
-              <p className="text-text-muted-light dark:text-text-muted-dark mt-3 whitespace-pre-line">{event.description}</p>
+              <SafeHtml
+                html={event.description}
+                className="text-text-muted-light dark:text-text-muted-dark mt-3 whitespace-pre-line"
+              />
 
               <div className="mt-4 flex flex-wrap gap-2">
                 {(event.tags ?? []).map((t) => (

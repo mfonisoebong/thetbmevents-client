@@ -46,3 +46,43 @@ label {
     background: #E8B025;
 }*/
 /* End Custom Scrollbar */
+
+/* ReactQuill editor theming (Create Event page) */
+.ql-toolbar.ql-snow,
+.ql-container.ql-snow {
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark .ql-toolbar.ql-snow,
+.dark .ql-container.ql-snow {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.ql-toolbar.ql-snow {
+  border-top-left-radius: 0.75rem;
+  border-top-right-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.dark .ql-toolbar.ql-snow {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.ql-container.ql-snow {
+  border-bottom-left-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.dark .ql-container.ql-snow {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.ql-editor {
+  min-height: 160px;
+  font-size: 0.875rem;
+}
+
+.dark .ql-editor {
+  color: #fff;
+}
