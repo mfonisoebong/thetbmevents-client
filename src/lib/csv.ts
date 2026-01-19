@@ -2,11 +2,14 @@ type CsvValue = string | number | boolean | null | undefined
 
 function escapeCsvValue(value: CsvValue): string {
   if (value === null || value === undefined) return ''
+
   const s = String(value)
+
   // Wrap in quotes if it contains a quote, comma, or newline
   if (/[",\n\r]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`
   }
+
   return s
 }
 
@@ -24,6 +27,7 @@ export function exportToCsv(filename: string, rows: Record<string, CsvValue>[], 
   const url = URL.createObjectURL(blob)
 
   const a = document.createElement('a')
+
   a.href = url
   a.download = filename.endsWith('.csv') ? filename : `${filename}.csv`
   document.body.appendChild(a)

@@ -5,7 +5,9 @@ export function useTableSearch<T>(rows: T[], matcher: (row: T, query: string) =>
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
+
     if (!q) return rows
+
     return rows.filter((r) => matcher(r, q))
   }, [rows, matcher, query])
 

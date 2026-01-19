@@ -2,10 +2,12 @@ import type { EventItem } from './types'
 
 function hashStringToNumber(s: string) {
   let h = 0
+
   for (let i = 0; i < s.length; i++) {
     h = (h << 5) - h + s.charCodeAt(i)
     h |= 0
   }
+
   return Math.abs(h)
 }
 
@@ -28,6 +30,7 @@ export function computeEventStats(event: EventItem): EventStats {
 
     // if quantity === 0 treat as unlimited; show a modest sold number
     let sold = 0
+
     if ((t.quantity ?? 0) === 0) {
       hasUnlimited = true
       sold = (seed % 50) + 5

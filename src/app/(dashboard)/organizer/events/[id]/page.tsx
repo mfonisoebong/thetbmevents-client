@@ -36,10 +36,12 @@ type AttendeeRow = {
 
 function hashStringToNumber(s: string) {
   let h = 0
+
   for (let i = 0; i < s.length; i++) {
     h = (h << 5) - h + s.charCodeAt(i)
     h |= 0
   }
+
   return Math.abs(h)
 }
 
@@ -51,13 +53,17 @@ function makePerson(seed: number) {
   const last = LAST_NAMES[(seed >> 3) % LAST_NAMES.length]
   const name = `${first} ${last}`
   const email = `${first}.${last}.${seed % 97}@example.com`.toLowerCase()
+
   return { name, email }
 }
 
 function pillClass(variant: 'success' | 'warning' | 'danger' | 'neutral') {
   if (variant === 'success') return 'bg-emerald-100 text-emerald-800'
+
   if (variant === 'warning') return 'bg-amber-100 text-amber-800'
+
   if (variant === 'danger') return 'bg-rose-100 text-rose-800'
+
   return 'bg-slate-100 text-slate-800'
 }
 
@@ -78,6 +84,7 @@ export default function OrganizerEventDetailsPage() {
 
   const id = useMemo(() => {
     const raw = routeParams?.id
+
     return Array.isArray(raw) ? raw[0] : raw
   }, [routeParams?.id])
 
