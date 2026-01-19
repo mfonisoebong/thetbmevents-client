@@ -712,6 +712,8 @@ function SettingsPanel({ event }: { event: EventItem }) {
   const [location, setLocation] = useState(event.location ?? '')
   const [category, setCategory] = useState(event.category)
 
+  // todo: re-upload image
+
   return (
     <div className="space-y-4">
       <div>

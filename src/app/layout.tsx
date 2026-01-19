@@ -21,7 +21,7 @@ export default function RootLayout({children}: { children: ReactNode }) {
         <Toaster/>
 
         <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden" aria-hidden>
-            <div className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] bg-blue-100/40 dark:bg-blue-900/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen animate-pulse duration-1000"></div>
+            <div className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] bg-blue-100/40 dark:bg-blue-900/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen"></div>
             <div className="absolute top-[10%] -right-[10%] w-[50vw] h-[50vw] bg-pink-100/40 dark:bg-purple-900/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen opacity-70"></div>
             <div className="absolute top-[30%] left-[20%] w-[40vw] h-[40vw] bg-[#FBBC05]/10 dark:bg-[#FBBC05]/5 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen opacity-60"></div>
         </div>
