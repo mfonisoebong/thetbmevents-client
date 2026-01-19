@@ -52,7 +52,7 @@ export default function OrganizerEventsPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link href="/dashboard/organizer/events/new" className="inline-flex items-center gap-2 rounded-lg bg-brand-teal px-4 py-2 text-white font-medium shadow-md hover:opacity-95">+ Create event</Link>
+            <Link href="/organizer/events/new" className="inline-flex items-center gap-2 rounded-lg bg-brand-teal px-4 py-2 text-white font-medium shadow-md hover:opacity-95">+ Create event</Link>
           </div>
         </div>
 

@@ -3,6 +3,7 @@ import "./global.css";
 import type {ReactNode} from "react";
 import NextTopLoader from "nextjs-toploader";
 import {Toaster} from "react-hot-toast";
+import {TicketProvider} from "../contexts/TicketContext";
 
 export const metadata: Metadata = {
     title: {
@@ -17,7 +18,11 @@ export default function RootLayout({children}: { children: ReactNode }) {
         <body className="bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark antialiased transition-colors duration-300 min-h-screen relative">
 
         <NextTopLoader color="#E8B025"/>
-        {children}
+
+        <TicketProvider>
+            {children}
+        </TicketProvider>
+
         <Toaster/>
 
         <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden" aria-hidden>
