@@ -16,7 +16,7 @@ import Sidebar from "../dashboard/Sidebar";
 import {Bars3Icon, XMarkIcon} from "@heroicons/react/24/outline";
 
 const userNavigation = [
-  { name: 'Your profile', href: '#' },
+  { name: 'Settings', href: '/settings' },
   { name: 'Sign out', href: '#' },
 ]
 

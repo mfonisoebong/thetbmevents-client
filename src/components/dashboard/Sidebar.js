@@ -3,7 +3,6 @@
 import {useEffect, useState} from "react";
 import {classNames} from "@lib/utils";
 import {usePathname} from "next/navigation";
-import HTTP from "../../lib/HTTP";
 
 import {
   Cog6ToothIcon,
@@ -15,7 +14,7 @@ import {
   QrCodeIcon,
   TicketIcon,
   GlobeAltIcon,
-  ChartBarIcon,
+  // ChartBarIcon,
 } from '@heroicons/react/24/outline'
 import TextLogo from "../TextLogo";
 import Link from "next/link";
@@ -89,16 +88,24 @@ export default function Sidebar() {
             </ul>
           </li>
           <li className="mt-auto">
-            <a
-              href="#"
-              className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-gray-50 hover:text-brand-yellow dark:text-white dark:hover:bg-gray-700"
+            <Link
+              href="/settings"
+              className={classNames(
+                pathname === '/settings'
+                  ? 'bg-brand-yellow text-white'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-brand-yellow dark:text-white dark:hover:bg-gray-700',
+                'group -mx-2 flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold'
+              )}
             >
               <Cog6ToothIcon
                 aria-hidden="true"
-                className="size-6 shrink-0 text-gray-400 group-hover:text-brand-yellow"
+                className={classNames(
+                  pathname === '/settings' ? 'text-white' : 'text-gray-400 group-hover:text-brand-yellow',
+                  'size-6 shrink-0'
+                )}
               />
               Settings
-            </a>
+            </Link>
           </li>
         </ul>
       </nav>
