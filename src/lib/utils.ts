@@ -123,3 +123,30 @@ export function getCookie(name: string) {
     }
     return null;
 }
+
+export function stripHtml(input?: string | null): string {
+    if (input == null) return '';
+    if (input === '') return '';
+
+    // Browser path: most accurate, entity-decoding included.
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+        const container = document.createElement('div');
+        container.innerHTML = input;
+
+        // Drop content that should never contribute to visible text.
+        container.querySelectorAll('script,style,noscript').forEach((el) => el.remove());
+
+        return (container.textContent ?? '').trim();
+    }
+
+    // SSR path: remove script/style blocks, then strip the remaining tags.
+    // Keep regexes simple to avoid catastrophic backtracking.
+    const withoutBlocks = input
+        .replace(/<\s*(script|style|noscript)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+        .replace(/<!--([\s\S]*?)-->/g, '');
+
+    const withoutTags = withoutBlocks.replace(/<[^>]+>/g, '');
+
+    // Normalize whitespace a bit.
+    return withoutTags.replace(/\s+/g, ' ').trim();
+}
