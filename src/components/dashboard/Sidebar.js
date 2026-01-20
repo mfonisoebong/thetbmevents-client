@@ -34,7 +34,7 @@ const roleBasedNavigation = {
     {name: 'Dashboard', href: '/dashboard', icon: HomeIcon},
     {name: 'Events', href: '/events', icon: GlobeAltIcon},
     {name: 'Coupons', href: '/coupons', icon: TicketIcon},
-    {name: 'Analytics', href: '/finance-and-analytics', icon: ChartBarIcon},
+    {name: 'Revenue', href: '/revenue', icon: CurrencyDollarIcon},
     {name: 'Scan QR', href: '/scan-qr', icon: QrCodeIcon},
   ]
 };

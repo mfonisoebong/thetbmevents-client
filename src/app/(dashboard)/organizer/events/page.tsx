@@ -7,6 +7,7 @@ import { events as mockEvents } from '../../../../lib/mockEvents'
 import { formatDate, currencySymbol, formatNumber } from '@lib/utils'
 import { computeEventStats, eventStatus } from '@lib/eventStats'
 import {ClipboardIcon} from "@heroicons/react/24/outline";
+import SafeHtml from "../../../../components/SafeHtml";
 
 export default function OrganizerEventsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -94,7 +95,10 @@ export default function OrganizerEventsPage() {
                       <div className="flex items-start justify-between gap-4">
                         <div className="hover:underline">
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{event.title}</h3>
-                          <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-2 line-clamp-2">{event.description}</p>
+                          <SafeHtml
+                              html={event.description}
+                              className="text-sm text-text-muted-light dark:text-text-muted-dark mt-2 truncate"
+                          />
 
                           <div className="mt-3 text-sm text-text-muted-light dark:text-text-muted-dark">
                             <div>{formatDate(event.date)} • {event.time}</div>
@@ -133,7 +137,7 @@ export default function OrganizerEventsPage() {
                     <div className="mt-4 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Link target="_blank" href={`/events/${event.id}`} className="text-sm text-sky-600 hover:underline">View public page</Link>
-                        <Link href={`/dashboard/organizer/events/${event.id}/edit`} className="text-sm text-text-muted-light hover:underline">Edit</Link>
+                        {/*<Link href={`/organizer/events/${event.id}/edit`} className="text-sm text-text-muted-light hover:underline">Edit</Link>*/}
                       </div>
 
                       <button onClick={() => onCopyLink(event.id)} className="inline-flex items-center gap-2 rounded-lg bg-brand-yellow px-3 py-2 text-sm font-medium  text-white">
