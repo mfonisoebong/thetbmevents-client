@@ -11,7 +11,7 @@ import { makeMockAttendees, type AdminAttendeeRow } from '@lib/adminAttendeesMoc
 
 function Modal({ open, onClose, row }: { open: boolean; onClose: () => void; row: AdminAttendeeRow | null }) {
   return (
-    <Dialog open={open} onClose={onClose} className="relative z-50">
+    <Dialog open={open} onClose={onClose} transition className="relative z-50 transition-opacity data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in">
       <DialogBackdrop className="fixed inset-0 bg-black/60" />
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <DialogPanel className="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-900 border border-black/10 dark:border-white/10 shadow-xl">

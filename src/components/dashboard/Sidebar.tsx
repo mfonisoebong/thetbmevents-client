@@ -59,7 +59,7 @@ export default function Sidebar() {
   const [role, setRole] = useState<Role>('')
 
   useEffect(() => {
-    const userRole: Role = 'admin' /* getCookie('role')*/
+    const userRole: Role = 'organizer' /* getCookie('role')*/
 
     setRole(userRole)
     setNavigation(roleBasedNavigation[userRole] || [])
