@@ -223,7 +223,12 @@ export default function AdminOrganizersPage() {
         }
       }
 
-      if (!ok) throw new Error('toggle failed')
+      if (!ok) {
+        setMessage({ type: 'error', text: 'Could not update organizer status.' })
+        // Revert
+        setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, isActive: r.isActive } : x)))
+        return
+      }
 
       setMessage({ type: 'success', text: `Organizer ${nextActive ? 'activated' : 'deactivated'}.` })
     } catch (e) {
@@ -316,7 +321,8 @@ export default function AdminOrganizersPage() {
               />
 
               <div className="inline-flex items-center gap-2">
-                <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', pillClass(true))}>Active</span>
+                <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', pillClass(true))}>All</span>
+                <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', pillClass(false))}>Active</span>
                 <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', pillClass(false))}>Inactive</span>
               </div>
             </div>

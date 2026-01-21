@@ -36,3 +36,10 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+## Dashboard pages
+
+- Admin dashboard: `src/app/(dashboard)/admin/dashboard/page.tsx` (route: `/admin/dashboard`)
+  - Uses deterministic mock metrics derived from `src/lib/mockEvents.ts`.
+  - Summary cards: revenue this month, net revenue (95%), total events (overall + this month), total organizers.
+  - Tables: revenue by month + top events.
