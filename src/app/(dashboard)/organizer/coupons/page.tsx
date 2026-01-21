@@ -6,6 +6,9 @@ import DataTable, { type DataTableColumn } from '../../../../components/DataTabl
 import { cn } from '@lib/utils'
 import { useTableSearch } from '../../../../hooks/useTableSearch'
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
+import GlassCard from "../../../../components/GlassCard";
+import Select from "../../../../components/Select";
+import Input from "../../../../components/Input"
 
 type CouponType = 'fixed' | 'percentage'
 
@@ -20,51 +23,6 @@ type CouponRow = {
   limit: number
   startAt: string
   endAt: string
-}
-
-function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div
-      className={cn(
-        'rounded-2xl bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 backdrop-blur-sm shadow-sm',
-        className ?? ''
-      )}
-    >
-      {children}
-    </div>
-  )
-}
-
-function Input({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
-  return (
-    <label className="block">
-      <span className="block text-sm font-semibold text-gray-900 dark:text-white">{label}</span>
-      <input
-        {...props}
-        className={cn(
-          'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
-          props.className ?? ''
-        )}
-      />
-    </label>
-  )
-}
-
-function Select({ label, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="block text-sm font-semibold text-gray-900 dark:text-white">{label}</span>
-      <select
-        {...props}
-        className={cn(
-          'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
-          props.className ?? ''
-        )}
-      >
-        {children}
-      </select>
-    </label>
-  )
 }
 
 function randomId(prefix: string) {

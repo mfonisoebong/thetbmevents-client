@@ -9,6 +9,8 @@ import { PhotoIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { categories as mockCategories } from '@lib/mockEvents'
 import dynamic from 'next/dynamic'
 import 'react-quill-new/dist/quill.snow.css';
+import Select from "../../../../../components/Select";
+import Input from "../../../../../components/Input";
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false })
 
@@ -64,38 +66,6 @@ function SectionTitle({ title, subtitle }: { title: string; subtitle?: string })
       <h2 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h2>
       {subtitle ? <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">{subtitle}</p> : null}
     </div>
-  )
-}
-
-function Input({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
-  return (
-    <label className="block">
-      <span className="block text-sm font-semibold text-gray-900 dark:text-white">{label}</span>
-      <input
-        {...props}
-        className={cn(
-          'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
-          props.className ?? ''
-        )}
-      />
-    </label>
-  )
-}
-
-function Select({ label, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="block text-sm font-semibold text-gray-900 dark:text-white">{label}</span>
-      <select
-        {...props}
-        className={cn(
-          'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
-          props.className ?? ''
-        )}
-      >
-        {children}
-      </select>
-    </label>
   )
 }
 
@@ -277,7 +247,6 @@ export default function CreateEventPage() {
       const loadedDraft = sanitizeLoadedDraft(parsed?.draft, defaultDraft)
       setDraft(loadedDraft)
     } catch {
-      // ignore
     }
   }, [defaultDraft])
 
@@ -342,31 +311,45 @@ export default function CreateEventPage() {
   function canGoNext(current: StepKey) {
     if (current === 1) {
       if (!draft.title.trim()) return false
+
       if (!draft.category.trim()) return false
-      if (draft.type === 'virtual' && !draft.eventLink.trim()) return false
-      return true
+
+      return !(draft.type === 'virtual' && !draft.eventLink.trim());
     }
+
     if (current === 2) {
       if (!draft.date) return false
+
       if (!draft.time) return false
+
       if (!draft.timezone.trim()) return false
+
       if (draft.type === 'physical') {
         if (!draft.venueName.trim()) return false
+
         if (!draft.address.trim()) return false
       }
+
       return true
     }
+
     if (current === 3) {
       const hasValidTicket = draft.tickets.some((t) => t.name.trim())
+
       if (!hasValidTicket) return false
+
       const invalid = draft.tickets.some((t) => {
         if (!t.name.trim()) return true
+
         if (t.price < 0) return true
+
         if (t.quantity < 0) return true
+
         if (!t.start_selling_date) return true
+
         if (!t.end_selling_date) return true
-        if (new Date(t.start_selling_date).getTime() > new Date(t.end_selling_date).getTime()) return true
-        return false
+
+        return new Date(t.start_selling_date).getTime() > new Date(t.end_selling_date).getTime();
       })
       return !invalid
     }
