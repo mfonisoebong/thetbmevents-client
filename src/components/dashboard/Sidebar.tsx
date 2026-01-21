@@ -1,6 +1,7 @@
 "use client"
 
 import {useEffect, useState} from "react";
+import type {ComponentType, SVGProps} from "react";
 import {classNames} from "@lib/utils";
 import {usePathname} from "next/navigation";
 
@@ -19,15 +20,30 @@ import {
 import TextLogo from "../TextLogo";
 import Link from "next/link";
 
-const roleBasedNavigation = {
+type Role = "admin" | "organizer" | (string & {});
+
+type NavItem = {
+  name: string;
+  href: string;
+  icon: ComponentType<
+    Omit<SVGProps<SVGSVGElement>, "ref"> & {
+      title?: string;
+      titleId?: string;
+    }
+  >;
+};
+
+type RoleBasedNavigation = Record<string, ReadonlyArray<NavItem>>;
+
+const roleBasedNavigation: RoleBasedNavigation = {
   admin: [
     {name: 'Dashboard', href: '/dashboard', icon: HomeIcon},
-    {name: 'Organizers', href: '#', icon: UsersIcon},
-    {name: 'Finance', href: '#', icon: CurrencyDollarIcon},
-    {name: 'Attendees', href: '#', icon: UsersIcon},
-    {name: 'Marketing', href: '#', icon: ShoppingCartIcon},
-    {name: 'Categories', href: '#', icon: TagIcon},
-    {name: 'Staff', href: '#', icon: UsersIcon},
+    {name: 'Organizers', href: '/organizers', icon: UsersIcon},
+    {name: 'Finance', href: '/finance', icon: CurrencyDollarIcon},
+    {name: 'Attendees', href: '/attendees', icon: UsersIcon},
+    {name: 'Marketing', href: '/marketing', icon: ShoppingCartIcon},
+    {name: 'Categories', href: '/categories', icon: TagIcon},
+    {name: 'Staff', href: '/staff', icon: UsersIcon},
   ],
   organizer: [
     {name: 'Dashboard', href: '/dashboard', icon: HomeIcon},
@@ -39,14 +55,14 @@ const roleBasedNavigation = {
 };
 
 export default function Sidebar() {
-  const [navigation, setNavigation] = useState([]);
-  const [role, setRole] = useState('')
+  const [navigation, setNavigation] = useState<ReadonlyArray<NavItem>>([]);
+  const [role, setRole] = useState<Role>('')
 
   useEffect(() => {
-    const role = 'organizer' /* getCookie('role')*/
+    const userRole: Role = 'organizer' /* getCookie('role')*/
 
-    setRole(role)
-    setNavigation(roleBasedNavigation[role] || [])
+    setRole(userRole)
+    setNavigation(roleBasedNavigation[userRole] || [])
   }, []);
 
 

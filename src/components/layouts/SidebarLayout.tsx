@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import {
   Dialog,
   DialogBackdrop,
@@ -18,9 +19,13 @@ import {Bars3Icon, XMarkIcon} from "@heroicons/react/24/outline";
 const userNavigation = [
   { name: 'Settings', href: '/settings' },
   { name: 'Sign out', href: '#' },
-]
+] satisfies ReadonlyArray<{ name: string; href: string }>
 
-export default function SidebarLayout({children}) {
+type SidebarLayoutProps = {
+  children: ReactNode
+}
+
+export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
