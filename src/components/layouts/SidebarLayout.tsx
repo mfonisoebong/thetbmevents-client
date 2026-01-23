@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import {
@@ -15,8 +13,13 @@ import {
 import { ChevronDownIcon } from '@heroicons/react/20/solid'
 import Sidebar from "../dashboard/Sidebar";
 import {Bars3Icon, XMarkIcon} from "@heroicons/react/24/outline";
-import {deleteCookie, getEndpoint} from "@lib/utils";
+import {deleteCookie, getEndpoint, getInitials, setCookie} from "@lib/utils";
 import HTTP from "@lib/HTTP";
+import api from "@lib/axios";
+import {useQuery} from "react-query";
+import useUser from "../../hooks/useUser";
+import {Role} from "@lib/types";
+import Link from "next/link";
 
 const userNavigation = [
   { name: 'Settings', href: '/settings' },
@@ -39,6 +42,8 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
       window.location.href = '/login';
     });
   }
+
+  const { name } = useUser();
 
   return (
     <>
@@ -90,10 +95,10 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
                 <Menu as="div" className="relative">
                   <MenuButton className="-m-1.5 flex items-center p-1.5">
                     <span className="sr-only">Open user menu</span>
-                    <div className="rounded-full bg-gray-100 p-3 text-sm font-bold flex items-center justify-center dark:text-text-light">TC</div>
+                    <div className="rounded-full bg-gray-100 p-3 text-sm font-bold flex items-center justify-center dark:text-text-light">{getInitials(name || '')}</div>
                     <span className="hidden lg:flex lg:items-center">
                       <span aria-hidden="true" className="ml-4 text-sm/6 font-semibold text-gray-900 dark:text-white">
-                        Tom Cook
+                        {name}
                       </span>
                       <ChevronDownIcon aria-hidden="true" className="ml-2 size-5 text-gray-400" />
                     </span>
@@ -104,13 +109,13 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
                   >
                     {userNavigation.map((item) => (
                       <MenuItem key={item.name}>
-                        <a
+                        <Link
                           href={item.href}
                           className="block px-3 py-1 text-sm/6 text-gray-900 data-[focus]:bg-gray-50 data-[focus]:outline-none dark:text-white dark:data-[focus]:bg-gray-800"
                           {...item.name === 'Sign out' ? {onClick: logout} : {}}
                         >
                           {item.name}
-                        </a>
+                        </Link>
                       </MenuItem>
                     ))}
                   </MenuItems>

@@ -39,3 +39,5 @@ export interface ApiData<T> {
     message: string;
 }
 
+export type Role = "admin" | "organizer" | (string & {});
+
