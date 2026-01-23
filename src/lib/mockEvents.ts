@@ -11,7 +11,6 @@ export const categories = [
   'Movie',
   'Tech',
   'Dinner',
-  'Other'
 ];
 
 export const events: EventItem[] = [

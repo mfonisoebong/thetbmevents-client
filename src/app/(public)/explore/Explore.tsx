@@ -72,15 +72,19 @@ export default function Explore(): ReactElement {
         .trim()
         .toLowerCase()
         .replace(/&/g, 'and')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
 
-    const selectedKey = normalizeCategory(selectedCategory)
+    const selectedNorm = normalizeCategory(selectedCategory)
 
     return events.filter((e: EventItem) => {
-      if (selectedCategory && selectedCategory !== 'All') {
-        const eventKey = normalizeCategory(e.category)
-        if (eventKey && selectedKey && eventKey !== selectedKey) return false
+      // Support partial matches: "club" should match "club event" / "club party".
+      // Also avoid strict mismatch filtering when server returns a different representation.
+      if (selectedCategory && selectedCategory !== 'All' && selectedNorm) {
+        const eventNorm = normalizeCategory(e.category)
+        // If category is missing on the event, don't hide it.
+        if (eventNorm && !eventNorm.includes(selectedNorm)) return false
       }
 
       if (!q) return true

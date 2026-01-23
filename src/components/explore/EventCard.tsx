@@ -19,7 +19,7 @@ export default function EventCard({ event }: Props) {
             alt={event.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute top-3 left-3 bg-black/40 text-white text-xs px-2 py-1 rounded-md">{event.category}</div>
+          <div className="absolute top-3 left-3 bg-black/40 text-white text-xs px-2 py-1 rounded-md uppercase">{event.category}</div>
         </div>
 
         <div className="p-4">
