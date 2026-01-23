@@ -1,5 +1,5 @@
-import {getCookie} from "@lib/utils";
-import {useEffect, useState} from "react";
+import { getCookie } from "@lib/utils";
+import { useEffect, useState } from "react";
 
 export default function useUser() {
     const [user, setUser] = useState<any>(null);
@@ -7,14 +7,23 @@ export default function useUser() {
     const [name, setName] = useState<string | null>(null);
 
     useEffect(() => {
-        const user =  JSON.parse(getCookie('user'));
-        setUser(user);
+        const rawUser = getCookie('user');
 
-        const role = getCookie('role');
-        setRole(role);
+        let parsedUser: any = null;
+        if (rawUser) {
+            try {
+                parsedUser = typeof rawUser === 'string' ? JSON.parse(rawUser) : rawUser;
+            } catch {
+                parsedUser = null;
+            }
+        }
+        setUser(parsedUser);
 
-        const name = role === 'admin' ? 'Administrator' : user?.business_name;
-        setName(name);
+        const cookieRole = getCookie('role');
+        setRole(cookieRole);
+
+        const derivedName = cookieRole === 'admin' ? 'Administrator' : parsedUser?.business_name ?? null;
+        setName(derivedName);
     }, []);
 
     return { user, role, name };
