@@ -4,8 +4,7 @@ import Providers from "../../components/layouts/providers";
 
 
 export default function layout({children}) {
-  // todo: uncomment when backend auth is ready
-  // if (!cookies().get('token')) redirect('/')
+  if (!cookies().get('token')) redirect('/')
 
   return (
     <Providers>

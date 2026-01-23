@@ -108,7 +108,7 @@ export function getInitials(name: string) {
     return name.split(" ").map((n) => n[0]).join("");
 }
 
-export function getCookie(name: string) {
+export function getCookie(name: string): any {
     if (typeof window !== "undefined") {
         var nameEQ = name + "=";
         var ca = document.cookie.split(';');
@@ -149,4 +149,12 @@ export function stripHtml(input?: string | null): string {
 
     // Normalize whitespace a bit.
     return withoutTags.replace(/\s+/g, ' ').trim();
+}
+
+export function getErrorMessage(err: any): string {
+    return (
+        err?.response?.data?.message ||
+        err?.message ||
+        'Something went wrong. Please try again.'
+    );
 }

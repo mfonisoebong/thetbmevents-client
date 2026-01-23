@@ -15,6 +15,8 @@ import {
 import { ChevronDownIcon } from '@heroicons/react/20/solid'
 import Sidebar from "../dashboard/Sidebar";
 import {Bars3Icon, XMarkIcon} from "@heroicons/react/24/outline";
+import {deleteCookie} from "@lib/utils";
+import HTTP from "@lib/HTTP";
 
 const userNavigation = [
   { name: 'Settings', href: '/settings' },
@@ -27,6 +29,16 @@ type SidebarLayoutProps = {
 
 export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  function logout() {
+    HTTP({url: '/auth/logout'}).then(() => {
+      deleteCookie('token');
+      deleteCookie('role');
+      deleteCookie('user');
+
+      window.location.href = '/login';
+    });
+  }
 
   return (
     <>
@@ -95,6 +107,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
                         <a
                           href={item.href}
                           className="block px-3 py-1 text-sm/6 text-gray-900 data-[focus]:bg-gray-50 data-[focus]:outline-none dark:text-white dark:data-[focus]:bg-gray-800"
+                          {...item.name === 'Sign out' ? {onClick: logout} : {}}
                         >
                           {item.name}
                         </a>

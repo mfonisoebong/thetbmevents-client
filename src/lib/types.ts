@@ -34,3 +34,8 @@ export interface EventItem {
 
 export type PaymentGateway = "paystack" | "flutterwave" | "chainpal";
 
+export interface ApiData<T> {
+    data: T;
+    message: string;
+}
+

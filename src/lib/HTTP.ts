@@ -4,7 +4,7 @@ import type { AxiosRequestConfig, Method } from "axios";
 
 export type HTTPArgs<TData> = {
   url: string;
-  method: Method;
+  method?: Method;
   data?: TData;
   headers?: Record<string, string>;
 };

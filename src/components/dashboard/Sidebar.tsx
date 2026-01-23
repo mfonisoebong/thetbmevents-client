@@ -2,7 +2,7 @@
 
 import {useEffect, useState} from "react";
 import type {ComponentType, SVGProps} from "react";
-import {classNames} from "@lib/utils";
+import {classNames, getCookie} from "@lib/utils";
 import {usePathname} from "next/navigation";
 
 import {
@@ -59,7 +59,7 @@ export default function Sidebar() {
   const [role, setRole] = useState<Role>('')
 
   useEffect(() => {
-    const userRole: Role = 'organizer' /* getCookie('role')*/
+    const userRole: Role =  getCookie('role')
 
     setRole(userRole)
     setNavigation(roleBasedNavigation[userRole] || [])

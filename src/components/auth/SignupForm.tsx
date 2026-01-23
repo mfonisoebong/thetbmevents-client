@@ -1,13 +1,18 @@
 "use client";
 
-import React, { FormEvent, useReducer } from 'react';
+import React, { FormEvent, useEffect, useReducer } from 'react';
 import PhoneInput from './PhoneInput';
 import { FormErrors, validateAll } from '../../hooks/useFormValidation';
 import useCountries from '../../hooks/useCountries';
-import { SelectOption } from "@lib/types";
+import {ApiData, SelectOption} from "@lib/types";
 import { Dropdown } from "../Dropdown";
+import HTTP from "@lib/HTTP";
+import {getEndpoint, getErrorMessage, setCookie} from "@lib/utils";
+
+type Step = 'signup' | 'verify';
 
 type SignupFormState = {
+	step: Step;
 	values: {
 		businessName: string;
 		email: string;
@@ -16,21 +21,33 @@ type SignupFormState = {
 	};
 	selectedCountry: SelectOption;
 	errors: FormErrors;
+	otp: string;
+	message: string | null;
 	ui: {
 		loading: boolean;
 		showPassword: boolean;
+		otpLoading: boolean;
+		resendLoading: boolean;
+		resendSecondsLeft: number;
 	};
 };
 
 type SignupFormAction =
+	| { type: 'SET_STEP'; value: Step }
 	| { type: 'SET_FIELD'; field: keyof SignupFormState['values']; value: string }
 	| { type: 'SET_COUNTRY'; value: SelectOption }
 	| { type: 'SET_ERRORS'; value: FormErrors }
 	| { type: 'SET_LOADING'; value: boolean }
-	| { type: 'TOGGLE_SHOW_PASSWORD' };
+	| { type: 'TOGGLE_SHOW_PASSWORD' }
+	| { type: 'SET_OTP'; value: string }
+	| { type: 'SET_MESSAGE'; value: string | null }
+	| { type: 'SET_OTP_LOADING'; value: boolean }
+	| { type: 'SET_RESEND_LOADING'; value: boolean }
+	| { type: 'SET_RESEND_SECONDS'; value: number };
 
 function getInitialState(): SignupFormState {
 	return {
+		step: 'signup',
 		values: {
 			businessName: '',
 			email: '',
@@ -39,17 +56,23 @@ function getInitialState(): SignupFormState {
 		},
 		selectedCountry: { label: "Nigeria (+234)", value: "NG" },
 		errors: {},
+		otp: '',
+		message: null,
 		ui: {
 			loading: false,
 			showPassword: false,
+			otpLoading: false,
+			resendLoading: false,
+			resendSecondsLeft: 0,
 		},
 	};
 }
 
 function reducer(state: SignupFormState, action: SignupFormAction): SignupFormState {
 	switch (action.type) {
+		case 'SET_STEP':
+			return { ...state, step: action.value };
 		case 'SET_FIELD': {
-			// Clear just the touched field's error to avoid stale messages.
 			const nextErrors = state.errors?.[action.field]
 				? { ...state.errors, [action.field]: undefined }
 				: state.errors;
@@ -68,6 +91,16 @@ function reducer(state: SignupFormState, action: SignupFormAction): SignupFormSt
 			return { ...state, ui: { ...state.ui, loading: action.value } };
 		case 'TOGGLE_SHOW_PASSWORD':
 			return { ...state, ui: { ...state.ui, showPassword: !state.ui.showPassword } };
+		case 'SET_OTP':
+			return { ...state, otp: action.value };
+		case 'SET_MESSAGE':
+			return { ...state, message: action.value };
+		case 'SET_OTP_LOADING':
+			return { ...state, ui: { ...state.ui, otpLoading: action.value } };
+		case 'SET_RESEND_LOADING':
+			return { ...state, ui: { ...state.ui, resendLoading: action.value } };
+		case 'SET_RESEND_SECONDS':
+			return { ...state, ui: { ...state.ui, resendSecondsLeft: action.value } };
 		default:
 			return state;
 	}
@@ -76,8 +109,20 @@ function reducer(state: SignupFormState, action: SignupFormAction): SignupFormSt
 export default function SignupForm() {
 	const [state, dispatch] = useReducer(reducer, undefined, getInitialState);
 
+	useEffect(() => {
+		if (state.step !== 'verify') return;
+		if (state.ui.resendSecondsLeft <= 0) return;
+
+		const id = window.setInterval(() => {
+			dispatch({ type: 'SET_RESEND_SECONDS', value: Math.max(0, state.ui.resendSecondsLeft - 1) });
+		}, 1000);
+
+		return () => window.clearInterval(id);
+	}, [state.step, state.ui.resendSecondsLeft]);
+
 	async function onSubmit(e: FormEvent) {
 		e.preventDefault();
+		dispatch({ type: 'SET_MESSAGE', value: null });
 
 		const vals = {
 			...state.values,
@@ -91,18 +136,159 @@ export default function SignupForm() {
 
 		dispatch({ type: 'SET_LOADING', value: true });
 
-		// placeholder: replace with API call
-		await new Promise((res) => setTimeout(res, 700));
+		const response = await HTTP<any, any>({
+			url: getEndpoint('/auth/signup'),
+			data: {
+				...vals,
+				business_name: vals.businessName.trim(),
+				phone_number: vals.phone.trim(),
+				businessName: undefined,
+				phone: undefined,
+			},
+		});
+
+		if (response.ok) {
+			dispatch({ type: 'SET_STEP', value: 'verify' });
+			dispatch({ type: 'SET_RESEND_SECONDS', value: 60 });
+		} else {
+			dispatch({ type: 'SET_MESSAGE', value: getErrorMessage(response.error) });
+		}
 
 		dispatch({ type: 'SET_LOADING', value: false });
+	}
 
-		console.log('signup:', { ...state.values, country: vals.country });
+	async function onVerifyOtp(e: FormEvent) {
+		e.preventDefault();
+		dispatch({ type: 'SET_MESSAGE', value: null });
+
+		const otp = state.otp.trim();
+		if (!otp) {
+			dispatch({ type: 'SET_MESSAGE', value: 'Please enter the verification code.' });
+			return;
+		}
+
+		dispatch({ type: 'SET_OTP_LOADING', value: true });
+
+		const resp = await HTTP<ApiData<any>, { email: string; otp: string }>({
+			url: getEndpoint('/auth/verify-email-otp'),
+			data: { email: state.values.email.trim(), otp },
+		});
+
+		if (resp.ok) {
+			setCookie('token', resp.data?.data.token)
+			setCookie('user', resp.data?.data.user)
+
+			const role = resp.data?.data.user.role
+
+			setCookie('role', role)
+
+			dispatch({ type: 'SET_MESSAGE', value: 'Email verified successfully. Logging you in...' });
+
+			window.location.href = `/${role}/dashboard`
+		} else {
+			dispatch({ type: 'SET_MESSAGE', value: getErrorMessage(resp.error) });
+		}
+
+		dispatch({ type: 'SET_OTP_LOADING', value: false });
+	}
+
+	async function onResendOtp() {
+		dispatch({ type: 'SET_MESSAGE', value: null });
+
+		if (state.ui.resendSecondsLeft > 0) return;
+
+		dispatch({ type: 'SET_RESEND_LOADING', value: true });
+
+		const resp = await HTTP<any, { email: string }>({
+			url: getEndpoint('/auth/resend-email-otp'),
+			data: { email: state.values.email.trim() },
+		});
+
+		if (resp.ok) {
+			dispatch({ type: 'SET_RESEND_SECONDS', value: 60 });
+			dispatch({ type: 'SET_MESSAGE', value: 'A new verification code has been sent.' });
+		} else {
+			dispatch({ type: 'SET_MESSAGE', value: getErrorMessage(resp.error) });
+		}
+
+		dispatch({ type: 'SET_RESEND_LOADING', value: false });
 	}
 
 	const { countries, loading: countriesLoading } = useCountries();
 
+	if (state.step === 'verify') {
+		return (
+			<form onSubmit={onVerifyOtp} className="space-y-6">
+				<div className="space-y-1">
+					<h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Verify your email</h2>
+					<p className="text-sm text-slate-600 dark:text-slate-300">
+						Enter the code sent to <span className="font-medium">{state.values.email}</span>.
+					</p>
+				</div>
+
+				{state.message && (
+					<p className="text-sm text-blue-700 bg-blue-50 rounded-lg px-4 py-3">
+						{state.message}
+					</p>
+				)}
+
+				<div>
+					<label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Verification code</label>
+					<input
+						value={state.otp}
+						onChange={(e) => dispatch({ type: 'SET_OTP', value: e.target.value.replace(/\s+/g, '') })}
+						inputMode="numeric"
+						autoComplete="one-time-code"
+						className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 shadow-sm"
+						placeholder="Enter OTP"
+					/>
+				</div>
+
+				<button
+					type="submit"
+					disabled={state.ui.otpLoading}
+					className="mt-2 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-brand-yellow hover:bg-yellow-600 text-white px-4 py-2 font-medium shadow-lg disabled:opacity-60"
+				>
+					{state.ui.otpLoading ? 'Verifying…' : 'Verify email'}
+				</button>
+
+				<div className="flex items-center justify-between text-sm">
+					<button
+						type="button"
+						onClick={onResendOtp}
+						disabled={state.ui.resendLoading || state.ui.resendSecondsLeft > 0}
+						className="text-slate-700 dark:text-slate-200 hover:underline disabled:opacity-60"
+					>
+						{state.ui.resendLoading
+							? 'Sending…'
+							: state.ui.resendSecondsLeft > 0
+								? `Resend code in ${state.ui.resendSecondsLeft}s`
+								: 'Resend code'}
+					</button>
+
+					<button
+						type="button"
+						onClick={() => {
+							dispatch({ type: 'SET_STEP', value: 'signup' });
+							dispatch({ type: 'SET_MESSAGE', value: null });
+						}}
+						className="text-slate-600 dark:text-slate-300 hover:underline"
+					>
+						Back
+					</button>
+				</div>
+			</form>
+		);
+	}
+
 	return (
 		<form onSubmit={onSubmit} className="space-y-6">
+			{state.message && (
+				<p className="text-sm text-red-700 bg-red-50 rounded-lg px-4 py-3">
+					{state.message}
+				</p>
+			)}
+
 			<div>
 				<label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Business name</label>
 				<input
