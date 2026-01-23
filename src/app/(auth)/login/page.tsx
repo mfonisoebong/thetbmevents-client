@@ -25,7 +25,7 @@ export default function LoginPage() {
 		});
 
 		if (response.ok) {
-			// todo: properly implement remember me
+			// todo: properly implement remember me with cookie expiration
 			setCookie('token', response.data.access_token)
 			setCookie('user', JSON.stringify(response.data.user))
 
