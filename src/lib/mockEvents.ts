@@ -2,12 +2,16 @@ import { EventItem } from './types';
 
 export const categories = [
   'All',
-  'Music',
+  'Concert',
+  'Club',
+  'Festival',
+  'Party',
+  'Virtual',
+  'Conference',
+  'Movie',
   'Tech',
-  'Art',
-  'Food & Drink',
-  'Business',
-  'Health',
+  'Dinner',
+  'Other'
 ];
 
 export const events: EventItem[] = [
