@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react'
 import type { EventItem, Ticket } from '@lib/types'
-import { formatDate, currencySymbol } from '@lib/utils'
+import { formatDate, currencySymbol, getTicketSellingState } from '@lib/utils'
 import { useRouter } from 'next/navigation'
 import { useTicketContext } from '../../contexts/TicketContext'
 import SafeHtml from '../SafeHtml'
@@ -109,7 +109,7 @@ export default function EventDetails({ event }: Props) {
             <section className="mb-6">
               <h2 className="text-lg font-semibold dark:text-white">About this event</h2>
               <SafeHtml
-                html={event.description}
+                html={event.description || ''}
                 className="text-text-muted-light dark:text-text-muted-dark mt-3 whitespace-pre-line"
               />
 
@@ -128,11 +128,21 @@ export default function EventDetails({ event }: Props) {
                   const qty = selectedQuantities[id] ?? 0
                   const price = ticket.price ?? 0
 
+                  const selling = getTicketSellingState(ticket.start_selling_date, ticket.end_selling_date)
+
                   return (
                     <div key={id} className="flex flex-col sm:flex-row sm:items-center justify-between max-sm:gap-4 bg-black/5 dark:bg-black/30 border border-black/5 dark:border-white/5 rounded-2xl p-4">
                       <div>
                         <div className="font-medium text-gray-900 dark:text-white">{ticket.name}</div>
                         <div className="text-sm text-text-muted-light">{ticket.description ?? ''}</div>
+
+                        {selling.state === 'not_started' && (
+                          <div className="mt-1 text-xs text-red-500">This ticket has not started selling</div>
+                        )}
+
+                        {selling.state === 'ended' && (
+                          <div className="mt-1 text-xs text-red-500">This ticket has stopped sales since {formatDate(selling.endedAt.toISOString())}</div>
+                        )}
                       </div>
 
                       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -140,7 +150,7 @@ export default function EventDetails({ event }: Props) {
                         <div className="inline-flex items-center gap-2">
                           <button
                             aria-label={`Remove one ${ticket.name}`}
-                            onClick={() => setSelectedQuantities(s => ({ ...s, [id]: Math.max(0, (s[id] ?? 0) - 1) }))}
+                            onClick={() => selling.state === 'open' && setSelectedQuantities(s => ({ ...s, [id]: Math.max(0, (s[id] ?? 0) - 1) }))}
                             className="px-3 py-1 rounded-full bg-black/5 dark:bg-white/5"
                           >
                             -
@@ -148,7 +158,7 @@ export default function EventDetails({ event }: Props) {
                           <div className="w-10 text-center font-medium">{qty}</div>
                           <button
                             aria-label={`Add one ${ticket.name}`}
-                            onClick={() => setSelectedQuantities(s => ({ ...s, [id]: (s[id] ?? 0) + 1 }))}
+                            onClick={() => selling.state === 'open' && setSelectedQuantities(s => ({ ...s, [id]: (s[id] ?? 0) + 1 }))}
                             className="px-3 py-1 rounded-full bg-black/5 dark:bg-white/5"
                           >
                             +

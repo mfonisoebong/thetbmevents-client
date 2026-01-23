@@ -14,6 +14,49 @@ export const formatDate = (isoDate: string) => {
     return `${day} ${month} ${year}`
 }
 
+// Parse API datetime safely.
+// Supports:
+// - ISO strings (e.g. 2025-11-29T22:46:00Z)
+// - "YYYY-MM-DD HH:mm:ss" (treated as local time)
+export function parseApiDateTime(input?: string | null): Date | null {
+    if (!input) return null;
+    const raw = String(input).trim();
+    if (!raw) return null;
+
+    // Common backend format: "YYYY-MM-DD HH:mm:ss"
+    const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+    if (m) {
+        const year = Number(m[1]);
+        const month = Number(m[2]);
+        const day = Number(m[3]);
+        const hour = Number(m[4]);
+        const minute = Number(m[5]);
+        const second = Number(m[6] ?? '0');
+
+        if ([year, month, day, hour, minute, second].some((n) => !Number.isFinite(n))) return null;
+        return new Date(year, month - 1, day, hour, minute, second);
+    }
+
+    // Fallback: let Date parse ISO (or other valid strings)
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? null : d;
+}
+
+export type TicketSellingState =
+  | { state: 'open' }
+  | { state: 'not_started' }
+  | { state: 'ended'; endedAt: Date };
+
+export function getTicketSellingState(start?: string | null, end?: string | null, now: Date = new Date()): TicketSellingState {
+  const startDt = parseApiDateTime(start);
+  const endDt = parseApiDateTime(end);
+
+  if (startDt && now.getTime() < startDt.getTime()) return { state: 'not_started' };
+  if (endDt && now.getTime() > endDt.getTime()) return { state: 'ended', endedAt: endDt };
+
+  return { state: 'open' };
+}
+
 export const currencySymbol = (code?: string) => {
   if (!code) return ''
 

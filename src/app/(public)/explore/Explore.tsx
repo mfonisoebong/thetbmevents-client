@@ -34,7 +34,7 @@ export default function Explore(): ReactElement {
 
   const fetchEvents = useCallback(async (category?: string) => {
     const isAll = !category || category === 'All'
-    const endpoint = isAll ? '/events' : `/events/${encodeURIComponent(category)}`
+    const endpoint = isAll ? '/events' : `/events/category/${encodeURIComponent(category)}`
 
     const requestId = ++requestIdRef.current
 

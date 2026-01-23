@@ -21,6 +21,7 @@ export interface Ticket {
 export interface EventItem {
     id: string;
     title: string;
+    slug?: string;
     description?: string;
     date: string;
     time?: string;
