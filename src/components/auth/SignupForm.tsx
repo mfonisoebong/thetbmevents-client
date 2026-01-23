@@ -176,7 +176,7 @@ export default function SignupForm() {
 
 		if (resp.ok) {
 			setCookie('token', resp.data?.data.token)
-			setCookie('user', resp.data?.data.user)
+			setCookie('user', JSON.stringify(resp.data?.data.user))
 
 			const role = resp.data?.data.user.role
 
