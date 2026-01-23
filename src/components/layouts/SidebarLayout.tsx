@@ -15,7 +15,7 @@ import {
 import { ChevronDownIcon } from '@heroicons/react/20/solid'
 import Sidebar from "../dashboard/Sidebar";
 import {Bars3Icon, XMarkIcon} from "@heroicons/react/24/outline";
-import {deleteCookie} from "@lib/utils";
+import {deleteCookie, getEndpoint} from "@lib/utils";
 import HTTP from "@lib/HTTP";
 
 const userNavigation = [
@@ -31,7 +31,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   function logout() {
-    HTTP({url: '/auth/logout'}).then(() => {
+    HTTP({url: getEndpoint('/auth/logout')}).then(() => {
       deleteCookie('token');
       deleteCookie('role');
       deleteCookie('user');

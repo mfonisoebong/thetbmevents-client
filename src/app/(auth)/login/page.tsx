@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import {FormEvent, useState} from 'react';
 import TextLogo from "../../../components/TextLogo";
+import HTTP from "@lib/HTTP";
+import {getEndpoint, getErrorMessage, setCookie} from "@lib/utils";
+import {errorToast} from "../../../components/Toast";
 
 export default function LoginPage() {
-	// todo: use reducer
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [remember, setRemember] = useState(false);
@@ -17,13 +19,25 @@ export default function LoginPage() {
 
 		setLoading(true);
 
-		// placeholder: replace with real auth call
-		await new Promise((res) => setTimeout(res, 700));
-		setLoading(false);
+		const response = await HTTP<any, any>({
+			url: getEndpoint('/auth/login'),
+			data: {email, password, remember},
+		});
 
-		// For now just log the values
-		console.log({ email, password, remember });
-		// TODO: redirect after successful login
+		if (response.ok) {
+			// todo: properly implement remember me
+			setCookie('token', response.data.access_token)
+			setCookie('user', JSON.stringify(response.data.user))
+
+			const role = response.data.user.role
+			setCookie('role', role)
+
+			window.location.href = `/${role}/dashboard`;
+		} else {
+			errorToast(getErrorMessage(response.error))
+		}
+
+		setLoading(false);
 	}
 
 	return (

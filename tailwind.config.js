@@ -43,6 +43,10 @@ module.exports = {
         'glass-light': 'linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%)',
         'glass-dark': 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.4) 100%)',
       },
+      animation: {
+        toastIn: "toastIn 1000ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        toastOut: "toastOut 1000ms ease-in both",
+      },
     },
   },
   plugins: [
@@ -53,5 +57,27 @@ module.exports = {
       // 2) [unused] class-based light-class: -> use a parent .light on the root
       addVariant('light-class', '.light &')
     },
+    function ({ addUtilities }) {
+      const newUtilities = {
+        '.flex-col-center': {
+          display: 'flex',
+          'flex-direction': 'column',
+          'align-items': 'center',
+          'justify-content': 'center',
+        },
+        '.flex-center': {
+          display: 'flex',
+          'align-items': 'center',
+          'justify-content': 'center',
+        },
+        ".toast-enter": {
+          animation: "toastIn 220ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        },
+        ".toast-leave": {
+          animation: "toastOut 180ms ease-in both",
+        },
+      }
+      addUtilities(newUtilities, ['responsive'])
+    }
   ],
 }
