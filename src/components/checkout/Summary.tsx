@@ -68,18 +68,18 @@ export default function Summary(
                 </div>
 
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
-                    <div>Gateway fee</div>
-                    <div className="font-medium">{gatewayFee || step === 3 ? `${moneySymbol}${gatewayFee.toLocaleString()}` : 'TBD'}</div>
-                </div>
-
-                <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                     <div>Discount</div>
                     <div className="font-medium">{couponApplied ? `-${moneySymbol}${effectiveDiscount.toLocaleString()}` : '—'}</div>
                 </div>
 
+                <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+                    <div>Gateway fee</div>
+                    <div className="font-medium">{gatewayFee || step === 3 ? `${moneySymbol}${(gatewayFee ?? 0).toLocaleString()}` : 'TBD'}</div>
+                </div>
+
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-300 pt-2 border-t border-black/10 dark:border-white/10">
                     <div className="text-sm">Total</div>
-                    <div className="text-lg font-semibold">{moneySymbol}{(total ?? Math.max(0, subtotal + platformFee + (gatewayFee ?? 0) - effectiveDiscount)).toLocaleString()}</div>
+                    <div className="text-lg font-semibold">{moneySymbol}{(total).toLocaleString()}</div>
                 </div>
             </div>
 

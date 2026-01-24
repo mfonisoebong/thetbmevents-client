@@ -39,6 +39,9 @@ interface TicketContextValue {
   setAttendees: (a: AttendeeInfo[]) => void
   // clear stored context
   clearContext: () => void
+  // send ticket to someone else
+  sendToDifferentEmail: boolean
+  setSendToDifferentEmail: (b: boolean) => void
 }
 
 const TicketContext = createContext<TicketContextValue | undefined>(undefined)
@@ -58,6 +61,7 @@ export function TicketProvider({ children }: { children: ReactNode }) {
   const [ticketMeta, setTicketMeta] = useState<Record<string, { name?: string; price?: number; currency?: string }>>({})
   const [customer, setCustomer] = useState<CustomerInfo>({ fullname: '', email: '', phone: '' })
   const [attendees, setAttendees] = useState<AttendeeInfo[]>([])
+  const [sendToDifferentEmail, setSendToDifferentEmail] = useState<boolean>(false)
 
   // load persisted state from sessionStorage
   useEffect(() => {
@@ -126,6 +130,8 @@ export function TicketProvider({ children }: { children: ReactNode }) {
     attendees,
     setAttendees,
     clearContext,
+    sendToDifferentEmail,
+    setSendToDifferentEmail,
   }
 
   return <TicketContext.Provider value={value}>{children}</TicketContext.Provider>

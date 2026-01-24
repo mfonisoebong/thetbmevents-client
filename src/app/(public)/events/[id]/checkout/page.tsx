@@ -232,7 +232,15 @@ export default function CheckoutPage() {
     const router = useRouter()
     const params = useParams()
     const searchParams = useSearchParams()
-    const {ticketInstances, customer, attendees, setCustomer, setAttendees} = useTicketContext()
+    const {
+        ticketInstances,
+        customer,
+        attendees,
+        setCustomer,
+        setAttendees,
+        sendToDifferentEmail,
+        setSendToDifferentEmail
+    } = useTicketContext()
 
     const id = (params as any)?.id as string | undefined
 
@@ -445,10 +453,23 @@ export default function CheckoutPage() {
         // If the order is free, no gateway is needed.
         if (!isFreeCheckout && !gateway) return
 
-        // For now, simulate payment and navigate to a success page or show result
-        console.log('Processing payment', {gateway, totalWithFee})
+        // extract only id from ticketInstances
+        const ticketInstancesLocal = ticketInstances.map((t) => t.id)
+
+        const checkoutData = {
+            gateway,
+            is_free_checkout: isFreeCheckout,
+            tickets: ticketInstancesLocal,
+            customer,
+            attendees,
+            send_to_different_email: sendToDifferentEmail,
+            coupon_applied: couponApplied,
+            coupon_code: coupon
+        }
+
+        console.log('Processing payment', checkoutData)
         // TODO: integrate real gateways. For now, route to a confirmation page (placeholder)
-        router.push(`/events/${id}/checkout/success`)
+        // router.push(`/events/${id}/checkout/success`)
     }
 
     const summaryDisabled = !touchedAny || !isFormValid() || (step === 3 && !isFreeCheckout && !gateway)
@@ -491,7 +512,7 @@ export default function CheckoutPage() {
         dispatch({
             type: 'COUPON_APPLY_SUCCESS',
             payload: {
-                discount: Number(payload.data.discount ?? 0),
+                discount: Number(payload.data.discount),
                 total: Number(payload.data.total),
             },
         })
@@ -560,19 +581,25 @@ export default function CheckoutPage() {
                                         <label
                                             className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300">
                                             <input type="radio" name="sendToSomeone" checked={!sendToSomeoneElse}
-                                                   onChange={() => dispatch({
-                                                       type: 'SET_SEND_TO_SOMEONE_ELSE',
-                                                       value: false
-                                                   })}/>
+                                                   onChange={() => {
+                                                       dispatch({
+                                                           type: 'SET_SEND_TO_SOMEONE_ELSE',
+                                                           value: false
+                                                       })
+                                                       setSendToDifferentEmail(false)
+                                                   }}/>
                                             <span className="text-sm">No</span>
                                         </label>
                                         <label
                                             className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300">
                                             <input type="radio" name="sendToSomeone" checked={sendToSomeoneElse}
-                                                   onChange={() => dispatch({
-                                                       type: 'SET_SEND_TO_SOMEONE_ELSE',
-                                                       value: true
-                                                   })}/>
+                                                   onChange={() => {
+                                                       dispatch({
+                                                           type: 'SET_SEND_TO_SOMEONE_ELSE',
+                                                           value: true
+                                                       })
+                                                       setSendToDifferentEmail(true)
+                                                   }}/>
                                             <span className="text-sm">Yes</span>
                                         </label>
                                     </div>
@@ -708,7 +735,8 @@ export default function CheckoutPage() {
                     </form>
                 </main>
 
-                <aside className={cn("lg:col-span-1", step === 3 ? isFreeCheckout ? 'lg:col-span-3' : '' : 'lg:sticky lg:top-20')}>
+                <aside
+                    className={cn("lg:col-span-1", step === 3 ? isFreeCheckout ? 'lg:col-span-3' : '' : 'lg:sticky lg:top-20')}>
                     <Summary
                         ticketInstances={ticketInstances}
                         onContinueAction={step === 3 ? onPayNow : goToStep3}
