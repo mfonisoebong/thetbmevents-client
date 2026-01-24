@@ -1,19 +1,30 @@
 "use client"
 
-import React, {useState, useEffect, useMemo} from 'react'
+import React, {useState, useEffect, useMemo, useCallback} from 'react'
 import {useRouter, useParams, useSearchParams, usePathname} from 'next/navigation'
 import {useTicketContext} from '../../../../../contexts/TicketContext'
 import Stepper from '../../../../../components/checkout/Stepper'
 import Summary from '../../../../../components/checkout/Summary'
 import {validateEmail, validatePhone} from '../../../../../hooks/useFormValidation'
-import {calculatePlatformFee, currencySymbol, getGatewayFee, roundToTwo} from "@lib/utils";
-import {PaymentGateway} from "@lib/types";
+import {calculatePlatformFee, currencySymbol, getEndpoint, getErrorMessage, getGatewayFee, roundToTwo} from "@lib/utils";
+import {ApiData, PaymentGateway} from "@lib/types";
+import HTTP from "@lib/HTTP";
 
 type TicketInstanceLocal = { id: string; name?: string; price?: number; currency?: string }
 type AttendeeLocal = { fullname: string; email: string; phone?: string; sendToMe?: boolean }
 
 type PurchaserErrors = { fullname?: string; email?: string; phone?: string }
 type AttendeeErrors = Array<{ fullname?: string; email?: string }>
+
+type ApplyCouponData = {
+    coupon_id: number
+    coupon_code: string
+    type: 'percentage' | 'fixed' | (string & {})
+    value: number
+    amount: number
+    discount: number
+    total: number
+}
 
 export default function CheckoutPage() {
     const router = useRouter()
@@ -44,13 +55,14 @@ export default function CheckoutPage() {
     const [touchedAny, setTouchedAny] = useState(false)
     const [coupon, setCoupon] = useState('')
     const [couponApplied, setCouponApplied] = useState(false)
+    const [couponDiscount, setCouponDiscount] = useState(0)
+    const [couponServerTotal, setCouponServerTotal] = useState<number | null>(null)
+    const [couponApplying, setCouponApplying] = useState(false)
+    const [couponError, setCouponError] = useState<string | null>(null)
     const [gateway, setGateway] = useState<PaymentGateway | null>(null)
 
     const subtotal = useMemo(() => ticketInstances.reduce((s, t) => s + (t.price ?? 0), 0), [ticketInstances])
     const moneySymbol = useMemo(() => currencySymbol(ticketInstances[0]?.currency), [ticketInstances])
-
-    // NOTE: placeholder demo coupon. The important part is that discount is applied LAST.
-    const couponDiscount = couponApplied ? 1000 : 0
 
     const platformFee = useMemo(() => roundToTwo(calculatePlatformFee(subtotal)), [subtotal])
 
@@ -61,11 +73,19 @@ export default function CheckoutPage() {
         return roundToTwo(getGatewayFee(base, gateway))
     }, [gateway, subtotal, platformFee])
 
+    const baseTotalWithFee = useMemo(() => {
+        return roundToTwo(Math.max(0, subtotal + platformFee + feeForSelected))
+    }, [subtotal, platformFee, feeForSelected])
+
     const totalWithFee = useMemo(() => {
-        const base = subtotal + platformFee + feeForSelected
-        const discounted = base - (couponApplied ? couponDiscount : 0)
+        // If server returns a final total, trust it.
+        if (couponApplied && couponServerTotal != null) {
+            return roundToTwo(Math.max(0, couponServerTotal))
+        }
+
+        const discounted = baseTotalWithFee - (couponApplied ? couponDiscount : 0)
         return roundToTwo(Math.max(0, discounted))
-    }, [subtotal, platformFee, feeForSelected, couponApplied, couponDiscount])
+    }, [baseTotalWithFee, couponApplied, couponDiscount, couponServerTotal])
 
     useEffect(() => {
         setFullname(customer.fullname)
@@ -266,6 +286,68 @@ export default function CheckoutPage() {
 
     const summaryDisabled = !touchedAny || !isFormValid() || (step === 3 && !gateway)
 
+    const applyCoupon = useCallback(async () => {
+        const code = coupon.trim()
+        if (!code || !id) return
+
+        setCouponApplying(true)
+        setCouponError(null)
+
+        type Resp = ApiData<ApplyCouponData>
+
+        const resp = await HTTP<Resp, { coupon_code: string; event_id: string; amount: number }>({
+            url: getEndpoint('/checkout/apply-coupon'),
+            method: 'post',
+            data: {
+                coupon_code: code,
+                event_id: id,
+                // send totalWithFee as amount as requested
+                amount: totalWithFee,
+            },
+        })
+
+        if (!resp.ok) {
+            setCouponApplied(false)
+            setCouponDiscount(0)
+            setCouponServerTotal(null)
+            setCouponError(getErrorMessage(resp.error))
+            setCouponApplying(false)
+            return
+        }
+
+        const payload = resp.data
+
+        // API can reply with { data: null, message: "Invalid..." }
+        if (!payload || !payload.data) {
+            setCouponApplied(false)
+            setCouponDiscount(0)
+            setCouponServerTotal(null)
+            setCouponError(payload?.message ?? 'Invalid coupon code for this event')
+            setCouponApplying(false)
+            return
+        }
+
+        setCouponApplied(true)
+        setCouponDiscount(Number(payload.data.discount ?? 0))
+        setCouponServerTotal(Number(payload.data.total))
+        setCouponError(null)
+        setCouponApplying(false)
+    }, [coupon, id, totalWithFee])
+
+    const clearCoupon = useCallback(() => {
+        setCouponApplied(false)
+        setCouponDiscount(0)
+        setCouponServerTotal(null)
+        setCouponError(null)
+    }, [])
+
+    // If totals (tickets/fees/gateway) change after applying a coupon, the coupon needs re-apply.
+    useEffect(() => {
+        if (!couponApplied) return
+        clearCoupon()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [baseTotalWithFee])
+
     return (
         <div className="w-full max-w-7xl mx-auto px-6 py-12">
             <Stepper step={step}/>
@@ -419,20 +501,43 @@ export default function CheckoutPage() {
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Coupon
                                         code</label>
                                     <div className="mt-2 flex gap-2">
-                                        <input value={coupon} onChange={(e) => {
-                                            setCoupon(e.target.value);
-                                            setCouponApplied(false)
-                                        }}
-                                               className="w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-teal dark:border dark:border-white/50 focus:border-none"
-                                               placeholder="Enter coupon code"/>
-                                        <button type="button" onClick={() => {
-                                            if (coupon.trim()) setCouponApplied(true)
-                                        }} className="px-4 py-2 rounded-lg bg-brand-teal text-white">Apply
+                                        <input
+                                            value={coupon}
+                                            onChange={(e) => {
+                                                setCoupon(e.target.value)
+                                                if (couponApplied) clearCoupon()
+                                            }}
+                                            className="w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-teal dark:border dark:border-white/50 focus:border-none"
+                                            placeholder="Enter coupon code"
+                                        />
+                                        <button
+                                            type="button"
+                                            disabled={couponApplying || !coupon.trim() || !id}
+                                            onClick={applyCoupon}
+                                            className="px-4 py-2 rounded-lg bg-brand-teal text-white disabled:opacity-60"
+                                        >
+                                            {couponApplying ? 'Applying…' : 'Apply'}
                                         </button>
                                     </div>
-                                    {couponApplied &&
-                                      <div className="mt-2 text-sm text-slate-600 dark:text-slate-300">Coupon applied:
-                                        {moneySymbol}{couponDiscount.toLocaleString()} discount</div>}
+
+                                    {couponError && (
+                                        <div className="mt-2 text-sm text-rose-500">{couponError}</div>
+                                    )}
+
+                                    {couponApplied && !couponError && (
+                                        <div className="mt-2 text-sm text-slate-600 dark:text-slate-300 flex items-center justify-between gap-3">
+                                            <div>
+                                                Coupon applied: {moneySymbol}{couponDiscount.toLocaleString()} discount
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={clearCoupon}
+                                                className="text-sm text-slate-600 dark:text-slate-300 underline"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                             </section>
@@ -445,7 +550,7 @@ export default function CheckoutPage() {
                     <Summary
                         ticketInstances={ticketInstances}
                         onContinueAction={step === 3 ? onPayNow : goToStep3}
-                        disabled={summaryDisabled}
+                        disabled={summaryDisabled || couponApplying}
                         buttonText={step === 3 ? 'Pay now' : 'Continue'}
                         couponApplied={couponApplied}
                         couponAmount={couponDiscount}
