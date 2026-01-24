@@ -1,6 +1,6 @@
 "use client"
 
-import React, {useState, useEffect, useMemo, useCallback} from 'react'
+import React, {useEffect, useMemo, useCallback, useReducer} from 'react'
 import {useRouter, useParams, useSearchParams, usePathname} from 'next/navigation'
 import {useTicketContext} from '../../../../../contexts/TicketContext'
 import Stepper from '../../../../../components/checkout/Stepper'
@@ -26,6 +26,201 @@ type ApplyCouponData = {
     total: number
 }
 
+type CheckoutState = {
+    purchaser: { fullname: string; email: string; phone: string }
+    sendToSomeoneElse: boolean
+    attendees: AttendeeLocal[]
+    touchedAny: boolean
+    purchaserErrors: PurchaserErrors
+    attendeeErrors: AttendeeErrors
+    coupon: {
+        code: string
+        applied: boolean
+        discount: number
+        serverTotal: number | null
+        applying: boolean
+        error: string | null
+    }
+    gateway: PaymentGateway | null
+}
+
+type CheckoutAction =
+    | { type: 'INIT_FROM_CONTEXT'; payload: { purchaser: CheckoutState['purchaser']; attendees?: AttendeeLocal[] } }
+    | { type: 'SET_PURCHASER_FIELD'; field: keyof CheckoutState['purchaser']; value: string }
+    | { type: 'SET_SEND_TO_SOMEONE_ELSE'; value: boolean }
+    | { type: 'SET_ATTENDEE_FIELD'; idx: number; field: 'fullname' | 'email' | 'phone'; value: string }
+    | { type: 'TOGGLE_ATTENDEE_SEND_TO_ME'; idx: number; checked: boolean }
+    | { type: 'SET_TOUCHED'; value: boolean }
+    | { type: 'SET_GATEWAY'; value: PaymentGateway | null }
+    | { type: 'SET_COUPON_CODE'; value: string }
+    | { type: 'COUPON_APPLY_START' }
+    | { type: 'COUPON_APPLY_SUCCESS'; payload: { discount: number; total: number } }
+    | { type: 'COUPON_APPLY_ERROR'; payload: { error: string } }
+    | { type: 'COUPON_CLEAR' }
+    | { type: 'SET_ERRORS'; payload: { purchaserErrors: PurchaserErrors; attendeeErrors: AttendeeErrors } }
+
+function makeEmptyAttendees(count: number): AttendeeLocal[] {
+    return Array.from({length: count}, () => ({
+        fullname: '',
+        email: '',
+        phone: '',
+        sendToMe: false,
+    }))
+}
+
+function makeInitialState(ticketCount: number): CheckoutState {
+    return {
+        purchaser: {fullname: '', email: '', phone: ''},
+        sendToSomeoneElse: false,
+        attendees: makeEmptyAttendees(ticketCount),
+        touchedAny: false,
+        purchaserErrors: {},
+        attendeeErrors: Array.from({length: ticketCount}, () => ({})),
+        coupon: {
+            code: '',
+            applied: false,
+            discount: 0,
+            serverTotal: null,
+            applying: false,
+            error: null,
+        },
+        gateway: null,
+    }
+}
+
+function checkoutReducer(state: CheckoutState, action: CheckoutAction): CheckoutState {
+    switch (action.type) {
+        case 'INIT_FROM_CONTEXT': {
+            const nextAttendees = action.payload.attendees ?? state.attendees
+            return {
+                ...state,
+                purchaser: action.payload.purchaser,
+                attendees: nextAttendees,
+            }
+        }
+
+        case 'SET_PURCHASER_FIELD': {
+            const purchaser = {...state.purchaser, [action.field]: action.value}
+
+            // Keep attendee rows in sync when "send to me" is checked.
+            const attendees = state.attendees.map((a) => {
+                if (!a.sendToMe) return a
+                return {
+                    ...a,
+                    fullname: purchaser.fullname,
+                    email: purchaser.email,
+                    phone: purchaser.phone,
+                }
+            })
+
+            return {
+                ...state,
+                purchaser,
+                attendees,
+                touchedAny: true,
+            }
+        }
+
+        case 'SET_SEND_TO_SOMEONE_ELSE':
+            return {...state, sendToSomeoneElse: action.value, touchedAny: true}
+
+        case 'SET_ATTENDEE_FIELD': {
+            const attendees = [...state.attendees]
+            attendees[action.idx] = {...attendees[action.idx], [action.field]: action.value}
+            return {...state, attendees, touchedAny: true}
+        }
+
+        case 'TOGGLE_ATTENDEE_SEND_TO_ME': {
+            const attendees = [...state.attendees]
+            const current = attendees[action.idx]
+            const next = {...current, sendToMe: action.checked}
+
+            if (action.checked) {
+                next.fullname = state.purchaser.fullname
+                next.email = state.purchaser.email
+                next.phone = state.purchaser.phone
+            }
+
+            attendees[action.idx] = next
+            return {...state, attendees, touchedAny: true}
+        }
+
+        case 'SET_TOUCHED':
+            return {...state, touchedAny: action.value}
+
+        case 'SET_GATEWAY':
+            return {...state, gateway: action.value}
+
+        case 'SET_COUPON_CODE':
+            return {
+                ...state,
+                coupon: {
+                    ...state.coupon,
+                    code: action.value,
+                },
+            }
+
+        case 'COUPON_APPLY_START':
+            return {
+                ...state,
+                coupon: {
+                    ...state.coupon,
+                    applying: true,
+                    error: null,
+                },
+            }
+
+        case 'COUPON_APPLY_SUCCESS':
+            return {
+                ...state,
+                coupon: {
+                    ...state.coupon,
+                    applied: true,
+                    applying: false,
+                    error: null,
+                    discount: action.payload.discount,
+                    serverTotal: action.payload.total,
+                },
+            }
+
+        case 'COUPON_APPLY_ERROR':
+            return {
+                ...state,
+                coupon: {
+                    ...state.coupon,
+                    applied: false,
+                    applying: false,
+                    discount: 0,
+                    serverTotal: null,
+                    error: action.payload.error,
+                },
+            }
+
+        case 'COUPON_CLEAR':
+            return {
+                ...state,
+                coupon: {
+                    ...state.coupon,
+                    applied: false,
+                    discount: 0,
+                    serverTotal: null,
+                    error: null,
+                    applying: false,
+                },
+            }
+
+        case 'SET_ERRORS':
+            return {
+                ...state,
+                purchaserErrors: action.payload.purchaserErrors,
+                attendeeErrors: action.payload.attendeeErrors,
+            }
+
+        default:
+            return state
+    }
+}
+
 export default function CheckoutPage() {
     const router = useRouter()
     const params = useParams()
@@ -37,29 +232,11 @@ export default function CheckoutPage() {
     const stepParam = searchParams?.get('step') ?? '2'
     const step = stepParam === '3' ? 3 : 2
 
-    const initialAttendees: AttendeeLocal[] = ticketInstances.map(() => ({
-        fullname: '',
-        email: '',
-        phone: '',
-        sendToMe: false
-    }))
+    const [state, dispatch] = useReducer(checkoutReducer, ticketInstances.length, makeInitialState)
 
-    // todo: use reducer
-    const [fullname, setFullname] = useState('')
-    const [email, setEmail] = useState('')
-    const [phone, setPhone] = useState('')
-    const [sendToSomeoneElse, setSendToSomeoneElse] = useState(false)
-    const [localAttendees, setLocalAttendees] = useState<AttendeeLocal[]>(initialAttendees)
-    const [purchaserErrors, setPurchaserErrors] = useState<PurchaserErrors>({})
-    const [attendeeErrors, setAttendeeErrors] = useState<AttendeeErrors>(ticketInstances.map(() => ({})))
-    const [touchedAny, setTouchedAny] = useState(false)
-    const [coupon, setCoupon] = useState('')
-    const [couponApplied, setCouponApplied] = useState(false)
-    const [couponDiscount, setCouponDiscount] = useState(0)
-    const [couponServerTotal, setCouponServerTotal] = useState<number | null>(null)
-    const [couponApplying, setCouponApplying] = useState(false)
-    const [couponError, setCouponError] = useState<string | null>(null)
-    const [gateway, setGateway] = useState<PaymentGateway | null>(null)
+    const {purchaser, sendToSomeoneElse, attendeeErrors, purchaserErrors, touchedAny, gateway} = state
+    const {code: coupon, applied: couponApplied, discount: couponDiscount, serverTotal: couponServerTotal, applying: couponApplying, error: couponError} = state.coupon
+    const localAttendees = state.attendees
 
     const subtotal = useMemo(() => ticketInstances.reduce((s, t) => s + (t.price ?? 0), 0), [ticketInstances])
     const moneySymbol = useMemo(() => currencySymbol(ticketInstances[0]?.currency), [ticketInstances])
@@ -87,43 +264,41 @@ export default function CheckoutPage() {
         return roundToTwo(Math.max(0, discounted))
     }, [baseTotalWithFee, couponApplied, couponDiscount, couponServerTotal])
 
+    // Keep reducer state synced with TicketContext.
     useEffect(() => {
-        setFullname(customer.fullname)
-        setEmail(customer.email)
-        setPhone(customer.phone ?? '')
+        const nextPurchaser = {
+            fullname: customer.fullname,
+            email: customer.email,
+            phone: customer.phone ?? '',
+        }
 
-        if (attendees.length === ticketInstances.length) {
-            const nextAttendees: AttendeeLocal[] = attendees.map((a) => ({
+        const nextAttendees = attendees.length === ticketInstances.length
+            ? attendees.map((a) => ({
                 fullname: a.fullname,
                 email: a.email,
                 phone: a.phone,
                 sendToMe: false,
             }))
-            setLocalAttendees(nextAttendees)
-        }
-    }, [customer, attendees, ticketInstances.length]);
+            : undefined
+
+        dispatch({
+            type: 'INIT_FROM_CONTEXT',
+            payload: {purchaser: nextPurchaser, attendees: nextAttendees},
+        })
+    }, [customer, attendees, ticketInstances.length])
 
     // validation effect (existing) kept — run on relevant deps
     useEffect(() => {
         const pErrs: PurchaserErrors = {}
 
-        const fullErr = getPurchaserError('fullname', fullname)
+        const fullErr = getPurchaserError('fullname', purchaser.fullname)
         if (fullErr) pErrs.fullname = fullErr
 
-        const emailErr = getPurchaserError('email', email)
+        const emailErr = getPurchaserError('email', purchaser.email)
         if (emailErr) pErrs.email = emailErr
 
-        const phoneErr = getPurchaserError('phone', phone)
+        const phoneErr = getPurchaserError('phone', purchaser.phone)
         if (phoneErr) pErrs.phone = phoneErr
-
-        setPurchaserErrors(prev => {
-            try {
-                if (JSON.stringify(prev) === JSON.stringify(pErrs)) return prev
-            } catch (_) {
-            }
-
-            return pErrs
-        })
 
         const aErrs: AttendeeErrors = localAttendees.map((a) => {
             const obj: { fullname?: string; email?: string } = {}
@@ -139,53 +314,29 @@ export default function CheckoutPage() {
             return obj
         })
 
-        setAttendeeErrors(prev => {
-            try {
-                if (JSON.stringify(prev) === JSON.stringify(aErrs)) return prev
-            } catch (_) {
-            }
-
-            return aErrs
-        })
+        dispatch({type: 'SET_ERRORS', payload: {purchaserErrors: pErrs, attendeeErrors: aErrs}})
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [fullname, email, phone, localAttendees, sendToSomeoneElse])
+    }, [purchaser.fullname, purchaser.email, purchaser.phone, localAttendees, sendToSomeoneElse])
 
     function onChangeFullname(v: string) {
-        setFullname(v)
-        setTouchedAny(true)
+        dispatch({type: 'SET_PURCHASER_FIELD', field: 'fullname', value: v})
     }
 
     function onChangeEmail(v: string) {
-        setEmail(v)
-        setTouchedAny(true)
+        dispatch({type: 'SET_PURCHASER_FIELD', field: 'email', value: v})
     }
 
     function onChangePhone(v: string) {
-        setPhone(v)
-        setTouchedAny(true)
+        dispatch({type: 'SET_PURCHASER_FIELD', field: 'phone', value: v})
     }
 
     function onToggleSendToMe(idx: number, checked: boolean) {
-        const next = [...localAttendees]
-        next[idx] = {...next[idx], sendToMe: checked}
-
-        if (checked) {
-            next[idx].fullname = fullname
-            next[idx].email = email
-            next[idx].phone = phone
-        }
-
-        setLocalAttendees(next)
-        setTouchedAny(true)
+        dispatch({type: 'TOGGLE_ATTENDEE_SEND_TO_ME', idx, checked})
     }
 
     function onChangeAttendee(idx: number, field: 'fullname' | 'email' | 'phone', value: string) {
-        const next = [...localAttendees]
-        next[idx] = {...next[idx], [field]: value}
-
-        setLocalAttendees(next)
-        setTouchedAny(true)
+        dispatch({type: 'SET_ATTENDEE_FIELD', idx, field, value})
     }
 
     function getPurchaserError(field: 'fullname' | 'email' | 'phone', value: string) {
@@ -220,9 +371,9 @@ export default function CheckoutPage() {
 
     function isFormValid() {
         // purchaser
-        const fullErr = getPurchaserError('fullname', fullname)
-        const emailErr = getPurchaserError('email', email)
-        const phoneErr = getPurchaserError('phone', phone)
+        const fullErr = getPurchaserError('fullname', purchaser.fullname)
+        const emailErr = getPurchaserError('email', purchaser.email)
+        const phoneErr = getPurchaserError('phone', purchaser.phone)
 
         if (fullErr || emailErr || phoneErr) return false
 
@@ -247,16 +398,16 @@ export default function CheckoutPage() {
 
     function goToStep3() {
         if (!isFormValid()) {
-            setTouchedAny(true)
+            dispatch({type: 'SET_TOUCHED', value: true})
             return
         }
 
-        setCustomer({fullname, email, phone})
+        setCustomer({fullname: purchaser.fullname, email: purchaser.email, phone: purchaser.phone})
         setAttendees(localAttendees.map((a: AttendeeLocal) => ({
             fullname: a.fullname,
             email: a.email,
             phone: a.phone,
-            sendToMe: a.sendToMe
+            sendToMe: a.sendToMe,
         })))
 
         const sp = new URLSearchParams(Array.from(searchParams ?? []))
@@ -272,7 +423,7 @@ export default function CheckoutPage() {
     async function onPayNow() {
         // final validation
         if (!isFormValid()) {
-            setTouchedAny(true);
+            dispatch({type: 'SET_TOUCHED', value: true})
             return
         }
 
@@ -290,8 +441,7 @@ export default function CheckoutPage() {
         const code = coupon.trim()
         if (!code || !id) return
 
-        setCouponApplying(true)
-        setCouponError(null)
+        dispatch({type: 'COUPON_APPLY_START'})
 
         type Resp = ApiData<ApplyCouponData>
 
@@ -307,11 +457,7 @@ export default function CheckoutPage() {
         })
 
         if (!resp.ok) {
-            setCouponApplied(false)
-            setCouponDiscount(0)
-            setCouponServerTotal(null)
-            setCouponError(getErrorMessage(resp.error))
-            setCouponApplying(false)
+            dispatch({type: 'COUPON_APPLY_ERROR', payload: {error: getErrorMessage(resp.error)}})
             return
         }
 
@@ -319,26 +465,24 @@ export default function CheckoutPage() {
 
         // API can reply with { data: null, message: "Invalid..." }
         if (!payload || !payload.data) {
-            setCouponApplied(false)
-            setCouponDiscount(0)
-            setCouponServerTotal(null)
-            setCouponError(payload?.message ?? 'Invalid coupon code for this event')
-            setCouponApplying(false)
+            dispatch({
+                type: 'COUPON_APPLY_ERROR',
+                payload: {error: payload?.message ?? 'Invalid coupon code for this event'},
+            })
             return
         }
 
-        setCouponApplied(true)
-        setCouponDiscount(Number(payload.data.discount ?? 0))
-        setCouponServerTotal(Number(payload.data.total))
-        setCouponError(null)
-        setCouponApplying(false)
+        dispatch({
+            type: 'COUPON_APPLY_SUCCESS',
+            payload: {
+                discount: Number(payload.data.discount ?? 0),
+                total: Number(payload.data.total),
+            },
+        })
     }, [coupon, id, totalWithFee])
 
     const clearCoupon = useCallback(() => {
-        setCouponApplied(false)
-        setCouponDiscount(0)
-        setCouponServerTotal(null)
-        setCouponError(null)
+        dispatch({type: 'COUPON_CLEAR'})
     }, [])
 
     // If totals (tickets/fees/gateway) change after applying a coupon, the coupon needs re-apply.
@@ -366,7 +510,7 @@ export default function CheckoutPage() {
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Full
                                             name</label>
-                                        <input type="text" value={fullname}
+                                        <input type="text" value={purchaser.fullname}
                                                onChange={(e) => onChangeFullname(e.target.value)} required
                                                className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-teal focus:duration-200 focus:ring-offset-0 shadow-sm dark:border dark:border-white/50 focus:border-none"/>
                                         {purchaserErrors.fullname &&
@@ -375,7 +519,7 @@ export default function CheckoutPage() {
                                     <div>
                                         <label
                                             className="block text-sm font-medium text-slate-700 dark:text-slate-200">Email</label>
-                                        <input type="email" value={email}
+                                        <input type="email" value={purchaser.email}
                                                onChange={(e) => onChangeEmail(e.target.value)} required
                                                className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-teal focus:duration-200 focus:ring-offset-0 shadow-sm dark:border dark:border-white/50 focus:border-none"/>
                                         {purchaserErrors.email &&
@@ -384,7 +528,7 @@ export default function CheckoutPage() {
                                     <div>
                                         <label
                                             className="block text-sm font-medium text-slate-700 dark:text-slate-200">Phone</label>
-                                        <input type="tel" value={phone} onChange={(e) => onChangePhone(e.target.value)}
+                                        <input type="tel" value={purchaser.phone} onChange={(e) => onChangePhone(e.target.value)}
                                                className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-teal focus:duration-200 focus:ring-offset-0 shadow-sm dark:border dark:border-white/50 focus:border-none"/>
                                         {purchaserErrors.phone &&
                                           <div className="mt-1 text-sm text-rose-500">{purchaserErrors.phone}</div>}
@@ -399,19 +543,13 @@ export default function CheckoutPage() {
                                         <label
                                             className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300">
                                             <input type="radio" name="sendToSomeone" checked={!sendToSomeoneElse}
-                                                   onChange={() => {
-                                                       setSendToSomeoneElse(false);
-                                                       setTouchedAny(true);
-                                                   }}/>
+                                                   onChange={() => dispatch({type: 'SET_SEND_TO_SOMEONE_ELSE', value: false})}/>
                                             <span className="text-sm">No</span>
                                         </label>
                                         <label
                                             className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300">
                                             <input type="radio" name="sendToSomeone" checked={sendToSomeoneElse}
-                                                   onChange={() => {
-                                                       setSendToSomeoneElse(true);
-                                                       setTouchedAny(true);
-                                                   }}/>
+                                                   onChange={() => dispatch({type: 'SET_SEND_TO_SOMEONE_ELSE', value: true})}/>
                                             <span className="text-sm">Yes</span>
                                         </label>
                                     </div>
@@ -486,7 +624,7 @@ export default function CheckoutPage() {
                                                     className="flex items-center justify-between gap-3 p-3 rounded-lg bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10">
                                                  <div className="flex items-center gap-3 capitalize">
                                                      <input type="radio" name="gateway" checked={gateway === g}
-                                                            onChange={() => setGateway(g)}/>
+                                                            onChange={() => dispatch({type: 'SET_GATEWAY', value: g})}/>
                                                      <div
                                                          className="text-sm text-slate-700 dark:text-slate-200">{g === 'chainpal' ? 'ChainPal (crypto)' : g}</div>
                                                  </div>
@@ -504,7 +642,7 @@ export default function CheckoutPage() {
                                         <input
                                             value={coupon}
                                             onChange={(e) => {
-                                                setCoupon(e.target.value)
+                                                dispatch({type: 'SET_COUPON_CODE', value: e.target.value})
                                                 if (couponApplied) clearCoupon()
                                             }}
                                             className="w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-teal dark:border dark:border-white/50 focus:border-none"
