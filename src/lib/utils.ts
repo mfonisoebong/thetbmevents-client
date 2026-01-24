@@ -100,6 +100,11 @@ export function getGatewayFee(amount : number, gateway: PaymentGateway): number 
     return 0;
 }
 
+export function calculatePlatformFee(amount: number): number {
+    const feePercentage = 0.03;
+    return amount * feePercentage;
+}
+
 export function classNames(...classes : string[]) {
     return classes.filter(Boolean).join(' ')
 }

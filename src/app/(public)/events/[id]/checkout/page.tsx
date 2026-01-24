@@ -6,7 +6,7 @@ import {useTicketContext} from '../../../../../contexts/TicketContext'
 import Stepper from '../../../../../components/checkout/Stepper'
 import Summary from '../../../../../components/checkout/Summary'
 import {validateEmail, validatePhone} from '../../../../../hooks/useFormValidation'
-import {getGatewayFee} from "@lib/utils";
+import {calculatePlatformFee, currencySymbol, getGatewayFee, roundToTwo} from "@lib/utils";
 import {PaymentGateway} from "@lib/types";
 
 type TicketInstanceLocal = { id: string; name?: string; price?: number; currency?: string }
@@ -47,11 +47,25 @@ export default function CheckoutPage() {
     const [gateway, setGateway] = useState<PaymentGateway | null>(null)
 
     const subtotal = useMemo(() => ticketInstances.reduce((s, t) => s + (t.price ?? 0), 0), [ticketInstances])
+    const moneySymbol = useMemo(() => currencySymbol(ticketInstances[0]?.currency), [ticketInstances])
 
+    // NOTE: placeholder demo coupon. The important part is that discount is applied LAST.
     const couponDiscount = couponApplied ? 1000 : 0
 
-    const feeForSelected = gateway ? getGatewayFee(Math.max(0, subtotal - couponDiscount), gateway) : 0
-    const totalWithFee = Math.max(0, subtotal - couponDiscount) + feeForSelected
+    const platformFee = useMemo(() => roundToTwo(calculatePlatformFee(subtotal)), [subtotal])
+
+    // Gateway fee is computed on (subtotal + platformFee), BEFORE discount is applied.
+    const feeForSelected = useMemo(() => {
+        if (!gateway) return 0
+        const base = Math.max(0, subtotal + platformFee)
+        return roundToTwo(getGatewayFee(base, gateway))
+    }, [gateway, subtotal, platformFee])
+
+    const totalWithFee = useMemo(() => {
+        const base = subtotal + platformFee + feeForSelected
+        const discounted = base - (couponApplied ? couponDiscount : 0)
+        return roundToTwo(Math.max(0, discounted))
+    }, [subtotal, platformFee, feeForSelected, couponApplied, couponDiscount])
 
     useEffect(() => {
         setFullname(customer.fullname)
@@ -67,7 +81,7 @@ export default function CheckoutPage() {
             }))
             setLocalAttendees(nextAttendees)
         }
-    }, [customer, attendees]);
+    }, [customer, attendees, ticketInstances.length]);
 
     // validation effect (existing) kept — run on relevant deps
     useEffect(() => {
@@ -383,25 +397,25 @@ export default function CheckoutPage() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    {(['paystack', 'flutterwave', 'chainpal'] as PaymentGateway[]).map((g) => {
-                                        const fee = getGatewayFee(Math.max(0, subtotal - couponDiscount), g)
-                                        return (
-                                            <label key={g}
-                                                   className="flex items-center justify-between gap-3 p-3 rounded-lg bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10">
-                                                <div className="flex items-center gap-3 capitalize">
-                                                    <input type="radio" name="gateway" checked={gateway === g}
-                                                           onChange={() => setGateway(g)}/>
-                                                    <div
-                                                        className="text-sm text-slate-700 dark:text-slate-200">{g === 'chainpal' ? 'ChainPal (crypto)' : g}</div>
-                                                </div>
-                                                <div
-                                                    className="text-sm text-slate-600 dark:text-slate-300">{fee === 0 ? 'Free' : `₦${fee.toLocaleString()}`}</div>
-                                            </label>
-                                        )
-                                    })}
-                                </div>
+                                    {(['paystack', 'flutterwave', /*'chainpal'*/] as PaymentGateway[]).map((g) => {
+                                        const fee = roundToTwo(getGatewayFee(Math.max(0, subtotal + platformFee), g))
+                                         return (
+                                             <label key={g}
+                                                    className="flex items-center justify-between gap-3 p-3 rounded-lg bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10">
+                                                 <div className="flex items-center gap-3 capitalize">
+                                                     <input type="radio" name="gateway" checked={gateway === g}
+                                                            onChange={() => setGateway(g)}/>
+                                                     <div
+                                                         className="text-sm text-slate-700 dark:text-slate-200">{g === 'chainpal' ? 'ChainPal (crypto)' : g}</div>
+                                                 </div>
+                                                 <div
+                                                     className="text-sm text-slate-600 dark:text-slate-300">{fee === 0 ? 'Free' : `${moneySymbol}${fee.toLocaleString()}`}</div>
+                                             </label>
+                                         )
+                                     })}
+                                 </div>
 
-                                <div className="mt-4">
+                                <div className="mt-8">
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Coupon
                                         code</label>
                                     <div className="mt-2 flex gap-2">
@@ -418,7 +432,7 @@ export default function CheckoutPage() {
                                     </div>
                                     {couponApplied &&
                                       <div className="mt-2 text-sm text-slate-600 dark:text-slate-300">Coupon applied:
-                                        ₦1,000 discount</div>}
+                                        {moneySymbol}{couponDiscount.toLocaleString()} discount</div>}
                                 </div>
 
                             </section>
@@ -435,8 +449,9 @@ export default function CheckoutPage() {
                         buttonText={step === 3 ? 'Pay now' : 'Continue'}
                         couponApplied={couponApplied}
                         couponAmount={couponDiscount}
+                        platformFee={platformFee}
                         gatewayFee={feeForSelected}
-                        total={Math.max(0, subtotal - couponDiscount) + feeForSelected}
+                        total={totalWithFee}
                         step={step}
                     />
                 </aside>

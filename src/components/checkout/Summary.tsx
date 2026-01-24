@@ -13,6 +13,7 @@ export default function Summary(
         buttonText,
         couponApplied,
         couponAmount = 0,
+        platformFee = 0,
         gatewayFee = 0,
         total = 0,
         step
@@ -23,6 +24,7 @@ export default function Summary(
         buttonText?: string;
         couponApplied?: boolean;
         couponAmount?: number;
+        platformFee?: number;
         gatewayFee?: number;
         total?: number;
         step: number;
@@ -37,7 +39,9 @@ export default function Summary(
         grouped[key].qty += 1
     })
 
+    const moneySymbol = currencySymbol(ticketInstances[0]?.currency)
     const subtotal = ticketInstances.reduce((s, t) => s + (t.price ?? 0), 0)
+    const effectiveDiscount = couponApplied ? couponAmount : 0
 
     return (
         <div
@@ -55,19 +59,27 @@ export default function Summary(
             <div className="mt-4 border-t border-black/10 dark:border-white/10 pt-3 text-sm space-y-2">
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                     <div>Subtotal</div>
-                    <div className="font-medium">{currencySymbol(ticketInstances[0]?.currency)}{subtotal.toLocaleString()}</div>
+                    <div className="font-medium">{moneySymbol}{subtotal.toLocaleString()}</div>
                 </div>
+
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
-                    <div>Fees</div>
-                    <div className="font-medium">{gatewayFee || step === 3 ? `₦${gatewayFee.toLocaleString()}` : 'TBD'}</div>
+                    <div>Platform fee</div>
+                    <div className="font-medium">{moneySymbol}{platformFee.toLocaleString()}</div>
                 </div>
+
+                <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+                    <div>Gateway fee</div>
+                    <div className="font-medium">{gatewayFee || step === 3 ? `${moneySymbol}${gatewayFee.toLocaleString()}` : 'TBD'}</div>
+                </div>
+
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                     <div>Discount</div>
-                    <div className="font-medium">{couponApplied ? `-₦${couponAmount.toLocaleString()}` : '—'}</div>
+                    <div className="font-medium">{couponApplied ? `-${moneySymbol}${effectiveDiscount.toLocaleString()}` : '—'}</div>
                 </div>
+
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-300 pt-2 border-t border-black/10 dark:border-white/10">
                     <div className="text-sm">Total</div>
-                    <div className="text-lg font-semibold">{currencySymbol(ticketInstances[0]?.currency)}{(total ?? Math.max(0, subtotal - (couponApplied ? couponAmount : 0) + (gatewayFee ?? 0))).toLocaleString()}</div>
+                    <div className="text-lg font-semibold">{moneySymbol}{(total ?? Math.max(0, subtotal + platformFee + (gatewayFee ?? 0) - effectiveDiscount)).toLocaleString()}</div>
                 </div>
             </div>
 
