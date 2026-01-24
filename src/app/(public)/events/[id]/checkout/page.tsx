@@ -42,9 +42,9 @@ type CheckoutState = {
     attendeeErrors: AttendeeErrors
     coupon: {
         code: string
+        applied_coupon_code: string | null
         applied: boolean
         discount: number
-        serverTotal: number | null
         applying: boolean
         error: string | null
     }
@@ -85,9 +85,9 @@ function makeInitialState(ticketCount: number): CheckoutState {
         attendeeErrors: Array.from({length: ticketCount}, () => ({})),
         coupon: {
             code: '',
+            applied_coupon_code: null,
             applied: false,
             discount: 0,
-            serverTotal: null,
             applying: false,
             error: null,
         },
@@ -185,8 +185,8 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
                     applied: true,
                     applying: false,
                     error: null,
+                    applied_coupon_code: state.coupon.code,
                     discount: action.payload.discount,
-                    serverTotal: action.payload.total,
                 },
             }
 
@@ -198,8 +198,8 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
                     applied: false,
                     applying: false,
                     discount: 0,
-                    serverTotal: null,
                     error: action.payload.error,
+                    applied_coupon_code: null,
                 },
             }
 
@@ -210,9 +210,9 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
                     ...state.coupon,
                     applied: false,
                     discount: 0,
-                    serverTotal: null,
                     error: null,
                     applying: false,
+                    applied_coupon_code: null,
                 },
             }
 
@@ -252,9 +252,9 @@ export default function CheckoutPage() {
     const {purchaser, sendToSomeoneElse, attendeeErrors, purchaserErrors, touchedAny, gateway} = state
     const {
         code: coupon,
+        applied_coupon_code,
         applied: couponApplied,
         discount: couponDiscount,
-        serverTotal: couponServerTotal,
         applying: couponApplying,
         error: couponError
     } = state.coupon
@@ -265,26 +265,15 @@ export default function CheckoutPage() {
 
     const platformFee = useMemo(() => roundToTwo(calculatePlatformFee(subtotal)), [subtotal])
 
-    // Gateway fee is computed on (subtotal + platformFee), BEFORE discount is applied.
     const feeForSelected = useMemo(() => {
         if (!gateway) return 0
-        const base = Math.max(0, subtotal + platformFee)
+        const base = Math.max(0, subtotal + platformFee - couponDiscount)
         return roundToTwo(getGatewayFee(base, gateway))
-    }, [gateway, subtotal, platformFee])
-
-    const baseTotalWithFee = useMemo(() => {
-        return roundToTwo(Math.max(0, subtotal + platformFee + feeForSelected))
-    }, [subtotal, platformFee, feeForSelected])
+    }, [gateway, subtotal, platformFee, couponDiscount])
 
     const totalWithFee = useMemo(() => {
-        // If server returns a final total, trust it.
-        if (couponApplied && couponServerTotal != null) {
-            return roundToTwo(Math.max(0, couponServerTotal))
-        }
-
-        const discounted = baseTotalWithFee - (couponApplied ? couponDiscount : 0)
-        return roundToTwo(Math.max(0, discounted))
-    }, [baseTotalWithFee, couponApplied, couponDiscount, couponServerTotal])
+        return roundToTwo(Math.max(0, subtotal + platformFee + feeForSelected - (couponApplied ? couponDiscount : 0)))
+    }, [subtotal, platformFee, feeForSelected, couponApplied, couponDiscount])
 
     const isFreeCheckout = step === 3 && totalWithFee <= 0
 
@@ -464,12 +453,21 @@ export default function CheckoutPage() {
             attendees,
             send_to_different_email: sendToDifferentEmail,
             coupon_applied: couponApplied,
-            coupon_code: coupon
+            coupon_code: applied_coupon_code
         }
 
-        console.log('Processing payment', checkoutData)
-        // TODO: integrate real gateways. For now, route to a confirmation page (placeholder)
-        // router.push(`/events/${id}/checkout/success`)
+        // @ts-ignore
+        if (!sendToDifferentEmail) delete checkoutData.attendees
+        // @ts-ignore
+        if (isFreeCheckout) delete checkoutData.gateway
+        // @ts-ignore
+        if (!couponApplied) delete checkoutData.coupon_code
+
+        const response = await HTTP<any, any>({url: getEndpoint('/checkout'), method: 'post', data: checkoutData});
+
+        if (response.ok) {
+            window.location.href = response.data?.data?.link ||response.data?.data?.authorization_url;
+        }
     }
 
     const summaryDisabled = !touchedAny || !isFormValid() || (step === 3 && !isFreeCheckout && !gateway)
@@ -488,8 +486,7 @@ export default function CheckoutPage() {
             data: {
                 coupon_code: code,
                 event_id: id,
-                // send totalWithFee as amount as requested
-                amount: totalWithFee,
+                amount: subtotal + platformFee,
             },
         })
 
@@ -521,13 +518,6 @@ export default function CheckoutPage() {
     const clearCoupon = useCallback(() => {
         dispatch({type: 'COUPON_CLEAR'})
     }, [])
-
-    // If totals (tickets/fees/gateway) change after applying a coupon, the coupon needs re-apply.
-    useEffect(() => {
-        if (!couponApplied) return
-        clearCoupon()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [baseTotalWithFee])
 
     return (
         <div className="w-full max-w-7xl mx-auto px-6 py-12">
@@ -668,7 +658,7 @@ export default function CheckoutPage() {
 
                                 <div className="space-y-3">
                                     {(['paystack', 'flutterwave', /*'chainpal'*/] as PaymentGateway[]).map((g) => {
-                                        const fee = roundToTwo(getGatewayFee(Math.max(0, subtotal + platformFee), g))
+                                        const fee = roundToTwo(getGatewayFee(Math.max(0, subtotal + platformFee - couponDiscount), g))
                                         return (
                                             <label key={g}
                                                    className="flex items-center justify-between gap-3 p-3 rounded-lg bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10">
