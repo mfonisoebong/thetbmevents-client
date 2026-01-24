@@ -5,6 +5,8 @@ import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
 import LoadingSpinner from '@components/LoadingSpinner'
 import SuccessCheckIcon from '@components/SuccessCheckIcon'
+import HTTP from "@lib/HTTP";
+import {getEndpoint} from "@lib/utils";
 
 type Status = 'loading' | 'success' | 'error'
 
@@ -15,14 +17,16 @@ export default function PaymentCompletePage() {
     const [status, setStatus] = useState<Status>('loading')
 
     useEffect(() => {
-        // TODO: verify transaction reference with backend.
-        // For now, always transition to success once the page has loaded.
-        if (!reference) {
-            setStatus('error')
-            return
-        }
+        (async () => {
+            let response = await HTTP({url: getEndpoint(`/manual-verify-payment/${reference}`), method: 'GET'})
 
-        setStatus('success')
+            if (response.ok) {
+                setStatus('success')
+            } else {
+                setStatus('error')
+            }
+
+        })()
     }, [reference])
 
     return (
@@ -50,8 +54,7 @@ export default function PaymentCompletePage() {
 
                         <h1 className="text-xl font-semibold text-text-light dark:text-text-dark text-center">Payment successful</h1>
                         <p className="mt-2 text-text-muted-light dark:text-text-muted-dark text-center">
-                            Your payment was successful. Reference:{' '}
-                            <span className="font-medium text-text-light dark:text-text-dark">{reference}</span>
+                            Your payment was successful. Please check your email for the ticket and event details.
                         </p>
 
                         <div className="mt-6 flex flex-wrap gap-3 justify-center">
