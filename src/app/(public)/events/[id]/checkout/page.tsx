@@ -242,6 +242,7 @@ export default function CheckoutPage() {
         setSendToDifferentEmail
     } = useTicketContext()
 
+    // todo: standadize like event details
     const id = (params as any)?.id as string | undefined
 
     const stepParam = searchParams?.get('step') ?? '2'
