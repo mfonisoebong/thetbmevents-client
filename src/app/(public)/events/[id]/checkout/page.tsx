@@ -6,7 +6,14 @@ import {useTicketContext} from '../../../../../contexts/TicketContext'
 import Stepper from '../../../../../components/checkout/Stepper'
 import Summary from '../../../../../components/checkout/Summary'
 import {validateEmail, validatePhone} from '../../../../../hooks/useFormValidation'
-import {calculatePlatformFee, currencySymbol, getEndpoint, getErrorMessage, getGatewayFee, roundToTwo} from "@lib/utils";
+import {
+    calculatePlatformFee, cn,
+    currencySymbol,
+    getEndpoint,
+    getErrorMessage,
+    getGatewayFee,
+    roundToTwo
+} from "@lib/utils";
 import {ApiData, PaymentGateway} from "@lib/types";
 import HTTP from "@lib/HTTP";
 
@@ -235,7 +242,14 @@ export default function CheckoutPage() {
     const [state, dispatch] = useReducer(checkoutReducer, ticketInstances.length, makeInitialState)
 
     const {purchaser, sendToSomeoneElse, attendeeErrors, purchaserErrors, touchedAny, gateway} = state
-    const {code: coupon, applied: couponApplied, discount: couponDiscount, serverTotal: couponServerTotal, applying: couponApplying, error: couponError} = state.coupon
+    const {
+        code: coupon,
+        applied: couponApplied,
+        discount: couponDiscount,
+        serverTotal: couponServerTotal,
+        applying: couponApplying,
+        error: couponError
+    } = state.coupon
     const localAttendees = state.attendees
 
     const subtotal = useMemo(() => ticketInstances.reduce((s, t) => s + (t.price ?? 0), 0), [ticketInstances])
@@ -263,6 +277,8 @@ export default function CheckoutPage() {
         const discounted = baseTotalWithFee - (couponApplied ? couponDiscount : 0)
         return roundToTwo(Math.max(0, discounted))
     }, [baseTotalWithFee, couponApplied, couponDiscount, couponServerTotal])
+
+    const isFreeCheckout = step === 3 && totalWithFee <= 0
 
     // Keep reducer state synced with TicketContext.
     useEffect(() => {
@@ -316,7 +332,6 @@ export default function CheckoutPage() {
 
         dispatch({type: 'SET_ERRORS', payload: {purchaserErrors: pErrs, attendeeErrors: aErrs}})
 
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [purchaser.fullname, purchaser.email, purchaser.phone, localAttendees, sendToSomeoneElse])
 
     function onChangeFullname(v: string) {
@@ -427,7 +442,8 @@ export default function CheckoutPage() {
             return
         }
 
-        if (!gateway) return
+        // If the order is free, no gateway is needed.
+        if (!isFreeCheckout && !gateway) return
 
         // For now, simulate payment and navigate to a success page or show result
         console.log('Processing payment', {gateway, totalWithFee})
@@ -435,7 +451,7 @@ export default function CheckoutPage() {
         router.push(`/events/${id}/checkout/success`)
     }
 
-    const summaryDisabled = !touchedAny || !isFormValid() || (step === 3 && !gateway)
+    const summaryDisabled = !touchedAny || !isFormValid() || (step === 3 && !isFreeCheckout && !gateway)
 
     const applyCoupon = useCallback(async () => {
         const code = coupon.trim()
@@ -528,7 +544,8 @@ export default function CheckoutPage() {
                                     <div>
                                         <label
                                             className="block text-sm font-medium text-slate-700 dark:text-slate-200">Phone</label>
-                                        <input type="tel" value={purchaser.phone} onChange={(e) => onChangePhone(e.target.value)}
+                                        <input type="tel" value={purchaser.phone}
+                                               onChange={(e) => onChangePhone(e.target.value)}
                                                className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-teal focus:duration-200 focus:ring-offset-0 shadow-sm dark:border dark:border-white/50 focus:border-none"/>
                                         {purchaserErrors.phone &&
                                           <div className="mt-1 text-sm text-rose-500">{purchaserErrors.phone}</div>}
@@ -543,13 +560,19 @@ export default function CheckoutPage() {
                                         <label
                                             className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300">
                                             <input type="radio" name="sendToSomeone" checked={!sendToSomeoneElse}
-                                                   onChange={() => dispatch({type: 'SET_SEND_TO_SOMEONE_ELSE', value: false})}/>
+                                                   onChange={() => dispatch({
+                                                       type: 'SET_SEND_TO_SOMEONE_ELSE',
+                                                       value: false
+                                                   })}/>
                                             <span className="text-sm">No</span>
                                         </label>
                                         <label
                                             className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300">
                                             <input type="radio" name="sendToSomeone" checked={sendToSomeoneElse}
-                                                   onChange={() => dispatch({type: 'SET_SEND_TO_SOMEONE_ELSE', value: true})}/>
+                                                   onChange={() => dispatch({
+                                                       type: 'SET_SEND_TO_SOMEONE_ELSE',
+                                                       value: true
+                                                   })}/>
                                             <span className="text-sm">Yes</span>
                                         </label>
                                     </div>
@@ -602,7 +625,7 @@ export default function CheckoutPage() {
                             </section>
                         )}
 
-                        {step === 3 && (
+                        {step === 3 && !isFreeCheckout && (
                             <section
                                 className={`bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 rounded-2xl p-6`}>
                                 <div className="flex items-center gap-3 mb-4">
@@ -619,21 +642,21 @@ export default function CheckoutPage() {
                                 <div className="space-y-3">
                                     {(['paystack', 'flutterwave', /*'chainpal'*/] as PaymentGateway[]).map((g) => {
                                         const fee = roundToTwo(getGatewayFee(Math.max(0, subtotal + platformFee), g))
-                                         return (
-                                             <label key={g}
-                                                    className="flex items-center justify-between gap-3 p-3 rounded-lg bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10">
-                                                 <div className="flex items-center gap-3 capitalize">
-                                                     <input type="radio" name="gateway" checked={gateway === g}
-                                                            onChange={() => dispatch({type: 'SET_GATEWAY', value: g})}/>
-                                                     <div
-                                                         className="text-sm text-slate-700 dark:text-slate-200">{g === 'chainpal' ? 'ChainPal (crypto)' : g}</div>
-                                                 </div>
-                                                 <div
-                                                     className="text-sm text-slate-600 dark:text-slate-300">{fee === 0 ? 'Free' : `${moneySymbol}${fee.toLocaleString()}`}</div>
-                                             </label>
-                                         )
-                                     })}
-                                 </div>
+                                        return (
+                                            <label key={g}
+                                                   className="flex items-center justify-between gap-3 p-3 rounded-lg bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10">
+                                                <div className="flex items-center gap-3 capitalize">
+                                                    <input type="radio" name="gateway" checked={gateway === g}
+                                                           onChange={() => dispatch({type: 'SET_GATEWAY', value: g})}/>
+                                                    <div
+                                                        className="text-sm text-slate-700 dark:text-slate-200">{g === 'chainpal' ? 'ChainPal (crypto)' : g}</div>
+                                                </div>
+                                                <div
+                                                    className="text-sm text-slate-600 dark:text-slate-300">{fee === 0 ? 'Free' : `${moneySymbol}${fee.toLocaleString()}`}</div>
+                                            </label>
+                                        )
+                                    })}
+                                </div>
 
                                 <div className="mt-8">
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Coupon
@@ -663,7 +686,8 @@ export default function CheckoutPage() {
                                     )}
 
                                     {couponApplied && !couponError && (
-                                        <div className="mt-2 text-sm text-slate-600 dark:text-slate-300 flex items-center justify-between gap-3">
+                                        <div
+                                            className="mt-2 text-sm text-slate-600 dark:text-slate-300 flex items-center justify-between gap-3">
                                             <div>
                                                 Coupon applied: {moneySymbol}{couponDiscount.toLocaleString()} discount
                                             </div>
@@ -684,12 +708,12 @@ export default function CheckoutPage() {
                     </form>
                 </main>
 
-                <aside className="lg:col-span-1">
+                <aside className={cn("lg:col-span-1", step === 3 ? isFreeCheckout ? 'lg:col-span-3' : '' : 'lg:sticky lg:top-20')}>
                     <Summary
                         ticketInstances={ticketInstances}
                         onContinueAction={step === 3 ? onPayNow : goToStep3}
                         disabled={summaryDisabled || couponApplying}
-                        buttonText={step === 3 ? 'Pay now' : 'Continue'}
+                        buttonText={step === 3 ? (isFreeCheckout ? 'Get tickets' : 'Pay now') : 'Continue'}
                         couponApplied={couponApplied}
                         couponAmount={couponDiscount}
                         platformFee={platformFee}

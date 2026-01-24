@@ -16,8 +16,8 @@ async function getEvent(id: string): Promise<EventItem | null> {
   try {
     const res = await fetch(getEndpoint(`/events/${encodeURIComponent(id)}`), {
       method: 'GET',
-      // Server component: let Next.js cache/dedupe within a request; adjust as needed.
-      next: { revalidate: 60 },
+      // Server component: let Next.js cache within a request; 0 = no caching.
+      next: { revalidate: 0 },
     })
 
     if (!res.ok) return null
