@@ -3,7 +3,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import SidebarLayout from '../../../../components/layouts/SidebarLayout'
-import { cn, currencySymbol, formatDate, formatNumber, getEndpoint, getErrorMessage } from '@lib/utils'
+import {cn, currencySymbol, formatDate, formatNumber, getEndpoint, getErrorMessage, normalizeStatus} from '@lib/utils'
 import {
   ArrowTrendingUpIcon,
   CalendarDaysIcon,
@@ -16,6 +16,7 @@ import GlassCard from '../../../../components/GlassCard'
 import OrganizerDashboardShimmer from '../../../../components/dashboard/OrganizerDashboardShimmer'
 import HTTP from '@lib/HTTP'
 import type { ApiData, OrganizerEvent } from '@lib/types'
+import {EventStatus} from "@lib/eventStats";
 
 type QuickMetric = {
   label: string
@@ -24,16 +25,6 @@ type QuickMetric = {
   icon: React.ReactNode
 }
 
-type EventStatus = 'Ended' | 'Draft' | 'Sold Out' | 'Published' | (string & {})
-
-function normalizeStatus(status?: string): EventStatus {
-  const s = (status ?? '').toLowerCase().trim()
-  if (s === 'published') return 'Published'
-  if (s === 'draft') return 'Draft'
-  if (s === 'sold out' || s === 'sold_out' || s === 'soldout') return 'Sold Out'
-  if (s === 'ended' || s === 'past') return 'Ended'
-  return (status as any) ?? 'Published'
-}
 
 function statusPill(status: EventStatus) {
   if (status === 'Published') return 'bg-emerald-100 text-emerald-800'

@@ -7,7 +7,7 @@ import SidebarLayout from '../../../../../components/layouts/SidebarLayout'
 import { events as mockEvents } from '../../../../../lib/mockEvents'
 import type { EventItem, Ticket } from '@lib/types'
 import { cn, currencySymbol, formatDate, formatNumber } from '@lib/utils'
-import { computeEventStats, eventStatus } from '@lib/eventStats'
+import {computeEventStats, EventStatus} from '@lib/eventStats'
 import { exportToCsv } from '@lib/csv'
 import { useTableSearch } from "../../../../../hooks/useTableSearch"
 import DataTable from "../../../../../components/DataTable";
@@ -100,7 +100,7 @@ export default function OrganizerEventDetailsPage() {
   const event = useMemo(() => (id ? (mockEvents.find((e) => e.id === id) as EventItem | undefined) : undefined), [id])
 
   const stats = useMemo(() => (event ? computeEventStats(event) : null), [event])
-  const status = useMemo(() => (event && stats ? eventStatus(event, stats) : null), [event, stats])
+  const status = "Published" as EventStatus
 
   const currency = event?.tickets?.[0]?.currency ?? 'NGN'
 

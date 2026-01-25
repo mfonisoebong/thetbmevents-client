@@ -206,3 +206,12 @@ export function getErrorMessage(err: any): string {
         'Something went wrong. Please try again.'
     );
 }
+
+export function normalizeStatus(status?: string): EventStatus {
+    const s = (status ?? '').toLowerCase().trim()
+    if (s === 'published') return 'Published'
+    if (s === 'draft') return 'Draft'
+    if (s === 'sold out' || s === 'sold_out' || s === 'soldout') return 'Sold Out'
+    if (s === 'ended' || s === 'past') return 'Ended'
+    return (status as any) ?? 'Published'
+}

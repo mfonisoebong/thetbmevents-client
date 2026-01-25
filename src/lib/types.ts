@@ -77,3 +77,5 @@ export interface ApiData<T> {
 }
 
 export type Role = "admin" | "organizer" | (string & {});
+
+type EventStatus = 'Ended' | 'Draft' | 'Sold Out' | 'Published' | (string & {})
