@@ -118,7 +118,7 @@ export function formatNumber(num: number) {
 }
 
 export function setCookie(name: string, value: string) {
-    document.cookie = `${name}=${value}; domain=${getTLD()}; path=/;`;
+    document.cookie = `${name}=${value}; domain=${getTLD()}; path=/; SameSite=Strict; secure`;
 }
 
 export function getTLD() {
