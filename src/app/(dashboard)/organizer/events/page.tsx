@@ -10,6 +10,7 @@ import HTTP from '@lib/HTTP'
 import type { ApiData, OrganizerEvent } from '@lib/types'
 import OrganizerEventsListShimmer from '../../../../components/dashboard/OrganizerEventsListShimmer'
 import GlassCard from '../../../../components/GlassCard'
+import { computeEventStatsFromApi } from '@lib/eventStats'
 
 export default function OrganizerEventsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -164,10 +165,7 @@ export default function OrganizerEventsPage() {
             const status = normalizeStatus(event.status)
             const detailsLink = `/organizer/events/${event.id}`
 
-            const totalSold = Number(event.total_tickets_sold ?? 0)
-            const totalRevenue = Number(event.total_revenue ?? 0)
-            const totalAvailable = (event.tickets ?? []).reduce((s, t) => s + Number(t.quantity ?? 0), 0)
-            const hasUnlimited = (event.tickets ?? []).some((t) => Number(t.quantity ?? 0) === 0)
+            const { totalSold, totalRevenue, totalAvailable, hasUnlimited } = computeEventStatsFromApi(event)
 
             return (
               <article key={event.id} className="bg-white/10 dark:bg-slate-900/40 backdrop-blur-sm border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">

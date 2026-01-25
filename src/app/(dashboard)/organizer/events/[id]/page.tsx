@@ -1,17 +1,19 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import SidebarLayout from '../../../../../components/layouts/SidebarLayout'
-import { events as mockEvents } from '../../../../../lib/mockEvents'
-import type { EventItem, Ticket } from '@lib/types'
-import { cn, currencySymbol, formatDate, formatNumber } from '@lib/utils'
-import {computeEventStats, EventStatus} from '@lib/eventStats'
+import type { ApiData, OrganizerEvent, OrdersAndAttendees } from '@lib/types'
+import { cn, currencySymbol, formatDate, formatNumber, getEndpoint, getErrorMessage } from '@lib/utils'
 import { exportToCsv } from '@lib/csv'
-import { useTableSearch } from "../../../../../hooks/useTableSearch"
-import DataTable from "../../../../../components/DataTable";
-import {ClipboardIcon} from "@heroicons/react/24/outline";
+import { useTableSearch } from '../../../../../hooks/useTableSearch'
+import DataTable from '../../../../../components/DataTable'
+import { ClipboardIcon } from '@heroicons/react/24/outline'
+import OrganizerEventDetailsShimmer from '../../../../../components/dashboard/OrganizerEventDetailsShimmer'
+import GlassCard from '../../../../../components/GlassCard'
+import HTTP from '@lib/HTTP'
+import { computeEventStatsFromApi } from '@lib/eventStats'
 
 type TabKey = 'overview' | 'tickets' | 'orders' | 'attendees' | 'settings'
 
@@ -22,7 +24,7 @@ type OrderRow = {
   items: string
   qty: number
   amount: number
-  status: 'Paid' | 'Refunded'
+  status: string
   date: string
 }
 
@@ -35,27 +37,15 @@ type AttendeeRow = {
   checkedIn: boolean
 }
 
-function hashStringToNumber(s: string) {
-  let h = 0
+type EventStatus = 'Ended' | 'Draft' | 'Sold Out' | 'Published' | (string & {})
 
-  for (let i = 0; i < s.length; i++) {
-    h = (h << 5) - h + s.charCodeAt(i)
-    h |= 0
-  }
-
-  return Math.abs(h)
-}
-
-const FIRST_NAMES = ['Amina', 'Chidi', 'Zainab', 'Tunde', 'Ife', 'Kelechi', 'Seyi', 'Mariam', 'Emeka', 'Ada']
-const LAST_NAMES = ['Okoro', 'Balogun', 'Ojo', 'Ibrahim', 'Eze', 'Adeniyi', 'Nwosu', 'Yakubu', 'Olawale', 'Umeh']
-
-function makePerson(seed: number) {
-  const first = FIRST_NAMES[seed % FIRST_NAMES.length]
-  const last = LAST_NAMES[(seed >> 3) % LAST_NAMES.length]
-  const name = `${first} ${last}`
-  const email = `${first}.${last}.${seed % 97}@example.com`.toLowerCase()
-
-  return { name, email }
+function normalizeStatus(status?: string): EventStatus {
+  const s = (status ?? '').toLowerCase().trim()
+  if (s === 'published') return 'Published'
+  if (s === 'draft') return 'Draft'
+  if (s === 'sold out' || s === 'sold_out' || s === 'soldout') return 'Sold Out'
+  if (s === 'ended' || s === 'past') return 'Ended'
+  return (status as any) ?? 'Published'
 }
 
 function pillClass(variant: 'success' | 'warning' | 'danger' | 'neutral') {
@@ -68,7 +58,7 @@ function pillClass(variant: 'success' | 'warning' | 'danger' | 'neutral') {
   return 'bg-slate-100 text-slate-800'
 }
 
-function GlassCard({ title, value, sub }: { title: string; value: React.ReactNode; sub?: React.ReactNode }) {
+function StatCard({ title, value, sub }: { title: string; value: React.ReactNode; sub?: React.ReactNode }) {
   return (
     <div className="rounded-2xl bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 backdrop-blur-sm p-5 shadow-sm">
       <div className="text-sm text-text-muted-light dark:text-text-muted-dark">{title}</div>
@@ -85,7 +75,6 @@ export default function OrganizerEventDetailsPage() {
 
   const id = useMemo(() => {
     const raw = routeParams?.id
-
     return Array.isArray(raw) ? raw[0] : raw
   }, [routeParams?.id])
 
@@ -97,91 +86,124 @@ export default function OrganizerEventDetailsPage() {
 
   const tab = (searchParams.get('tab') as TabKey) || 'overview'
 
-  const event = useMemo(() => (id ? (mockEvents.find((e) => e.id === id) as EventItem | undefined) : undefined), [id])
+  const [event, setEvent] = useState<OrganizerEvent | null>(null)
+  const [ordersAndAttendees, setOrdersAndAttendees] = useState<OrdersAndAttendees | null>(null)
 
-  const stats = useMemo(() => (event ? computeEventStats(event) : null), [event])
-  const status = "Published" as EventStatus
+  const [loadingOverview, setLoadingOverview] = useState(true)
+  const [loadingOrders, setLoadingOrders] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [reloadToken, setReloadToken] = useState(0)
 
-  const currency = event?.tickets?.[0]?.currency ?? 'NGN'
+  const loadOverview = useCallback(async () => {
+    if (!id) return
+
+    setLoadingOverview(true)
+    setError(null)
+
+    const resp = await HTTP<ApiData<OrganizerEvent[]>, undefined>({
+      url: getEndpoint('/dashboard/organizer/overview'),
+      method: 'get',
+    })
+
+    if (!resp.ok) {
+      setEvent(null)
+      setError(getErrorMessage(resp.error))
+      setLoadingOverview(false)
+      return
+    }
+
+    const list = resp.data?.data ?? []
+    const found = Array.isArray(list) ? list.find((e) => String(e.id) === String(id)) ?? null : null
+
+    setEvent(found)
+    setLoadingOverview(false)
+  }, [id])
+
+  const loadOrdersAndAttendees = useCallback(async () => {
+    if (!id) return
+
+    setLoadingOrders(true)
+
+    const resp = await HTTP<ApiData<OrdersAndAttendees>, undefined>({
+      url: getEndpoint(`/dashboard/organizer/event-orders-and-attendees/${encodeURIComponent(id)}`),
+      method: 'get',
+    })
+
+    if (!resp.ok) {
+      setOrdersAndAttendees(null)
+      setError(getErrorMessage(resp.error))
+      setLoadingOrders(false)
+      return
+    }
+
+    setOrdersAndAttendees(resp.data?.data ?? null)
+    setLoadingOrders(false)
+  }, [id])
+
+  useEffect(() => {
+    // reset between event id changes or retries
+    setEvent(null)
+    setOrdersAndAttendees(null)
+    setError(null)
+    setLoadingOverview(true)
+    setLoadingOrders(true)
+
+    loadOverview()
+    loadOrdersAndAttendees()
+  }, [loadOverview, loadOrdersAndAttendees, reloadToken])
+
+  const loading = loadingOverview || loadingOrders
+
+  const currency = useMemo(() => {
+    const firstTicket = event?.tickets?.[0]
+    return firstTicket?.currency ?? 'NGN'
+  }, [event])
+
+  const status = useMemo(() => normalizeStatus(event?.status), [event])
+
+  const stats = useMemo(() => {
+    if (!event) return null
+    return computeEventStatsFromApi(event)
+  }, [event])
 
   const { attendees, orders, topCustomers } = useMemo(() => {
-    if (!event) return { attendees: [] as AttendeeRow[], orders: [] as OrderRow[], topCustomers: [] as { name: string; email: string; tickets: number }[] }
+    const api = ordersAndAttendees
 
-    // Deterministic attendee + order generation based on ticket ids
-    const rows: AttendeeRow[] = []
-    const orderMap = new Map<string, { customerName: string; customerEmail: string; qty: number; amount: number; items: string[]; status: 'Paid' | 'Refunded'; date: string }>()
+    const aRows: AttendeeRow[] = (api?.attendees ?? []).map((a) => ({
+      id: String(a.id),
+      name: a.full_name,
+      email: a.email,
+      ticketType: a.ticket_name,
+      orderId: '',
+      checkedIn: Boolean(a.checked_in),
+    }))
 
-    for (const t of event.tickets ?? []) {
-      const seedBase = hashStringToNumber(`${event.id}:${t.id}:attendees`)
-      const soldApprox = (t.quantity === 0 ? (seedBase % 35) + 8 : Math.min(t.quantity, Math.round(((seedBase % 65) / 100) * t.quantity)))
+    const oRows: OrderRow[] = (api?.orders ?? []).map((o) => ({
+      id: o.id,
+      customerName: o.customer?.full_name ?? '',
+      customerEmail: o.customer?.email ?? '',
+      items: (o.items ?? []).join(', '),
+      qty: Number(o.quantity ?? 0),
+      amount: Number(o.amount ?? 0),
+      status: o.status ?? 'Paid',
+      date: '',
+    }))
 
-      for (let i = 0; i < soldApprox; i++) {
-        const seed = seedBase + i * 17
-        const person = makePerson(seed)
-        const orderId = `ORD-${event.id}-${(seed % 9000) + 1000}`
-        const checkedIn = (seed % 5) === 0
-
-        rows.push({
-          id: `${event.id}-${t.id}-${i}`,
-          name: person.name,
-          email: person.email,
-          ticketType: t.name,
-          orderId,
-          checkedIn,
-        })
-
-        // group attendees into orders
-        const existing = orderMap.get(orderId)
-        const status: 'Paid' | 'Refunded' = (seed % 23) === 0 ? 'Refunded' : 'Paid'
-        const orderDate = new Date(new Date(event.date).getTime() - ((seed % 20) + 1) * 24 * 60 * 60 * 1000)
-        const date = orderDate.toISOString().slice(0, 10)
-
-        if (!existing) {
-          orderMap.set(orderId, {
-            customerName: person.name,
-            customerEmail: person.email,
-            qty: 1,
-            amount: (t.price ?? 0),
-            items: [t.name],
-            status,
-            date,
-          })
-        } else {
-          existing.qty += 1
-          existing.amount += (t.price ?? 0)
-          if (!existing.items.includes(t.name)) existing.items.push(t.name)
-        }
-      }
-    }
-
-    const orders: OrderRow[] = Array.from(orderMap.entries())
-      .map(([id, o]) => ({
-        id,
-        customerName: o.customerName,
-        customerEmail: o.customerEmail,
-        qty: o.qty,
-        amount: o.amount,
-        items: o.items.join(', '),
-        status: o.status,
-        date: o.date,
-      }))
-      .sort((a, b) => (a.date < b.date ? 1 : -1))
-
-    // Top customers by tickets bought
     const counts = new Map<string, { name: string; email: string; tickets: number }>()
-    for (const a of rows) {
-      const key = a.email
-      const prev = counts.get(key)
-      if (prev) prev.tickets += 1
-      else counts.set(key, { name: a.name, email: a.email, tickets: 1 })
+    for (const o of (api?.orders ?? [])) {
+      const email = o.customer?.email ?? ''
+      if (!email) continue
+      const prev = counts.get(email)
+      if (prev) prev.tickets += Number(o.quantity ?? 0)
+      else counts.set(email, { name: o.customer?.full_name ?? '', email, tickets: Number(o.quantity ?? 0) })
     }
 
-    const topCustomers = Array.from(counts.values())
+    const top = Array.from(counts.values())
       .sort((a, b) => b.tickets - a.tickets)
       .slice(0, 6)
 
-    return { attendees: rows, orders, topCustomers }
-  }, [event])
+    return { attendees: aRows, orders: oRows, topCustomers: top }
+  }, [ordersAndAttendees])
 
   const attendeeSearch = useTableSearch(attendees, (row, q) => {
     return (
@@ -220,7 +242,39 @@ export default function OrganizerEventDetailsPage() {
     }
   }
 
-  if (!event || !stats || !status) {
+  if (loading) {
+    return (
+      <SidebarLayout>
+        <OrganizerEventDetailsShimmer />
+      </SidebarLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <SidebarLayout>
+        <div className="w-full max-w-7xl mx-auto px-6 py-8">
+          <GlassCard className="p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold text-red-700 dark:text-red-200">Couldn’t load this event</div>
+                <div className="text-sm text-red-700/80 dark:text-red-200/80 mt-1">{error}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReloadToken((t) => t + 1)}
+                className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          </GlassCard>
+        </div>
+      </SidebarLayout>
+    )
+  }
+
+  if (!event || !stats) {
     return (
       <SidebarLayout>
         <div className="w-full max-w-5xl mx-auto px-6 py-8">
@@ -236,7 +290,8 @@ export default function OrganizerEventDetailsPage() {
     )
   }
 
-  const headerStatusClass = status === 'Published' ? pillClass('success') : status === 'Draft' ? pillClass('neutral') : status === 'Sold Out' ? pillClass('danger') : pillClass('warning')
+  const headerStatusClass =
+    status === 'Published' ? pillClass('success') : status === 'Draft' ? pillClass('neutral') : status === 'Sold Out' ? pillClass('danger') : pillClass('warning')
 
   const netRevenue = Math.round(stats.totalRevenue * 0.95)
 
@@ -252,17 +307,23 @@ export default function OrganizerEventDetailsPage() {
                 <span className={cn('px-3 py-1 rounded-full text-sm font-medium', headerStatusClass)}>{status}</span>
               </div>
               <div className="mt-2 text-sm text-text-muted-light dark:text-text-muted-dark">
-                <div>{formatDate(event.date)}{event.time ? ` • ${event.time}` : ''}</div>
+                <div>
+                  {formatDate(event.date)}{event.time ? ` • ${event.time}` : ''}
+                </div>
                 {event.location ? <div className="mt-1">{event.location}</div> : null}
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Link target="_blank" href={`/events/${event.id}`} className="inline-flex items-center rounded-lg bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-white/20">
+              <Link
+                target="_blank"
+                href={`/events/${event.id}`}
+                className="inline-flex items-center rounded-lg bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-white/20"
+              >
                 View public
               </Link>
               <button onClick={onCopyPublicLink} className="inline-flex items-center rounded-lg bg-brand-yellow px-3 py-2 text-sm font-medium text-white">
-                <ClipboardIcon className="w-4 h-4 mr-1"/>
+                <ClipboardIcon className="w-4 h-4 mr-1" />
                 {copied ? 'Copied' : 'Copy link'}
               </button>
             </div>
@@ -304,9 +365,13 @@ export default function OrganizerEventDetailsPage() {
           {tab === 'overview' ? (
             <div className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <GlassCard title="Revenue" value={<>{currencySymbol(currency)}{formatNumber(stats.totalRevenue)}</>} sub="Gross ticket revenue" />
-                <GlassCard title="Net revenue" value={<>{currencySymbol(currency)}{formatNumber(netRevenue)}</>} sub="Estimated after 5% platform fee" />
-                <GlassCard title="Tickets sold" value={<>{formatNumber(stats.totalSold)}</>} sub={stats.hasUnlimited ? 'Unlimited capacity' : `${formatNumber(stats.totalAvailable)} total available`} />
+                <StatCard title="Revenue" value={<>{currencySymbol(currency)}{formatNumber(stats.totalRevenue)}</>} sub="Gross ticket revenue" />
+                <StatCard title="Net revenue" value={<>{currencySymbol(currency)}{formatNumber(netRevenue)}</>} sub="Estimated after 5% platform fee" />
+                <StatCard
+                  title="Tickets sold"
+                  value={<>{formatNumber(stats.totalSold)}</>}
+                  sub={stats.hasUnlimited ? 'Unlimited capacity' : `${formatNumber(stats.totalAvailable)} total available`}
+                />
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -319,7 +384,10 @@ export default function OrganizerEventDetailsPage() {
                       <div className="text-sm text-text-muted-light dark:text-text-muted-dark">No sales yet.</div>
                     ) : (
                       topCustomers.map((c) => (
-                        <div key={c.email} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-3 overflow-hidden">
+                        <div
+                          key={c.email}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-3 overflow-hidden"
+                        >
                           <div>
                             <div className="font-semibold text-gray-900 dark:text-white">{c.name}</div>
                             <div className="text-sm text-text-muted-light dark:text-text-muted-dark">{c.email}</div>
@@ -356,9 +424,7 @@ export default function OrganizerEventDetailsPage() {
             </div>
           ) : null}
 
-          {tab === 'tickets' ? (
-            <TicketsPanel event={event} currency={currency} />
-          ) : null}
+          {tab === 'tickets' ? <TicketsPanel event={event} currency={currency} /> : null}
 
           {tab === 'orders' ? (
             <div className="space-y-4">
@@ -412,24 +478,40 @@ export default function OrganizerEventDetailsPage() {
               <DataTable<OrderRow>
                 columns={[
                   { key: 'id', header: 'Order ID', render: (o) => <span className="font-mono text-xs">{o.id}</span> },
-                  { key: 'customer', header: 'Customer', render: (o) => (
+                  {
+                    key: 'customer',
+                    header: 'Customer',
+                    render: (o) => (
                       <div>
                         <div className="font-semibold">{o.customerName}</div>
                         <div className="text-xs text-text-muted-light dark:text-text-muted-dark">{o.customerEmail}</div>
                       </div>
-                    )
+                    ),
                   },
                   { key: 'items', header: 'Items', render: (o) => <span className="text-sm">{o.items}</span> },
                   { key: 'qty', header: 'Qty', className: 'whitespace-nowrap', render: (o) => formatNumber(o.qty) },
-                  { key: 'amount', header: 'Amount', className: 'whitespace-nowrap', render: (o) => (
-                      <span className="font-semibold">{currencySymbol(currency)}{formatNumber(o.amount)}</span>
-                    )
+                  {
+                    key: 'amount',
+                    header: 'Amount',
+                    className: 'whitespace-nowrap',
+                    render: (o) => <span className="font-semibold">{currencySymbol(currency)}{formatNumber(o.amount)}</span>,
                   },
-                  { key: 'status', header: 'Status', className: 'whitespace-nowrap', render: (o) => (
-                      <span className={cn('px-2 py-1 rounded-full text-xs font-semibold', o.status === 'Paid' ? pillClass('success') : pillClass('warning'))}>{o.status}</span>
-                    )
+                  {
+                    key: 'status',
+                    header: 'Status',
+                    className: 'whitespace-nowrap',
+                    render: (o) => (
+                      <span
+                        className={cn(
+                          'px-2 py-1 rounded-full text-xs font-semibold',
+                          String(o.status).toLowerCase().includes('refund') ? pillClass('warning') : pillClass('success')
+                        )}
+                      >
+                        {o.status}
+                      </span>
+                    ),
                   },
-                  { key: 'date', header: 'Date', className: 'whitespace-nowrap', render: (o) => formatDate(o.date) },
+                  { key: 'date', header: 'Date', className: 'whitespace-nowrap', render: (o) => (o.date ? formatDate(o.date) : '—') },
                 ]}
                 rows={orderSearch.filtered}
                 rowKey={(o) => o.id}
@@ -487,12 +569,16 @@ export default function OrganizerEventDetailsPage() {
                   { key: 'name', header: 'Name', render: (a) => <span className="font-semibold">{a.name}</span> },
                   { key: 'email', header: 'Email', render: (a) => <span className="text-sm">{a.email}</span> },
                   { key: 'ticket', header: 'Ticket type', render: (a) => a.ticketType },
-                  { key: 'order', header: 'Order ID', render: (a) => <span className="font-mono text-xs">{a.orderId}</span> },
-                  { key: 'checkin', header: 'Check-in status', className: 'whitespace-nowrap', render: (a) => (
+                  { key: 'order', header: 'Order ID', render: (a) => (a.orderId ? <span className="font-mono text-xs">{a.orderId}</span> : '—') },
+                  {
+                    key: 'checkin',
+                    header: 'Check-in status',
+                    className: 'whitespace-nowrap',
+                    render: (a) => (
                       <span className={cn('px-2 py-1 rounded-full text-xs font-semibold', a.checkedIn ? pillClass('success') : pillClass('neutral'))}>
                         {a.checkedIn ? 'Checked in' : 'Not checked in'}
                       </span>
-                    )
+                    ),
                   },
                 ]}
                 rows={attendeeSearch.filtered}
@@ -524,12 +610,7 @@ export default function OrganizerEventDetailsPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      // This is a client-only mock. In a real app this calls an API.
-                      const target = (manualOrderId || manualEmail).trim().toLowerCase()
-                      if (!target) return
-                      const match = attendees.find((a) => a.orderId.toLowerCase() === target || a.email.toLowerCase() === target)
-                      if (match) alert(`Checked in: ${match.name}`)
-                      else alert('No attendee found for that Order ID / Email')
+                      alert('This check-in tool is still demo-only. Wire it to your API to persist.')
                     }}
                     className="mt-3 rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white"
                   >
@@ -575,16 +656,15 @@ export default function OrganizerEventDetailsPage() {
             </div>
           ) : null}
 
-          {tab === 'settings' ? (
-            <SettingsPanel event={event} />
-          ) : null}
+          {tab === 'settings' ? <SettingsPanel event={event} /> : null}
         </div>
       </div>
     </SidebarLayout>
   )
 }
 
-function TicketsPanel({ event, currency }: { event: EventItem; currency: string }) {
+function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: string }) {
+  // Tickets now use API-provided sold counts rather than deterministic demo logic.
   const [editEndDateForTicketId, setEditEndDateForTicketId] = useState<string | null>(null)
   const [endSellingDate, setEndSellingDate] = useState('')
   const [deleted, setDeleted] = useState<Record<string, boolean>>({})
@@ -594,12 +674,11 @@ function TicketsPanel({ event, currency }: { event: EventItem; currency: string 
   const statsByTicket = useMemo(() => {
     const map = new Map<string, { sold: number; revenue: number }>()
     for (const t of rows) {
-      const seed = hashStringToNumber(`${event.id}:${t.id}:sold`)
-      const sold = t.quantity === 0 ? (seed % 40) + 6 : Math.min(t.quantity, Math.round(((seed % 70) / 100) * t.quantity))
-      map.set(t.id, { sold, revenue: sold * t.price })
+      const sold = Number((t as any).sold ?? 0)
+      map.set(t.id, { sold, revenue: sold * Number(t.price ?? 0) })
     }
     return map
-  }, [event.id, rows])
+  }, [rows])
 
   return (
     <div className="space-y-4">
@@ -608,7 +687,7 @@ function TicketsPanel({ event, currency }: { event: EventItem; currency: string 
         <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Manage ticket types, sales and selling dates.</p>
       </div>
 
-      <DataTable<Ticket>
+      <DataTable<any>
         columns={[
           {
             key: 'name',
@@ -620,27 +699,41 @@ function TicketsPanel({ event, currency }: { event: EventItem; currency: string 
               </div>
             ),
           },
-          { key: 'price', header: 'Price', className: 'whitespace-nowrap', render: (t) => (
-              <span className="font-semibold">{t.price === 0 ? 'Free' : `${currencySymbol(currency)}${formatNumber(t.price)}`}</span>
-            )
+          {
+            key: 'price',
+            header: 'Price',
+            className: 'whitespace-nowrap',
+            render: (t) => <span className="font-semibold">{t.price === 0 ? 'Free' : `${currencySymbol(currency)}${formatNumber(t.price)}`}</span>,
           },
-          { key: 'sales', header: 'Sales', className: 'whitespace-nowrap', render: (t) => {
-              const s = statsByTicket.get(t.id)!
-              const cap = t.quantity === 0 ? '∞' : formatNumber(t.quantity)
+          {
+            key: 'sales',
+            header: 'Sales',
+            className: 'whitespace-nowrap',
+            render: (t) => {
+              const s = statsByTicket.get(t.id) || { sold: 0, revenue: 0 }
+              const cap = Number(t.quantity) === 0 ? '∞' : formatNumber(t.quantity)
               return (
                 <div>
                   <div className="font-semibold text-gray-900 dark:text-white">{formatNumber(s.sold)} / {cap}</div>
                   <div className="text-xs text-text-muted-light dark:text-text-muted-dark">Revenue: {currencySymbol(currency)}{formatNumber(s.revenue)}</div>
                 </div>
               )
-            }
+            },
           },
-          { key: 'dates', header: 'Selling window', className: 'whitespace-nowrap', render: (t) => (
+          {
+            key: 'dates',
+            header: 'Selling window',
+            className: 'whitespace-nowrap',
+            render: (t) => (
               <div className="text-sm text-text-muted-light dark:text-text-muted-dark">
-                <div>Start: <span className="text-gray-900 dark:text-white font-semibold">{formatDate(t.start_selling_date)}</span></div>
-                <div>End: <span className="text-gray-900 dark:text-white font-semibold">{formatDate(t.end_selling_date)}</span></div>
+                <div>
+                  Start: <span className="text-gray-900 dark:text-white font-semibold">{formatDate(t.start_selling_date)}</span>
+                </div>
+                <div>
+                  End: <span className="text-gray-900 dark:text-white font-semibold">{formatDate(t.end_selling_date)}</span>
+                </div>
               </div>
-            )
+            ),
           },
           {
             key: 'actions',
@@ -671,7 +764,7 @@ function TicketsPanel({ event, currency }: { event: EventItem; currency: string 
             ),
           },
         ]}
-        rows={rows}
+        rows={rows as any}
         rowKey={(t) => t.id}
         emptyTitle="No tickets"
         emptyDescription="Create your first ticket type to start selling."
@@ -684,7 +777,9 @@ function TicketsPanel({ event, currency }: { event: EventItem; currency: string 
               <h3 className="text-base font-bold text-gray-900 dark:text-white">Edit end selling date</h3>
               <p className="text-sm text-text-muted-light dark:text-text-muted-dark">This only updates local UI for now.</p>
             </div>
-            <button type="button" onClick={() => setEditEndDateForTicketId(null)} className="text-sm text-sky-600 hover:underline">Close</button>
+            <button type="button" onClick={() => setEditEndDateForTicketId(null)} className="text-sm text-sky-600 hover:underline">
+              Close
+            </button>
           </div>
 
           <div className="mt-4 flex flex-col sm:flex-row gap-2">
@@ -711,15 +806,13 @@ function TicketsPanel({ event, currency }: { event: EventItem; currency: string 
   )
 }
 
-function SettingsPanel({ event }: { event: EventItem }) {
+function SettingsPanel({ event }: { event: OrganizerEvent }) {
   const [title, setTitle] = useState(event.title)
   const [description, setDescription] = useState(event.description ?? '')
   const [date, setDate] = useState(event.date)
   const [time, setTime] = useState(event.time ?? '')
   const [location, setLocation] = useState(event.location ?? '')
   const [category, setCategory] = useState(event.category)
-
-  // todo: re-upload image
 
   return (
     <div className="space-y-4">

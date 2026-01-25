@@ -47,5 +47,26 @@ export function computeEventStats(event: EventItem): EventStats {
   return { totalSold, totalAvailable, totalRevenue, hasUnlimited }
 }
 
-export type EventStatus = 'Ended' | 'Draft' | 'Sold Out' | 'Published'
+/**
+ * Computes organizer dashboard stats using API-provided aggregates when present.
+ *
+ * This is used by dashboard screens that already receive `total_tickets_sold`
+ * and `total_revenue` from the backend.
+ */
+export function computeEventStatsFromApi(
+  event: Pick<EventItem, 'tickets' | 'total_tickets_sold' | 'total_revenue'>,
+): EventStats {
+  const totalSold = Number((event as any)?.total_tickets_sold ?? 0)
+  const totalRevenue = Number((event as any)?.total_revenue ?? 0)
 
+  const totalAvailable = ((event as any)?.tickets ?? []).reduce(
+    (s: number, t: any) => s + Number(t?.quantity ?? 0),
+    0,
+  )
+
+  const hasUnlimited = ((event as any)?.tickets ?? []).some((t: any) => Number(t?.quantity ?? 0) === 0)
+
+  return { totalSold, totalRevenue, totalAvailable, hasUnlimited }
+}
+
+export type EventStatus = 'Ended' | 'Draft' | 'Sold Out' | 'Published'

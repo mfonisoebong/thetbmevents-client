@@ -31,6 +31,7 @@ export interface EventItem {
     tags?: string[];
     isOnline?: boolean;
     tickets: Ticket[];
+    [key: string]: any;
 }
 
 export interface OrganizerTicket {
@@ -69,6 +70,34 @@ export interface OrganizerEvent {
     total_revenue: number
 }
 
+export interface OrdersAndAttendees {
+    orders: Order[]
+    attendees: Attendee[]
+}
+
+export interface Order {
+    id: string
+    items: string[]
+    amount: number
+    status: string
+    customer: Customer
+    quantity: number
+}
+
+export interface Customer {
+    full_name: string
+    email: string
+    phone_number: string
+}
+
+export interface Attendee {
+    id: number
+    full_name: string
+    email: string
+    ticket_name: string
+    checked_in: boolean
+}
+
 export type PaymentGateway = "paystack" | "flutterwave" | "chainpal";
 
 export interface ApiData<T> {
@@ -77,5 +106,3 @@ export interface ApiData<T> {
 }
 
 export type Role = "admin" | "organizer" | (string & {});
-
-type EventStatus = 'Ended' | 'Draft' | 'Sold Out' | 'Published' | (string & {})
