@@ -82,6 +82,7 @@ export interface Order {
     status: string
     customer: Customer
     quantity: number
+    date: string
 }
 
 export interface Customer {

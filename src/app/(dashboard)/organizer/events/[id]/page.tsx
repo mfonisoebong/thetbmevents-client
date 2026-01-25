@@ -186,7 +186,7 @@ export default function OrganizerEventDetailsPage() {
       qty: Number(o.quantity ?? 0),
       amount: Number(o.amount ?? 0),
       status: o.status ?? 'Paid',
-      date: '',
+      date: o.date,
     }))
 
     const counts = new Map<string, { name: string; email: string; tickets: number }>()
@@ -511,12 +511,13 @@ export default function OrganizerEventDetailsPage() {
                       </span>
                     ),
                   },
-                  { key: 'date', header: 'Date', className: 'whitespace-nowrap', render: (o) => (o.date ? formatDate(o.date) : '—') },
+                  { key: 'date', header: 'Date', className: 'whitespace-nowrap', render: (o) => o.date}
                 ]}
                 rows={orderSearch.filtered}
                 rowKey={(o) => o.id}
                 emptyTitle="No orders"
                 emptyDescription="When people buy tickets, you’ll see the orders here."
+                pagination={{ enabled: true, pageSize: 25, pageSizeOptions: [10, 25, 50, 100] }}
               />
             </div>
           ) : null}
@@ -584,11 +585,12 @@ export default function OrganizerEventDetailsPage() {
                 rowKey={(a) => a.id}
                 emptyTitle="No attendees"
                 emptyDescription="Attendees will show up after someone gets a ticket."
+                pagination={{ enabled: true, pageSize: 25, pageSizeOptions: [10, 25, 50, 100] }}
               />
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Manual check-in */}
-                <div className="rounded-2xl bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 backdrop-blur-sm p-5">
+                {/*<div className="rounded-2xl bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 backdrop-blur-sm p-5">
                   <h3 className="text-base font-bold text-gray-900 dark:text-white">Manual check-in</h3>
                   <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">Enter an order ID (or email) to mark an attendee as checked in. (Demo only)</p>
 
@@ -615,12 +617,12 @@ export default function OrganizerEventDetailsPage() {
                   >
                     Check in
                   </button>
-                </div>
+                </div>*/}
 
-                {/* Blast email */}
-                <div className="rounded-2xl bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 backdrop-blur-sm p-5">
+                {/* Blast email. temporarily spanning 2 columns */}
+                <div className="rounded-2xl bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 backdrop-blur-sm p-5 col-span-2">
                   <h3 className="text-base font-bold text-gray-900 dark:text-white">Blast email</h3>
-                  <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">Send a message to attendees. (Demo UI — wire to your email provider later)</p>
+                  <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">Send a message to attendees.</p>
 
                   <div className="mt-4 space-y-3">
                     <input
@@ -638,13 +640,6 @@ export default function OrganizerEventDetailsPage() {
                     />
                     <button
                       type="button"
-                      onClick={() => {
-                        const recipients = attendeeSearch.filtered.length
-                        if (!blastSubject.trim() || !blastBody.trim()) return
-                        alert(`Blast email queued to ${recipients} attendees (demo).`)
-                        setBlastSubject('')
-                        setBlastBody('')
-                      }}
                       className="rounded-xl bg-brand-teal px-4 py-2 text-sm font-semibold text-white hover:opacity-95"
                     >
                       Send blast email
@@ -767,6 +762,7 @@ function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: st
         rowKey={(t) => t.id}
         emptyTitle="No tickets"
         emptyDescription="Create your first ticket type to start selling."
+        pagination={{ enabled: true, pageSize: 10, pageSizeOptions: [10, 25, 50, 100] }}
       />
 
       {editEndDateForTicketId ? (
