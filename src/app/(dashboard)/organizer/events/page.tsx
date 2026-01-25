@@ -59,6 +59,23 @@ export default function OrganizerEventsPage() {
     return { totalEvents, ticketsSold, totalRevenue, totalTickets }
   }, [events])
 
+  const sortedEvents = useMemo(() => {
+    const toTs = (e: OrganizerEvent) => {
+      // Prefer the actual scheduled date/time shown to users.
+      const eventDateTime = `${e.date ?? ''}T${(e.time ?? '00:00').slice(0, 5)}`
+      const eventTs = Date.parse(eventDateTime)
+      if (!Number.isNaN(eventTs)) return eventTs
+
+      // Fallbacks.
+      const createdTs = Date.parse(e.created_at ?? '')
+      if (!Number.isNaN(createdTs)) return createdTs
+
+      return 0
+    }
+
+    return [...events].sort((a, b) => toTs(b) - toTs(a))
+  }, [events])
+
   function onCopyLink(id: string) {
     try {
       const url = `${window.location.origin}/events/${id}`
@@ -143,7 +160,7 @@ export default function OrganizerEventsPage() {
             </div>
           ) : null}
 
-          {events.map((event) => {
+          {sortedEvents.map((event) => {
             const status = normalizeStatus(event.status)
             const detailsLink = `/organizer/events/${event.id}`
 
@@ -163,8 +180,8 @@ export default function OrganizerEventsPage() {
                   <div className="p-4 flex-1 flex flex-col justify-between">
                     <Link href={detailsLink} className="cursor-pointer">
                       <div className="flex items-start justify-between gap-4">
-                        <div className="hover:underline">
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{event.title}</h3>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white hover:underline">{event.title}</h3>
                           <SafeHtml
                             html={event.description || ''}
                             className="text-sm text-text-muted-light dark:text-text-muted-dark mt-2 line-clamp-2"
