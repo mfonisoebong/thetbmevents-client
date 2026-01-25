@@ -35,8 +35,7 @@ export default function Page() {
 
   const events = useMemo(() => mockEvents, [])
 
-  // Using a stable "now" to make the dashboard deterministic while still being time-aware.
-  const now = useMemo(() => new Date('2026-01-21T12:00:00.000Z'), [])
+  const now = useMemo(() => new Date(), [])
 
   const derived = useMemo(() => {
     const rows = events.map((e) => {
