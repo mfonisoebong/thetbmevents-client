@@ -5,7 +5,7 @@ import Link from 'next/link'
 import SidebarLayout from "../../../../components/layouts/SidebarLayout"
 import { events as mockEvents } from '../../../../lib/mockEvents'
 import {formatDate, currencySymbol, formatNumber, stripHtml} from '@lib/utils'
-import { computeEventStats, eventStatus } from '@lib/eventStats'
+import {computeEventStats, EventStatus} from '@lib/eventStats'
 import {ClipboardIcon} from "@heroicons/react/24/outline";
 import SafeHtml from "../../../../components/SafeHtml";
 
@@ -79,7 +79,7 @@ export default function OrganizerEventsPage() {
         <div className="grid grid-cols-1 gap-4">
           {events.map((event) => {
             const stats = computeEventStats(event)
-            const status = eventStatus(event, stats)
+            const status = "Published" as EventStatus
             const detailsLink = `/organizer/events/${event.id}`
 
             return (

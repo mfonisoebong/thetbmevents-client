@@ -49,17 +49,3 @@ export function computeEventStats(event: EventItem): EventStats {
 
 export type EventStatus = 'Ended' | 'Draft' | 'Sold Out' | 'Published'
 
-export function eventStatus(event: EventItem, stats: Pick<EventStats, 'totalSold' | 'totalAvailable' | 'hasUnlimited'>): EventStatus {
-  const today = new Date()
-  const evDate = new Date(event.date)
-
-  // Compare against start-of-today so the event stays "Published" on the day.
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
-  if (evDate.getTime() < startOfToday) return 'Ended'
-
-  if (!event.tickets || event.tickets.length === 0) return 'Draft'
-
-  if (!stats.hasUnlimited && stats.totalAvailable > 0 && stats.totalSold >= stats.totalAvailable) return 'Sold Out'
-
-  return 'Published'
-}
