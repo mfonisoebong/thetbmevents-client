@@ -1,32 +1,45 @@
 'use client'
 
-import React, {useEffect, useMemo, useState} from 'react'
+import React, {Suspense, useEffect, useMemo, useState} from 'react'
 import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
 import LoadingSpinner from '@components/LoadingSpinner'
 import SuccessCheckIcon from '@components/SuccessCheckIcon'
-import HTTP from "@lib/HTTP";
-import {getEndpoint} from "@lib/utils";
+import HTTP from '@lib/HTTP'
+import {getEndpoint} from '@lib/utils'
 
 type Status = 'loading' | 'success' | 'error'
 
-export default function PaymentCompletePage() {
+function PaymentCompleteContent() {
     const searchParams = useSearchParams()
 
     const reference = useMemo(() => searchParams?.get('reference') ?? '', [searchParams])
     const [status, setStatus] = useState<Status>('loading')
 
     useEffect(() => {
-        (async () => {
-            let response = await HTTP({url: getEndpoint(`/manual-verify-payment/${reference}`), method: 'GET'})
+        // Missing/invalid reference – don't hit the API.
+        if (!reference) {
+            setStatus('error')
+            return
+        }
+
+        let isCurrent = true
+
+        ;(async () => {
+            const response = await HTTP({url: getEndpoint(`/manual-verify-payment/${reference}`), method: 'GET'})
+
+            if (!isCurrent) return
 
             if (response.ok) {
                 setStatus('success')
             } else {
                 setStatus('error')
             }
-
         })()
+
+        return () => {
+            isCurrent = false
+        }
     }, [reference])
 
     return (
@@ -92,5 +105,31 @@ export default function PaymentCompletePage() {
                 )}
             </div>
         </div>
+    )
+}
+
+export default function PaymentCompletePage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="w-full max-w-4xl mx-auto px-6 py-16 min-h-[75vh]">
+                    <div className="bg-white/10 dark:bg-slate-900/40 backdrop-blur-sm border border-gray-200/60 dark:border-white/10 rounded-2xl p-8">
+                        <div aria-busy="true" aria-live="polite">
+                            <div className="flex items-center gap-3">
+                                <LoadingSpinner size={40} label="Confirming payment" />
+                                <h1 className="text-xl font-semibold text-text-light dark:text-text-dark">
+                                    Confirming payment…
+                                </h1>
+                            </div>
+                            <p className="mt-2 text-text-muted-light dark:text-text-muted-dark">
+                                Please wait while we confirm your transaction.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+        >
+            <PaymentCompleteContent />
+        </Suspense>
     )
 }
