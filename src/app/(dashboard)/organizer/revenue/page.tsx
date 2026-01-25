@@ -1,14 +1,14 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect, useCallback } from 'react'
 import SidebarLayout from '../../../../components/layouts/SidebarLayout'
-import { events as mockEvents } from '../../../../lib/mockEvents'
-import { computeEventStats } from '@lib/eventStats'
-import type { EventItem } from '@lib/types'
-import { cn, currencySymbol, formatNumber } from '@lib/utils'
+import type { ApiData, OrganizerEvent } from '@lib/types'
+import { cn, currencySymbol, formatNumber, getEndpoint, getErrorMessage } from '@lib/utils'
 import Link from 'next/link'
 import { ArrowTrendingUpIcon, ArrowsUpDownIcon, CalendarDaysIcon, SparklesIcon } from '@heroicons/react/24/outline'
-import GlassCard from "../../../../components/GlassCard";
+import GlassCard from '../../../../components/GlassCard'
+import HTTP from '@lib/HTTP'
+import OrganizerRevenueShimmer from '../../../../components/dashboard/OrganizerRevenueShimmer'
 
 type SortKey = 'ticketsSold' | 'revenue'
 
@@ -128,24 +128,50 @@ function BarChart({
 }
 
 export default function OrganizerRevenuePage() {
-  // Current date context: Jan 20, 2026
-  const currentYear = 2026
-  const currentMonthIndex = 0 // Jan
+  const now = useMemo(() => new Date(), [])
+  const currentYear = now.getFullYear()
+  const currentMonthIndex = now.getMonth()
 
   const currency: 'NGN' | 'USD' = 'NGN'
 
-  const events = useMemo(() => mockEvents, [])
+  const [events, setEvents] = useState<OrganizerEvent[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [reloadToken, setReloadToken] = useState(0)
+
+  const fetchOverview = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
+    const resp = await HTTP<ApiData<OrganizerEvent[]>, undefined>({
+      url: getEndpoint('/dashboard/organizer/overview'),
+      method: 'get',
+    })
+
+    if (!resp.ok) {
+      setEvents([])
+      setError(getErrorMessage(resp.error))
+      setLoading(false)
+      return
+    }
+
+    setEvents(Array.isArray(resp.data?.data) ? (resp.data?.data as OrganizerEvent[]) : [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    fetchOverview()
+  }, [fetchOverview, reloadToken])
 
   const eventRows = useMemo(() => {
-    return events.map((e: EventItem) => {
-      const s = computeEventStats(e)
+    return events.map((e: OrganizerEvent) => {
       return {
         id: e.id,
         title: e.title,
         category: e.category,
         image: e.image ?? '/images/placeholder-event.svg',
-        ticketsSold: s.totalSold,
-        revenue: s.totalRevenue,
+        ticketsSold: Number(e.total_tickets_sold ?? 0),
+        revenue: Number(e.total_revenue ?? 0),
       }
     })
   }, [events])
@@ -191,6 +217,38 @@ export default function OrganizerRevenuePage() {
     }
     return { label: monthLabel(idx), value: max }
   }, [monthlyValues])
+
+  if (loading) {
+    return (
+      <SidebarLayout>
+        <OrganizerRevenueShimmer />
+      </SidebarLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <SidebarLayout>
+        <div className="w-full max-w-7xl mx-auto px-6 py-8">
+          <GlassCard className="p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold text-red-700 dark:text-red-200">Couldn’t load revenue</div>
+                <div className="text-sm text-red-700/80 dark:text-red-200/80 mt-1">{error}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReloadToken((t) => t + 1)}
+                className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          </GlassCard>
+        </div>
+      </SidebarLayout>
+    )
+  }
 
   return (
     <SidebarLayout>
