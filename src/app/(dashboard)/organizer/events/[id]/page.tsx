@@ -569,7 +569,6 @@ export default function OrganizerEventDetailsPage() {
                   { key: 'name', header: 'Name', render: (a) => <span className="font-semibold">{a.name}</span> },
                   { key: 'email', header: 'Email', render: (a) => <span className="text-sm">{a.email}</span> },
                   { key: 'ticket', header: 'Ticket type', render: (a) => a.ticketType },
-                  { key: 'order', header: 'Order ID', render: (a) => (a.orderId ? <span className="font-mono text-xs">{a.orderId}</span> : '—') },
                   {
                     key: 'checkin',
                     header: 'Check-in status',
