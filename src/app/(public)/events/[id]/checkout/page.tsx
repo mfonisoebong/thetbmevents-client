@@ -16,6 +16,7 @@ import {
 } from "@lib/utils";
 import {ApiData, PaymentGateway} from "@lib/types";
 import HTTP from "@lib/HTTP";
+import {errorToast} from "@components/Toast";
 
 type TicketInstanceLocal = { id: string; name?: string; price?: number; currency?: string }
 type AttendeeLocal = { fullname: string; email: string; phone?: string; sendToMe?: boolean }
@@ -468,7 +469,7 @@ export default function CheckoutPage() {
 
         if (response.ok) {
             window.location.href = response.data?.data?.link ||response.data?.data?.authorization_url;
-        }
+        } else errorToast(getErrorMessage(response.error))
     }
 
     const summaryDisabled = !touchedAny || !isFormValid() || (step === 3 && !isFreeCheckout && !gateway)
