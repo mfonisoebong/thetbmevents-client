@@ -14,6 +14,12 @@ import OrganizerEventDetailsShimmer from '../../../../../components/dashboard/Or
 import GlassCard from '../../../../../components/GlassCard'
 import HTTP from '@lib/HTTP'
 import { computeEventStatsFromApi } from '@lib/eventStats'
+import 'react-quill-new/dist/quill.snow.css';
+import dynamic from 'next/dynamic'
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
+import {successToast} from "@components/Toast";
+
+const ReactQuill = dynamic(() => import('react-quill-new'), {ssr: false})
 
 type TabKey = 'overview' | 'tickets' | 'orders' | 'attendees' | 'settings'
 
@@ -78,11 +84,10 @@ export default function OrganizerEventDetailsPage() {
     return Array.isArray(raw) ? raw[0] : raw
   }, [routeParams?.id])
 
-  const [copied, setCopied] = useState(false)
-  const [manualOrderId, setManualOrderId] = useState('')
-  const [manualEmail, setManualEmail] = useState('')
-  const [blastSubject, setBlastSubject] = useState('')
-  const [blastBody, setBlastBody] = useState('')
+    const [copied, setCopied] = useState(false)
+    // removed unused manual check-in draft state
+    const [blastSubject, setBlastSubject] = useState('')
+    const [blastBody, setBlastBody] = useState('')
 
   const tab = (searchParams.get('tab') as TabKey) || 'overview'
 
@@ -659,11 +664,21 @@ export default function OrganizerEventDetailsPage() {
 
 function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: string }) {
   // Tickets now use API-provided sold counts rather than deterministic demo logic.
+  const [tickets, setTickets] = useState(() => event.tickets ?? [])
+
+  useEffect(() => {
+    setTickets(event.tickets ?? [])
+  }, [event.tickets])
+
   const [editEndDateForTicketId, setEditEndDateForTicketId] = useState<string | null>(null)
   const [endSellingDate, setEndSellingDate] = useState('')
   const [deleted, setDeleted] = useState<Record<string, boolean>>({})
 
-  const rows = (event.tickets ?? []).filter((t) => !deleted[t.id])
+  const [savingEndDate, setSavingEndDate] = useState(false)
+  const [deletingTicketId, setDeletingTicketId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+
+  const rows = tickets.filter((t) => !deleted[t.id])
 
   const statsByTicket = useMemo(() => {
     const map = new Map<string, { sold: number; revenue: number }>()
@@ -674,12 +689,83 @@ function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: st
     return map
   }, [rows])
 
+  const editingTicket = useMemo(() => {
+    if (!editEndDateForTicketId) return null
+    return tickets.find((t) => String(t.id) === String(editEndDateForTicketId)) ?? null
+  }, [editEndDateForTicketId, tickets])
+
+  const canCloseModal = !savingEndDate
+
+  const onDeleteTicket = useCallback(
+    async (ticketId: string) => {
+      if (!ticketId) return
+
+      const ok = confirm('Delete this ticket type?')
+      if (!ok) return
+
+      setActionError(null)
+      setDeletingTicketId(ticketId)
+
+      const resp = await HTTP<ApiData<unknown>, undefined>({
+        url: getEndpoint(`/dashboard/organizer/ticket/delete/${encodeURIComponent(String(ticketId))}`),
+        method: 'delete',
+      })
+
+      if (!resp.ok) {
+        setActionError(getErrorMessage(resp.error))
+        setDeletingTicketId(null)
+        return
+      }
+
+      // Remove from UI immediately (backend is source of truth; a refresh will also reflect it).
+      setDeleted((d) => ({ ...d, [ticketId]: true }))
+      setDeletingTicketId(null)
+    },
+    [setDeleted]
+  )
+
+  const onSaveEndDate = useCallback(async () => {
+    if (!editEndDateForTicketId) return
+    if (!endSellingDate) {
+      setActionError('Please select an end date')
+      return
+    }
+
+    setActionError(null)
+    setSavingEndDate(true)
+
+    const resp = await HTTP<ApiData<unknown>, undefined>({
+      url: getEndpoint(
+        `/dashboard/organizer/ticket/edit-end-date/${encodeURIComponent(String(editEndDateForTicketId))}/${encodeURIComponent(String(endSellingDate))}`
+      ),
+      method: 'put',
+    })
+
+    if (!resp.ok) {
+      setActionError(getErrorMessage(resp.error))
+      setSavingEndDate(false)
+      return
+    }
+
+    // Update local state so the table reflects the new date immediately.
+    setTickets((prev) => prev.map((t) => (String(t.id) === String(editEndDateForTicketId) ? { ...t, end_selling_date: endSellingDate } : t)))
+
+    setSavingEndDate(false)
+    setEditEndDateForTicketId(null)
+  }, [editEndDateForTicketId, endSellingDate])
+
   return (
     <div className="space-y-4">
       <div>
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Tickets</h2>
         <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Manage ticket types, sales and selling dates.</p>
       </div>
+
+      {actionError ? (
+        <div className="rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50/80 dark:bg-red-950/30 px-4 py-3 text-sm text-red-800 dark:text-red-200">
+          {actionError}
+        </div>
+      ) : null}
 
       <DataTable<any>
         columns={[
@@ -733,29 +819,43 @@ function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: st
             key: 'actions',
             header: 'Actions',
             className: 'whitespace-nowrap',
-            render: (t) => (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditEndDateForTicketId(t.id)
-                    setEndSellingDate(t.end_selling_date)
-                  }}
-                  className="rounded-lg bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-2 text-xs font-semibold text-gray-900 dark:text-white hover:bg-white/20"
-                >
-                  Edit end date
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (confirm('Delete this ticket type? (Demo only)')) setDeleted((d) => ({ ...d, [t.id]: true }))
-                  }}
-                  className="rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-700"
-                >
-                  Delete
-                </button>
-              </div>
-            ),
+            render: (t) => {
+              const sold = statsByTicket.get(t.id)?.sold || 0
+              const isDeleting = deletingTicketId === t.id
+
+              return (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionError(null)
+                      setEditEndDateForTicketId(t.id)
+                      setEndSellingDate((t.end_selling_date ?? '').slice(0, 10))
+                    }}
+                    className={cn(
+                      'rounded-lg bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-2 text-xs font-semibold text-gray-900 dark:text-white hover:bg-white/20',
+                      savingEndDate && 'opacity-60 cursor-not-allowed'
+                    )}
+                    disabled={savingEndDate}
+                  >
+                    Edit end date
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => sold === 0 && onDeleteTicket(t.id)}
+                    disabled={isDeleting}
+                    className={cn(
+                      'rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-700',
+                      sold > 0 && 'hidden',
+                      isDeleting && 'opacity-60 cursor-not-allowed'
+                    )}
+                  >
+                    {isDeleting ? 'Deleting…' : 'Delete'}
+                  </button>
+                </div>
+              )
+            },
           },
         ]}
         rows={rows as any}
@@ -765,38 +865,67 @@ function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: st
         pagination={{ enabled: true, pageSize: 10, pageSizeOptions: [10, 25, 50, 100] }}
       />
 
-      {editEndDateForTicketId ? (
-        <div className="rounded-2xl bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 backdrop-blur-sm p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-white">Edit end selling date</h3>
-              <p className="text-sm text-text-muted-light dark:text-text-muted-dark">This only updates local UI for now.</p>
-            </div>
-            <button type="button" onClick={() => setEditEndDateForTicketId(null)} className="text-sm text-sky-600 hover:underline">
-              Close
-            </button>
-          </div>
+      <Dialog
+        open={Boolean(editEndDateForTicketId)}
+        onClose={(open) => {
+          if (!open && canCloseModal) {
+            setEditEndDateForTicketId(null)
+            setActionError(null)
+          }
+        }}
+        transition
+        className="relative z-50 transition-opacity data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in"
+      >
+        <DialogBackdrop className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
 
-          <div className="mt-4 flex flex-col sm:flex-row gap-2">
-            <input
-              type="date"
-              value={endSellingDate}
-              onChange={(e) => setEndSellingDate(e.target.value)}
-              className="rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                alert('Saved (demo). Wire this to your API to persist the change.')
-                setEditEndDateForTicketId(null)
-              }}
-              className="rounded-xl bg-brand-teal px-4 py-2 text-sm font-semibold text-white hover:opacity-95"
-            >
-              Save
-            </button>
-          </div>
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <DialogPanel className="w-full max-w-lg rounded-2xl bg-white/80 dark:bg-slate-950/70 border border-black/10 dark:border-white/10 backdrop-blur-xl shadow-xl p-6">
+            <DialogTitle className="text-lg font-extrabold text-gray-900 dark:text-white">Edit end selling date</DialogTitle>
+            <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">
+              Update the end date for <span className="font-semibold">{editingTicket?.name ?? 'this ticket'}</span>.
+            </p>
+
+            <div className="mt-5">
+              <label className="block text-sm font-semibold text-gray-900 dark:text-white">End selling date</label>
+              <input
+                type="datetime-local"
+                value={endSellingDate}
+                onChange={(e) => setEndSellingDate(e.target.value)}
+                className="mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                disabled={savingEndDate}
+              />
+
+              {actionError ? <div className="mt-3 text-sm text-red-700 dark:text-red-200">{actionError}</div> : null}
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!canCloseModal) return
+                  setEditEndDateForTicketId(null)
+                  setActionError(null)
+                }}
+                disabled={!canCloseModal}
+                className={cn(
+                  'rounded-xl bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-white/20',
+                  !canCloseModal && 'opacity-60 cursor-not-allowed'
+                )}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onSaveEndDate}
+                disabled={savingEndDate}
+                className={cn('rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white', savingEndDate && 'opacity-60 cursor-not-allowed')}
+              >
+                {savingEndDate ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </DialogPanel>
         </div>
-      ) : null}
+      </Dialog>
     </div>
   )
 }
@@ -809,12 +938,87 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
   const [location, setLocation] = useState(event.location ?? '')
   const [category, setCategory] = useState(event.category)
 
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  useEffect(() => {
+    setTitle(event.title)
+    setDescription(event.description ?? '')
+    setDate(event.date)
+    setTime(event.time ?? '')
+    setLocation(event.location ?? '')
+    setCategory(event.category)
+    setMessage(null)
+    setSaving(false)
+  }, [event])
+
+  const onReset = useCallback(() => {
+    if (saving) return
+    setTitle(event.title)
+    setDescription(event.description ?? '')
+    setDate(event.date)
+    setTime(event.time ?? '')
+    setLocation(event.location ?? '')
+    setCategory(event.category)
+    setMessage(null)
+  }, [event, saving])
+
+  const onSave = useCallback(async () => {
+    setMessage(null)
+
+    const eventId = (event as any).id
+    if (!eventId) {
+      setMessage({ type: 'error', text: 'Missing event id.' })
+      return
+    }
+
+    setSaving(true)
+
+    const payload = {
+      title: title.trim(),
+      description,
+      date,
+      time,
+      location,
+      category,
+    }
+
+    const resp = await HTTP<ApiData<OrganizerEvent>, typeof payload>({
+      url: getEndpoint(`/dashboard/organizer/event/${encodeURIComponent(String(eventId))}`),
+      method: 'put',
+      data: payload,
+    })
+
+    if (!resp.ok) {
+      setMessage({ type: 'error', text: getErrorMessage(resp.error) })
+      setSaving(false)
+      return
+    }
+
+    setMessage({ type: 'success', text: resp.data?.message ?? 'Changes saved.' })
+    successToast(resp.data?.message ?? 'Changes saved.')
+    setSaving(false)
+  }, [category, date, description, event, location, time, title])
+
   return (
     <div className="space-y-4">
       <div>
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Settings</h2>
         <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Update event details and save changes.</p>
       </div>
+
+      {message ? (
+        <div
+          className={cn(
+            'rounded-xl border px-4 py-3 text-sm',
+            message.type === 'success'
+              ? 'border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-200'
+              : 'border-red-200 dark:border-red-900/40 bg-red-50/80 dark:bg-red-950/30 text-red-800 dark:text-red-200'
+          )}
+        >
+          {message.text}
+        </div>
+      ) : null}
 
       <div className="rounded-2xl bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 backdrop-blur-sm p-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -823,18 +1027,19 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+              disabled={saving}
+              className={cn(
+                "mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow",
+                saving && 'opacity-60 cursor-not-allowed'
+              )}
             />
           </div>
 
           <div className="sm:col-span-2">
             <label className="block text-sm font-semibold text-gray-900 dark:text-white">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              className="mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
-            />
+            <div className={cn(saving && 'pointer-events-none opacity-60')}>
+              <ReactQuill theme="snow" value={description} onChange={(value) => setDescription(value)} />
+            </div>
           </div>
 
           <div>
@@ -843,21 +1048,30 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+              disabled={saving}
+              className={cn(
+                "mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow",
+                saving && 'opacity-60 cursor-not-allowed'
+              )}
             />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-gray-900 dark:text-white">Time</label>
             <input
+              type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
               placeholder="e.g. 19:00"
-              className="mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+              disabled={saving}
+              className={cn(
+                "mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow",
+                saving && 'opacity-60 cursor-not-allowed'
+              )}
             />
           </div>
 
-          <div>
+          {/*<div>
             <label className="block text-sm font-semibold text-gray-900 dark:text-white">Location</label>
             <input
               value={location}
@@ -867,38 +1081,42 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-900 dark:text-white">Category</label>
-            <input
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
-            />
-          </div>
+            <Select
+                label="Category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+            >
+              {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+              ))}
+            </Select>
+          </div>*/}
         </div>
 
         <div className="mt-5 flex items-center justify-end gap-2">
           <button
             type="button"
-            onClick={() => {
-              setTitle(event.title)
-              setDescription(event.description ?? '')
-              setDate(event.date)
-              setTime(event.time ?? '')
-              setLocation(event.location ?? '')
-              setCategory(event.category)
-            }}
-            className="rounded-xl bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-white/20"
+            onClick={onReset}
+            disabled={saving}
+            className={cn(
+              "rounded-xl bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-white/20",
+              saving && 'opacity-60 cursor-not-allowed'
+            )}
           >
             Reset
           </button>
           <button
             type="button"
-            onClick={() => {
-              alert('Saved (demo). Wire this to your API to persist changes.')
-            }}
-            className="rounded-xl bg-brand-teal px-4 py-2 text-sm font-semibold text-white hover:opacity-95"
+            onClick={onSave}
+            disabled={saving}
+            className={cn(
+              "rounded-xl bg-brand-teal px-4 py-2 text-sm font-semibold text-white hover:opacity-95",
+              saving && 'opacity-60 cursor-not-allowed'
+            )}
           >
-            Save changes
+            {saving ? 'Saving…' : 'Save changes'}
           </button>
         </div>
       </div>

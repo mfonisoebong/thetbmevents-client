@@ -700,6 +700,7 @@ export default function CreateEventPage() {
 
                                 <Input
                                     label="Time"
+                                    type="time"
                                     value={draft.time}
                                     onChange={(e) => setDraft((d) => ({...d, time: e.target.value}))}
                                     placeholder="e.g. 19:00"
