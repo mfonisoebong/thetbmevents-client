@@ -1,7 +1,7 @@
 import React from "react";
 import {cn} from "@lib/utils";
 
-export default function Input({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+export default function Input({ label, note, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string, note?: string }) {
     return (
         <label className="block">
             <span className="block text-sm font-semibold text-gray-900 dark:text-white">{label}</span>
@@ -12,6 +12,7 @@ export default function Input({ label, ...props }: React.InputHTMLAttributes<HTM
                     props.className ?? ''
                 )}
             />
+            {note && <span className="mt-1 ml-2 block text-xs text-text-muted-light dark:text-text-muted-dark">{note}</span>}
         </label>
     )
 }
