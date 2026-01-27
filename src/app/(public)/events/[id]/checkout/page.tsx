@@ -468,7 +468,10 @@ export default function CheckoutPage() {
         const response = await HTTP<any, any>({url: getEndpoint('/checkout'), method: 'post', data: checkoutData});
 
         if (response.ok) {
-            window.location.href = response.data?.data?.link ||response.data?.data?.authorization_url;
+            window.location.href =
+                response.data?.data?.link
+                || response.data?.data?.authorization_url
+                || `/payment-complete?reference=${response.data?.data?.reference}`;
         } else errorToast(getErrorMessage(response.error))
     }
 
