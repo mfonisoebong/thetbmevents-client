@@ -17,7 +17,8 @@ import { computeEventStatsFromApi } from '@lib/eventStats'
 import 'react-quill-new/dist/quill.snow.css';
 import dynamic from 'next/dynamic'
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
-import {successToast} from "@components/Toast";
+import { successToast, errorToast } from "@components/Toast";
+import sanitizeHtml from "sanitize-html";
 
 const ReactQuill = dynamic(() => import('react-quill-new'), {ssr: false})
 
@@ -88,11 +89,54 @@ export default function OrganizerEventDetailsPage() {
     // removed unused manual check-in draft state
     const [blastSubject, setBlastSubject] = useState('')
     const [blastBody, setBlastBody] = useState('')
+    const [sendingBlast, setSendingBlast] = useState(false)
 
-  const tab = (searchParams.get('tab') as TabKey) || 'overview'
+    const tab = (searchParams.get('tab') as TabKey) || 'overview'
 
-  const [event, setEvent] = useState<OrganizerEvent | null>(null)
-  const [ordersAndAttendees, setOrdersAndAttendees] = useState<OrdersAndAttendees | null>(null)
+    const [event, setEvent] = useState<OrganizerEvent | null>(null)
+    const [ordersAndAttendees, setOrdersAndAttendees] = useState<OrdersAndAttendees | null>(null)
+
+    const onSendBlastEmail = useCallback(async () => {
+    if (!event?.id) return
+
+    const subject = blastSubject.trim()
+    const content = sanitizeHtml(blastBody)
+
+    if (!subject) {
+      errorToast('Please enter a subject.')
+      return
+    }
+
+    if (!content || content === '<p><br></p>') {
+      errorToast('Please enter an email message.')
+      return
+    }
+
+    setSendingBlast(true)
+
+    const payload = {
+      subject,
+      content,
+      event_id: event.id,
+    }
+
+    const resp = await HTTP<ApiData<unknown>, typeof payload>({
+      url: getEndpoint('/dashboard/organizer/send-blast-email'),
+      method: 'post',
+      data: payload,
+    })
+
+    if (!resp.ok) {
+      errorToast(getErrorMessage(resp.error))
+      setSendingBlast(false)
+      return
+    }
+
+    successToast(resp.data?.message ?? 'Blast email sent successfully.')
+    setBlastSubject('')
+    setBlastBody('')
+    setSendingBlast(false)
+    }, [blastBody, blastSubject, event?.id])
 
   const [loadingOverview, setLoadingOverview] = useState(true)
   const [loadingOrders, setLoadingOrders] = useState(true)
@@ -635,15 +679,24 @@ export default function OrganizerEventDetailsPage() {
                       onChange={(e) => setBlastSubject(e.target.value)}
                       placeholder="Subject"
                       className="w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                      disabled={sendingBlast}
                     />
 
-                    <ReactQuill theme="snow" value={blastBody} onChange={(value) => setBlastBody(value)} placeholder="Write your message…" />
+                    <ReactQuill
+                      theme="snow"
+                      value={blastBody}
+                      onChange={(value) => setBlastBody(value)}
+                      placeholder="Write your message…"
+                      readOnly={sendingBlast}
+                    />
 
                     <button
                       type="button"
                       className="rounded-xl bg-brand-teal px-4 py-2 text-sm font-semibold text-white hover:opacity-95"
+                      onClick={onSendBlastEmail}
+                      disabled={sendingBlast}
                     >
-                      Send blast email
+                      {sendingBlast ? 'Sending…' : 'Send blast email'}
                     </button>
                   </div>
                 </div>
