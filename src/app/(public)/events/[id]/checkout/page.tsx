@@ -18,6 +18,8 @@ import {ApiData, PaymentGateway} from "@lib/types";
 import HTTP from "@lib/HTTP";
 import {errorToast} from "@components/Toast";
 
+type ResolveEventData = { id: string }
+
 type TicketInstanceLocal = { id: string; name?: string; price?: number; currency?: string }
 type AttendeeLocal = { fullname: string; email: string; phone?: string; sendToMe?: boolean }
 
@@ -252,8 +254,53 @@ export default function CheckoutPage() {
         setSendToDifferentEmail
     } = useTicketContext()
 
-    // todo: standadize like event details
-    const id = (params as any)?.id as string | undefined
+    const idParam = (params as { id?: string | string[] } | null)?.id
+    const idOrSlug = Array.isArray(idParam) ? idParam[0] : idParam
+
+    // Resolve slug -> canonical event id (server is source of truth).
+    const [resolvedEventId, setResolvedEventId] = React.useState<string | null>(null)
+
+    useEffect(() => {
+        let cancelled = false
+
+        async function resolve() {
+            if (!idOrSlug) {
+                setResolvedEventId(null)
+                return
+            }
+
+            // Reuse the same endpoint the event details page uses.
+            const resp = await HTTP<ApiData<ResolveEventData>, any>({
+                url: getEndpoint(`/events/${encodeURIComponent(idOrSlug)}`),
+                method: 'get',
+            })
+
+            if (cancelled) return
+
+            if (resp.ok && resp.data?.data?.id) {
+                setResolvedEventId(String(resp.data.data.id))
+            } else {
+                // If we can't resolve, leave it null; coupon UI will disable and redirect is best-effort.
+                setResolvedEventId(null)
+            }
+        }
+
+        resolve()
+
+        return () => {
+            cancelled = true
+        }
+    }, [idOrSlug])
+
+    const eventId = resolvedEventId ?? undefined
+
+    // If someone hits checkout directly (no selected tickets), send them back to the event page.
+    useEffect(() => {
+        if (!idOrSlug) return
+        if (ticketInstances.length === 0) {
+            router.replace(`/events/${encodeURIComponent(idOrSlug)}`)
+        }
+    }, [idOrSlug, router, ticketInstances.length])
 
     const stepParam = searchParams?.get('step') ?? '2'
     const step = stepParam === '3' ? 3 : 2
@@ -492,7 +539,7 @@ export default function CheckoutPage() {
 
     const applyCoupon = useCallback(async () => {
         const code = coupon.trim()
-        if (!code || !id) return
+        if (!code || !eventId) return
 
         dispatch({type: 'COUPON_APPLY_START'})
 
@@ -503,7 +550,7 @@ export default function CheckoutPage() {
             method: 'post',
             data: {
                 coupon_code: code,
-                event_id: id,
+                event_id: eventId,
                 amount: subtotal + platformFee,
             },
         })
@@ -531,7 +578,7 @@ export default function CheckoutPage() {
                 total: Number(payload.data.total),
             },
         })
-    }, [coupon, id, totalWithFee])
+    }, [coupon, eventId, platformFee, subtotal])
 
     const clearCoupon = useCallback(() => {
         dispatch({type: 'COUPON_CLEAR'})
@@ -708,7 +755,7 @@ export default function CheckoutPage() {
                                         />
                                         <button
                                             type="button"
-                                            disabled={couponApplying || !coupon.trim() || !id}
+                                            disabled={couponApplying || !coupon.trim() || !eventId}
                                             onClick={applyCoupon}
                                             className="px-4 py-2 rounded-lg bg-brand-teal text-white disabled:opacity-60"
                                         >

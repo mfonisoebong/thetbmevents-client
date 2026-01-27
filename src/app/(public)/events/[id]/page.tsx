@@ -8,7 +8,7 @@ type PageProps = {
   params: Promise<{ id: string }>
 }
 
-async function getEvent(id: string): Promise<EventItem | null> {
+export async function getEvent(id: string): Promise<EventItem | null> {
   const { getEndpoint } = await import('@lib/utils')
 
   type EventApiResponse = ApiData<EventItem>
