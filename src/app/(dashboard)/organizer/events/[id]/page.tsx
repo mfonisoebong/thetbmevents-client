@@ -636,13 +636,9 @@ export default function OrganizerEventDetailsPage() {
                       placeholder="Subject"
                       className="w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
                     />
-                    <textarea
-                      value={blastBody}
-                      onChange={(e) => setBlastBody(e.target.value)}
-                      placeholder="Write your message…"
-                      rows={4}
-                      className="w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
-                    />
+
+                    <ReactQuill theme="snow" value={blastBody} onChange={(value) => setBlastBody(value)} placeholder="Write your message…" />
+
                     <button
                       type="button"
                       className="rounded-xl bg-brand-teal px-4 py-2 text-sm font-semibold text-white hover:opacity-95"

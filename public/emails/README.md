@@ -15,6 +15,7 @@ They use **table layout + inline styles** for maximum email client compatibility
 - `payment-notification-admin.html` – Brief admin notification for a new payment
 - `payment-notification-organizer.html` – Brief organizer notification for a new ticket purchase
 - `coupon-referral-notification.html` – Brief notification to the coupon referrer when code is used
+- `blast-attendee.html` – Organizer “blast email” to all event attendees (subject + rich HTML body)
 
 ## Placeholder variables
 These templates use Mustache/Handlebars-style placeholders like `{{variable}}`. Replace them using whatever templating approach your email service supports.
@@ -103,6 +104,17 @@ Coupon referral notification:
 - `{{amountPaid}}`
 - `{{referralReward}}`
 - `{{referralDashboardUrl}}`
+
+Blast email (attendee):
+- `{{brandLogoUrl}}` (recommended: absolute URL in production)
+- `{{timestamp}}`
+- `{{emailSubject}}`
+- `{{preheaderText}}` (optional)
+- `{{organizerName}}`
+- `{{eventName}}`
+- `{{bodyHtml}}` (rich HTML)
+- `{{unsubscribeUrl}}` (optional)
+- `{{companyAddress}}`
 
 ## Notes
 - Email clients often don’t load relative image paths. Prefer absolute URLs.

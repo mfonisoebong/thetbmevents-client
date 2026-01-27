@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>{{emailSubject}}</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#F8FAFC;">
+    <!-- Preheader (hidden preview text). Keep it short; truncated by many email clients. -->
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+      {{preheaderText}}
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#F8FAFC;">
+      <tr>
+        <td align="center" style="padding:32px 12px;">
+          <!-- Container -->
+          <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:600px;max-width:600px;">
+            <!-- Header -->
+            <tr>
+              <td style="padding:0 0 16px 0;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left" style="padding:0 4px;">
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td style="vertical-align:middle;padding-right:10px;">
+                            <img
+                              src="{{brandLogoUrl}}"
+                              width="40"
+                              height="40"
+                              alt="TBM Events"
+                              style="display:block;border:0;outline:none;text-decoration:none;border-radius:10px;"
+                            />
+                          </td>
+                          <td style="vertical-align:middle;">
+                            <div style="font-family:Inter,Segoe UI,Arial,sans-serif;font-size:18px;line-height:22px;font-weight:800;color:#0F172A;">
+                              TBM <span style="color:#E8B025;">EVENTS</span>
+                            </div>
+                            <div style="font-family:Inter,Segoe UI,Arial,sans-serif;font-size:12px;line-height:16px;color:#4B5563;">
+                              Message from <strong>{{organizerName}}</strong> &mdash; <strong>{{eventName}}</strong>
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td align="right" style="padding:0 4px;">
+                      <div style="font-family:Inter,Segoe UI,Arial,sans-serif;font-size:12px;line-height:16px;color:#9CA3AF;">
+                        {{timestamp}}
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Card -->
+            <tr>
+              <td style="background-color:#FFFFFF;border:1px solid rgba(15,23,42,0.08);border-radius:4px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,42,0.06);">
+                <!-- Accent header -->
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="padding:18px 22px;background:#E8B025;">
+                      <div style="font-family:Manrope,Inter,Segoe UI,Arial,sans-serif;font-size:18px;line-height:24px;font-weight:800;color:#0F172A;">
+                        {{emailSubject}}
+                      </div>
+                      <div style="font-family:Inter,Segoe UI,Arial,sans-serif;font-size:13px;line-height:18px;color:rgba(15,23,42,0.9);margin-top:4px;">
+                        From {{organizerName}} &mdash; {{eventName}}
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <!-- Rich HTML body -->
+                  <tr>
+                    <td style="padding:18px 22px 10px 22px;">
+                      <!--
+                        IMPORTANT:
+                        - {{bodyHtml}} is intended to be injected as *rich HTML*.
+                        - Make sure you sanitize/allowlist it before sending to prevent XSS/phishing content.
+                        - Use simple tags for best email compatibility: p, br, strong, em, a, ul, ol, li, img.
+                      -->
+                      <div style="font-family:Inter,Segoe UI,Arial,sans-serif;font-size:14px;line-height:22px;color:#111827;">
+                        {{bodyHtml}}
+                      </div>
+                    </td>
+                  </tr>
+
+                  <!-- Minimal footer note -->
+                  <tr>
+                    <td style="padding:0 22px 22px 22px;">
+                      <div style="font-family:Inter,Segoe UI,Arial,sans-serif;font-size:12px;line-height:18px;color:#6B7280;">
+                        You're receiving this message because you registered for <strong>{{eventName}}</strong> on TBM Events.
+                        If you need help, contact <a href="mailto:{{supportEmail}}" style="color:#4F8A92;text-decoration:none;font-weight:700;">{{supportEmail}}</a>.
+                      </div>
+                      <div style="font-family:Inter,Segoe UI,Arial,sans-serif;font-size:12px;line-height:18px;color:#9CA3AF;margin-top:10px;">
+                        <!-- Optional: add a one-click unsubscribe link if your ESP supports it -->
+                        <!-- <a href="{{unsubscribeUrl}}" style="color:#9CA3AF;text-decoration:underline;">Unsubscribe</a> -->
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding:16px 6px 0 6px;">
+                <div style="text-align:center;font-family:Inter,Segoe UI,Arial,sans-serif;font-size:12px;line-height:18px;color:#9CA3AF;">
+                  &copy; {{currentYear}} TBM Events.
+                  <br />
+                  <span style="color:#9CA3AF;">{{companyAddress}}</span>
+                </div>
+              </td>
+            </tr>
+          </table>
+          <!-- /Container -->
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
