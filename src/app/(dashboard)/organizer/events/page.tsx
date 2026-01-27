@@ -225,9 +225,9 @@ export default function OrganizerEventsPage() {
                         {/*<Link href={`/organizer/events/${event.id}/edit`} className="text-sm text-text-muted-light hover:underline">Edit</Link>*/}
                       </div>
 
-                      <button onClick={() => onCopyLink(event.id)} className="inline-flex items-center gap-2 rounded-lg bg-brand-yellow px-3 py-2 text-sm font-medium  text-white">
+                      <button onClick={() => onCopyLink(event.slug)} className="inline-flex items-center gap-2 rounded-lg bg-brand-yellow px-3 py-2 text-sm font-medium  text-white">
                         <ClipboardIcon className="w-4 h-4 -mr-1"/>
-                        {copiedId === event.id ? 'Copied' : 'Copy link'}
+                        {copiedId === event.slug ? 'Copied' : 'Copy link'}
                       </button>
                     </div>
                   </div>

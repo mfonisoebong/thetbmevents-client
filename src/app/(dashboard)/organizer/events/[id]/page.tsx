@@ -282,7 +282,7 @@ export default function OrganizerEventDetailsPage() {
   function onCopyPublicLink() {
     try {
       if (!event) return
-      const url = `${window.location.origin}/events/${event.id}`
+      const url = `${window.location.origin}/events/${event.slug}`
       navigator.clipboard.writeText(url)
       setCopied(true)
       setTimeout(() => setCopied(false), 1600)
