@@ -49,29 +49,6 @@ function monthLabel(i: number) {
   return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i] ?? '—'
 }
 
-function buildDeterministicMonthlySeries(total: number, year: number) {
-  // Make a deterministic looking distribution (no random api calls) that sums to `total`.
-  // This is demo data; later you can swap with backend analytics.
-  const weights = [7, 6, 8, 9, 10, 11, 12, 10, 9, 8, 7, 6]
-  const sumW = weights.reduce((a, b) => a + b, 0)
-
-  // Slightly skew by year so it doesn't look identical forever.
-  const bump = (year % 5) - 2
-
-  let remaining = Math.max(0, Math.round(total))
-  const values = weights.map((w, idx) => {
-    const adjusted = Math.max(1, w + (idx % 2 === 0 ? bump : -bump))
-    const v = Math.floor((adjusted / sumW) * total)
-    remaining -= v
-    return v
-  })
-
-  // Put leftover into current month (Jan date context says current month is Jan).
-  values[0] = Math.max(0, values[0] + remaining)
-
-  return values
-}
-
 function BarChart({
   points,
   currency,
@@ -94,6 +71,7 @@ function BarChart({
       <div className="mt-5 grid grid-cols-12 gap-2 items-end flex-1">
         {points.map((p) => {
           const h = Math.round((p.value / max) * 100)
+          console.log(h)
 
           return (
             <div key={p.key} className="col-span-3 h-full sm:col-span-1 flex flex-col items-center gap-2">
@@ -104,7 +82,7 @@ function BarChart({
                     'bg-gradient-to-b from-brand-yellow/80 to-brand-yellow/30',
                     'dark:from-brand-yellow/70 dark:to-brand-yellow/20'
                   )}
-                  style={{ height: `${Math.max(6, h)}%` }}
+                  style={{ height: `${h}%` }}
                 />
 
                 <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-12 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -134,34 +112,85 @@ export default function OrganizerRevenuePage() {
 
   const currency: 'NGN' | 'USD' = 'NGN'
 
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear)
+
+  const yearOptions = useMemo(() => {
+    const start = 2023
+    const end = currentYear
+    const years: number[] = []
+    for (let y = end; y >= start; y--) years.push(y)
+    return years
+  }, [currentYear])
+
   const [events, setEvents] = useState<OrganizerEvent[]>([])
+  const [monthlyValues, setMonthlyValues] = useState<number[]>(() => Array(12).fill(0))
+
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reloadToken, setReloadToken] = useState(0)
 
   const fetchOverview = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-
     const resp = await HTTP<ApiData<OrganizerEvent[]>, undefined>({
       url: getEndpoint('/dashboard/organizer/overview'),
       method: 'get',
     })
 
     if (!resp.ok) {
+      return { ok: false as const, error: resp.error }
+    }
+
+    const list = resp.data?.data
+    return { ok: true as const, data: Array.isArray(list) ? (list as OrganizerEvent[]) : [] }
+  }, [])
+
+  const fetchRevenueByYear = useCallback(async (year: number) => {
+    const resp = await HTTP<ApiData<number[]>, undefined>({
+      url: getEndpoint(`/dashboard/organizer/revenue-by year/${encodeURIComponent(String(year))}`),
+      method: 'get',
+    })
+
+    if (!resp.ok) {
+      return { ok: false as const, error: resp.error }
+    }
+
+    const arr = resp.data?.data
+
+    // Ensure exactly 12 numeric points.
+    const normalized = Array.from({ length: 12 }).map((_, i) => Number((Array.isArray(arr) ? arr[i] : 0) ?? 0))
+
+    return { ok: true as const, data: normalized }
+  }, [])
+
+  const loadAll = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
+    const [overviewResp, revenueResp] = await Promise.all([fetchOverview(), fetchRevenueByYear(selectedYear)])
+
+    if (!overviewResp.ok) {
       setEvents([])
-      setError(getErrorMessage(resp.error))
+      setMonthlyValues(Array(12).fill(0))
+      setError(getErrorMessage(overviewResp.error))
       setLoading(false)
       return
     }
 
-    setEvents(Array.isArray(resp.data?.data) ? (resp.data?.data as OrganizerEvent[]) : [])
+    if (!revenueResp.ok) {
+      setEvents(overviewResp.data)
+      setMonthlyValues(Array(12).fill(0))
+      setError(getErrorMessage(revenueResp.error))
+      setLoading(false)
+      return
+    }
+
+    setEvents(overviewResp.data)
+    setMonthlyValues(revenueResp.data)
     setLoading(false)
-  }, [])
+  }, [fetchOverview, fetchRevenueByYear, selectedYear])
 
   useEffect(() => {
-    fetchOverview()
-  }, [fetchOverview, reloadToken])
+    void loadAll()
+  }, [loadAll, reloadToken])
 
   const eventRows = useMemo(() => {
     return events.map((e: OrganizerEvent) => {
@@ -176,20 +205,19 @@ export default function OrganizerRevenuePage() {
     })
   }, [events])
 
-  const totalRevenue = useMemo(() => eventRows.reduce((acc, r) => acc + r.revenue, 0), [eventRows])
+  const totalRevenue = useMemo(() => monthlyValues.reduce((acc, v) => acc + Number(v ?? 0), 0), [monthlyValues])
   const totalNetRevenue = useMemo(() => Math.round(totalRevenue * 0.95), [totalRevenue])
 
-  const monthlyValues = useMemo(() => buildDeterministicMonthlySeries(totalRevenue, currentYear), [totalRevenue, currentYear])
   const revenueThisMonth = useMemo(() => monthlyValues[currentMonthIndex] ?? 0, [monthlyValues, currentMonthIndex])
 
   const monthPoints: MonthPoint[] = useMemo(
     () =>
       monthlyValues.map((v, i) => ({
-        key: `${currentYear}-${i + 1}`,
+        key: `${selectedYear}-${i + 1}`,
         label: monthLabel(i),
-        value: v,
+        value: Number(v ?? 0),
       })),
-    [monthlyValues, currentYear]
+    [monthlyValues, selectedYear]
   )
 
   const [sortKey, setSortKey] = useState<SortKey>('ticketsSold')
@@ -215,7 +243,7 @@ export default function OrganizerRevenuePage() {
         idx = i
       }
     }
-    return { label: monthLabel(idx), value: max }
+    return { label: monthLabel(idx), value: max === -Infinity ? 0 : max }
   }, [monthlyValues])
 
   if (loading) {
@@ -260,6 +288,21 @@ export default function OrganizerRevenuePage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-text-muted-light dark:text-text-muted-dark">Year</span>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="rounded-xl bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-white/20"
+              >
+                {yearOptions.map((y) => (
+                  <option key={y} value={y} className="bg-white dark:bg-slate-950 text-gray-900 dark:text-white">
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <Link
               href="/organizer/events"
               className="rounded-xl bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-white/20"
@@ -278,19 +321,19 @@ export default function OrganizerRevenuePage() {
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
           <StatCard
-            title="Total revenue"
+            title={`Total revenue in ${selectedYear}`}
             value={
               <>
                 {currencySymbol(currency)}
                 {formatNumber(totalRevenue)}
               </>
             }
-            subtitle="Sum of all ticket sales (demo)."
+            subtitle="Sum of all ticket sales."
             icon={<ArrowTrendingUpIcon className="w-5 h-5" />}
           />
 
           <StatCard
-            title="Total net revenue"
+            title={`Total net revenue in ${selectedYear}`}
             value={
               <>
                 {currencySymbol(currency)}
@@ -311,7 +354,7 @@ export default function OrganizerRevenuePage() {
             }
             subtitle={
               <span className="inline-flex items-center gap-1">
-                <CalendarDaysIcon className="w-4 h-4" /> {monthLabel(currentMonthIndex)} {currentYear}
+                <CalendarDaysIcon className="w-4 h-4" /> {monthLabel(currentMonthIndex)} {selectedYear}
               </span>
             }
           />
@@ -325,7 +368,7 @@ export default function OrganizerRevenuePage() {
           <div className="space-y-6">
             <GlassCard className="p-6">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">Best month</h2>
-              <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">Your highest revenue month this year.</p>
+              <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">Your highest revenue month in {selectedYear}.</p>
               <div className="mt-4 text-3xl font-extrabold text-gray-900 dark:text-white">{bestMonth.label}</div>
               <div className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">
                 {currencySymbol(currency)}
