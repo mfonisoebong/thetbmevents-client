@@ -50,6 +50,7 @@ type CheckoutState = {
         error: string | null
     }
     gateway: PaymentGateway | null
+    processingPayment: boolean
 }
 
 type CheckoutAction =
@@ -66,6 +67,7 @@ type CheckoutAction =
     | { type: 'COUPON_APPLY_ERROR'; payload: { error: string } }
     | { type: 'COUPON_CLEAR' }
     | { type: 'SET_ERRORS'; payload: { purchaserErrors: PurchaserErrors; attendeeErrors: AttendeeErrors } }
+    | { type: 'SET_PROCESSING_PAYMENT'; value: boolean }
 
 function makeEmptyAttendees(count: number): AttendeeLocal[] {
     return Array.from({length: count}, () => ({
@@ -93,6 +95,7 @@ function makeInitialState(ticketCount: number): CheckoutState {
             error: null,
         },
         gateway: null,
+        processingPayment: false,
     }
 }
 
@@ -222,6 +225,12 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
                 ...state,
                 purchaserErrors: action.payload.purchaserErrors,
                 attendeeErrors: action.payload.attendeeErrors,
+            }
+
+        case 'SET_PROCESSING_PAYMENT':
+            return {
+                ...state,
+                processingPayment: action.value,
             }
 
         default:
@@ -465,6 +474,8 @@ export default function CheckoutPage() {
         // @ts-ignore
         if (!couponApplied) delete checkoutData.coupon_code
 
+        dispatch({type: 'SET_PROCESSING_PAYMENT', value: true})
+
         const response = await HTTP<any, any>({url: getEndpoint('/checkout'), method: 'post', data: checkoutData});
 
         if (response.ok) {
@@ -473,6 +484,8 @@ export default function CheckoutPage() {
                 || response.data?.data?.authorization_url
                 || `/payment-complete?reference=${response.data?.data?.reference}`;
         } else errorToast(getErrorMessage(response.error))
+
+        dispatch({type: 'SET_PROCESSING_PAYMENT', value: false})
     }
 
     const summaryDisabled = !touchedAny || !isFormValid() || (step === 3 && !isFreeCheckout && !gateway)
@@ -735,8 +748,8 @@ export default function CheckoutPage() {
                     <Summary
                         ticketInstances={ticketInstances}
                         onContinueAction={step === 3 ? onPayNow : goToStep3}
-                        disabled={summaryDisabled || couponApplying}
-                        buttonText={step === 3 ? (isFreeCheckout ? 'Get tickets' : 'Pay now') : 'Continue'}
+                        disabled={summaryDisabled || couponApplying || state.processingPayment}
+                        buttonText={step === 3 ? (state.processingPayment ? "Processing..." : isFreeCheckout ? 'Get tickets' : 'Pay now') : 'Continue'}
                         couponApplied={couponApplied}
                         couponAmount={couponDiscount}
                         platformFee={platformFee}

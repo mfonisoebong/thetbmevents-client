@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import SidebarLayout from '../../../../components/layouts/SidebarLayout'
-import { cn } from '@lib/utils'
+import { cn, getEndpoint, getErrorMessage } from '@lib/utils'
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import {
   CheckCircleIcon,
@@ -11,24 +11,25 @@ import {
   XCircleIcon,
   CameraIcon,
   ArrowUpTrayIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import GlassCard from "../../../../components/GlassCard";
+import HTTP from '@lib/HTTP'
+import type { ApiData } from '@lib/types'
 
 type ValidationStatus = 'success' | 'used' | 'invalid'
+
+type ScanQrResult = {
+  attendee_name: string
+  ticket_name: string
+  event_name: string
+}
 
 type ScanResult = {
   raw: string
   decodedId: string | null
   status: ValidationStatus
-}
-
-function hashStringToNumber(s: string) {
-  let h = 0
-  for (let i = 0; i < s.length; i++) {
-    h = (h << 5) - h + s.charCodeAt(i)
-    h |= 0
-  }
-  return Math.abs(h)
+  details?: ScanQrResult | null
 }
 
 function base64Decode(input: string): string | null {
@@ -45,13 +46,6 @@ function base64Decode(input: string): string | null {
   } catch {
     return null
   }
-}
-
-function statusFromTicketId(ticketId: string): ValidationStatus {
-  const mod = hashStringToNumber(ticketId) % 3
-  if (mod === 0) return 'success'
-  if (mod === 1) return 'used'
-  return 'invalid'
 }
 
 function pillClass(status: ValidationStatus) {
@@ -71,8 +65,7 @@ function useIsMobile() {
 
   useEffect(() => {
     const check = () => {
-      // Feature requirement: "only work on mobile phones".
-      // We treat small viewports + touch as mobile enough for this demo.
+      // Treat small viewports + touch as mobile enough.
       const hasTouch = typeof navigator !== 'undefined' && (navigator.maxTouchPoints ?? 0) > 0
       const small = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
       setIsMobile(Boolean(hasTouch && small))
@@ -133,6 +126,7 @@ export default function OrganizerScanQrPage() {
   const [scannerHelp, setScannerHelp] = useState<string[]>([])
   const [isScanning, setIsScanning] = useState(false)
   const [startMode, setStartMode] = useState<StartMode>('camera')
+  const [isCheckingIn, setIsCheckingIn] = useState(false)
 
   const scannerRef = useRef<any>(null)
   const qrLibRef = useRef<QrLib | null>(null)
@@ -141,13 +135,34 @@ export default function OrganizerScanQrPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [pasteValue, setPasteValue] = useState('')
 
-  const sample = useMemo(
-    () => ({
-      raw: 'OWFkNGQwZmMtYzdiYS00YTA2LWE4ODQtYWQ4MDRjNTVkY2Y2',
-      decoded: '9ad4d0fc-c7ba-4a06-a884-ad804c55dcf6',
-    }),
-    []
-  )
+  const checkIn = useCallback(async (decodedId: string) => {
+    setIsCheckingIn(true)
+
+    const resp = await HTTP<ApiData<ScanQrResult>, undefined>({
+      url: getEndpoint(`/dashboard/organizer/check-in-attendee/${encodeURIComponent(decodedId)}`),
+      method: 'get',
+    })
+
+    if (!resp.ok) {
+      const msg = getErrorMessage(resp.error)
+      const lower = msg.toLowerCase()
+
+      // Server can return 404 (not found) or 400 (already checked in)
+      const status: ValidationStatus =
+        lower.includes('already') || lower.includes('checked') || lower.includes('used')
+          ? 'used'
+          : 'invalid'
+
+      setScanResult({ raw: '', decodedId, status, details: null })
+      setIsModalOpen(true)
+      setIsCheckingIn(false)
+      return
+    }
+
+    setScanResult({ raw: '', decodedId, status: 'success', details: resp.data?.data ?? null })
+    setIsModalOpen(true)
+    setIsCheckingIn(false)
+  }, [])
 
   async function stopScanner() {
     const inst = scannerRef.current
@@ -187,7 +202,7 @@ export default function OrganizerScanQrPage() {
 
     if (!isMobile) {
       setScannerError('This feature is only available on mobile phones.')
-      setScannerHelp(['Open this page on your phone to use the camera scanner.', 'You can still test on desktop with “Simulate scan”.'])
+      setScannerHelp(['Open this page on your phone to use the camera scanner.'])
       return
     }
 
@@ -272,13 +287,15 @@ export default function OrganizerScanQrPage() {
 
   function onDecoded(raw: string) {
     const decodedId = base64Decode(raw)
-    const status = decodedId ? statusFromTicketId(decodedId) : 'invalid'
 
-    // Pretend we send decodedId to server for validation.
-    console.log('Validate ticket id', { decodedId, status })
+    if (!decodedId) {
+      setScanResult({ raw, decodedId: null, status: 'invalid', details: null })
+      setIsModalOpen(true)
+      return
+    }
 
-    setScanResult({ raw, decodedId, status })
-    setIsModalOpen(true)
+    setScanResult({ raw, decodedId, status: 'invalid', details: null })
+    void checkIn(decodedId)
   }
 
   async function onScanAgain() {
@@ -310,7 +327,7 @@ export default function OrganizerScanQrPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Scan QR</h1>
           <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">
-            Scan attendee tickets and validate them instantly. (Mobile-only)
+            Scan attendee tickets and validate them instantly.
           </p>
         </div>
 
@@ -323,30 +340,9 @@ export default function OrganizerScanQrPage() {
               <div>
                 <div className="font-bold text-gray-900 dark:text-white">Mobile only</div>
                 <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">
-                  This feature only works on mobile phones because it requires a camera.
+                  Open this page on your phone to scan tickets.
                 </p>
-                <div className="mt-4 text-xs text-text-muted-light dark:text-text-muted-dark">
-                  Tip: open this page on your phone.
-                </div>
               </div>
-            </div>
-
-            <div className="mt-6 rounded-2xl bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10 p-4">
-              <div className="text-sm font-semibold text-gray-900 dark:text-white">Test with sample payload</div>
-              <div className="mt-2 text-xs text-text-muted-light dark:text-text-muted-dark break-all">{sample.raw}</div>
-              <div className="mt-2 text-xs">
-                <span className="text-text-muted-light dark:text-text-muted-dark">Decodes to: </span>
-                <span className="font-mono text-gray-900 dark:text-white">{sample.decoded}</span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => onDecoded(sample.raw)}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white"
-              >
-                <QrCodeIcon className="w-5 h-5" />
-                Simulate scan
-              </button>
             </div>
           </GlassCard>
         ) : (
@@ -357,7 +353,7 @@ export default function OrganizerScanQrPage() {
                   <div>
                     <div className="font-bold text-gray-900 dark:text-white">Scanner</div>
                     <div className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">
-                      Scan tickets via camera, upload an image of a QR code, or paste the Base64 payload.
+                      Scan tickets via camera, upload an image of a QR code, or paste the encoded string.
                     </div>
                   </div>
 
@@ -401,15 +397,7 @@ export default function OrganizerScanQrPage() {
                       )}
                     >
                       <QrCodeIcon className="w-5 h-5" />
-                      Paste code
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => onDecoded(sample.raw)}
-                      className="rounded-xl bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-white/20"
-                    >
-                      Use sample
+                      Paste ID
                     </button>
                   </div>
                 </div>
@@ -434,7 +422,7 @@ export default function OrganizerScanQrPage() {
                       onClick={startScanner}
                       className="w-fit rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white"
                     >
-                      {isScanning ? 'Scanning…' : 'Start camera scan'}
+                      {isScanning ? 'Scanning...' : 'Start camera scan'}
                     </button>
 
                     <div>
@@ -453,7 +441,7 @@ export default function OrganizerScanQrPage() {
                   <div className="rounded-2xl bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10 p-4">
                     <div className="text-sm font-semibold text-gray-900 dark:text-white">Upload a QR image</div>
                     <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">
-                      If your browser won’t stream the camera, you can upload a screenshot/photo of the QR.
+                      Upload a screenshot/photo of the QR code to check in an attendee.
                     </p>
 
                     <input
@@ -468,7 +456,6 @@ export default function OrganizerScanQrPage() {
                       }}
                     />
 
-                    {/* hidden render region for scanFile */}
                     <div className="mt-4">
                       <div
                         id={regionId}
@@ -480,16 +467,16 @@ export default function OrganizerScanQrPage() {
 
                 {startMode === 'paste' ? (
                   <div className="rounded-2xl bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10 p-4">
-                    <div className="text-sm font-semibold text-gray-900 dark:text-white">Paste Base64 payload</div>
+                    <div className="text-sm font-semibold text-gray-900 dark:text-white">Paste ticket ID</div>
                     <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">
-                      Paste the QR string (what was encoded into the QR). We’ll decode it and validate.
+                      Paste the ticket ID. We decode it and check the attendee in.
                     </p>
 
                     <textarea
                       value={pasteValue}
                       onChange={(e) => setPasteValue(e.target.value)}
                       rows={4}
-                      placeholder="e.g. OWFkNGQwZmMtYzdiYS00YTA2LWE4ODQtYWQ4MDRjNTVkY2Y2"
+                      placeholder="Paste the encoded ticket ID here"
                       className="mt-3 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
                     />
 
@@ -503,62 +490,72 @@ export default function OrganizerScanQrPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => onDecoded(pasteValue)}
+                        onClick={() => checkIn(pasteValue)}
                         className="rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white"
-                        disabled={!pasteValue.trim()}
+                        disabled={!pasteValue.trim() || isCheckingIn}
                       >
-                        Decode & validate
+                        {isCheckingIn ? 'Checking in...' : 'Check in attendee'}
                       </button>
                     </div>
                   </div>
                 ) : null}
               </div>
             </GlassCard>
-
-            {/* Keep the demo explanation card */}
-            <GlassCard className="p-6">
-              <div className="text-sm font-semibold text-gray-900 dark:text-white">How validation works (demo)</div>
-              <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">
-                We decode the scanned QR (Base64 → ticket ID), then “validate with server”. For now:
-              </p>
-              <ul className="mt-3 space-y-1 text-sm text-text-muted-light dark:text-text-muted-dark list-disc pl-5">
-                <li>
-                  <span className="font-mono">hash(id) % 3 = 0</span> → success
-                </li>
-                <li>
-                  <span className="font-mono">hash(id) % 3 = 1</span> → used
-                </li>
-                <li>
-                  <span className="font-mono">hash(id) % 3 = 2</span> → invalid
-                </li>
-              </ul>
-            </GlassCard>
           </div>
         )}
 
-        <Dialog open={isModalOpen} onClose={setIsModalOpen} className="relative z-50">
+        <Dialog
+          open={isModalOpen}
+          onClose={(open) => {
+            if (!open) setIsModalOpen(false)
+          }}
+          className="relative z-50"
+        >
           <DialogBackdrop className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
           <div className="fixed inset-0 flex items-center justify-center p-4">
             <DialogPanel className="w-full max-w-lg rounded-2xl bg-white/80 dark:bg-slate-950/70 border border-black/10 dark:border-white/10 backdrop-blur-xl shadow-xl p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <DialogTitle className="text-lg font-extrabold text-gray-900 dark:text-white">Scan result</DialogTitle>
-                  <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">Decoded ticket ID and validation status.</p>
+                  <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">
+                    {isCheckingIn ? 'Checking in attendee...' : 'Ticket validation result.'}
+                  </p>
                 </div>
-                {scanResult ? <StatusIcon status={scanResult.status} /> : null}
+
+                <div className="flex items-center gap-2">
+                  {scanResult ? <StatusIcon status={scanResult.status} /> : null}
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="rounded-lg p-2 text-gray-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/5"
+                    aria-label="Close"
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               {scanResult ? (
                 <div className="mt-5 space-y-4">
                   <div className="rounded-2xl bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10 p-4">
-                    <div className="text-xs text-text-muted-light dark:text-text-muted-dark">Raw payload</div>
-                    <div className="mt-1 text-xs text-gray-900 dark:text-white break-all font-mono">{scanResult.raw}</div>
+                    <div className="text-xs text-text-muted-light dark:text-text-muted-dark">Attendee name</div>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-white break-all font-mono">
+                      {scanResult.details?.attendee_name ?? '—'}
+                    </div>
                   </div>
 
                   <div className="rounded-2xl bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10 p-4">
-                    <div className="text-xs text-text-muted-light dark:text-text-muted-dark">Ticket ID</div>
-                    <div className="mt-1 text-sm text-gray-900 dark:text-white break-all font-mono">
-                      {scanResult.decodedId ?? 'Could not decode Base64 payload'}
+                    <div className="text-xs text-text-muted-light dark:text-text-muted-dark">Event  — Ticket</div>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-white break-all">
+                      {scanResult.details ? (
+                        <span>
+                          <span className="font-semibold">{scanResult.details.event_name}</span>
+                          <span className="text-text-muted-light dark:text-text-muted-dark"> — </span>
+                          <span className="font-semibold">{scanResult.details.ticket_name}</span>
+                        </span>
+                      ) : (
+                        '—'
+                      )}
                     </div>
                   </div>
 
@@ -566,12 +563,16 @@ export default function OrganizerScanQrPage() {
                     <div>
                       <div className="text-xs text-text-muted-light dark:text-text-muted-dark">Validation</div>
                       <div className={cn('mt-1 inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold', pillClass(scanResult.status))}>
-                        {scanResult.status === 'success' ? 'Success — valid ticket' : scanResult.status === 'used' ? 'Used — already checked in' : 'Invalid — not recognized'}
+                        {scanResult.status === 'success'
+                          ? 'Success — checked in'
+                          : scanResult.status === 'used'
+                            ? 'Already checked in'
+                            : 'Not found'}
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="text-xs text-text-muted-light dark:text-text-muted-dark">Server</div>
-                      <div className="text-sm font-semibold text-gray-900 dark:text-white">Demo</div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">Live</div>
                     </div>
                   </div>
 
@@ -586,17 +587,10 @@ export default function OrganizerScanQrPage() {
 
                     <button
                       type="button"
-                      onClick={() => {
-                        if (!scanResult.decodedId) return
-                        navigator.clipboard?.writeText(scanResult.decodedId)
-                      }}
-                      className="rounded-xl bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-white/20"
-                      disabled={!scanResult.decodedId}
+                      onClick={onScanAgain}
+                      className="rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white"
+                      disabled={isCheckingIn}
                     >
-                      Copy ID
-                    </button>
-
-                    <button type="button" onClick={onScanAgain} className="rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white">
                       Scan again
                     </button>
                   </div>

@@ -597,7 +597,7 @@ export default function OrganizerEventDetailsPage() {
                 {/* Manual check-in */}
                 {/*<div className="rounded-2xl bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 backdrop-blur-sm p-5">
                   <h3 className="text-base font-bold text-gray-900 dark:text-white">Manual check-in</h3>
-                  <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">Enter an order ID (or email) to mark an attendee as checked in. (Demo only)</p>
+                  <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">Enter an order ID (or email) to mark an attendee as checked in.</p>
 
                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input
@@ -663,7 +663,6 @@ export default function OrganizerEventDetailsPage() {
 }
 
 function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: string }) {
-  // Tickets now use API-provided sold counts rather than deterministic demo logic.
   const [tickets, setTickets] = useState(() => event.tickets ?? [])
 
   useEffect(() => {
