@@ -82,7 +82,7 @@ function BarChart({
   const max = Math.max(...points.map((p) => p.value), 1)
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full flex flex-col">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Revenue by month</h2>
@@ -91,13 +91,13 @@ function BarChart({
         <div className="text-xs text-text-muted-light dark:text-text-muted-dark">{currency === 'NGN' ? '₦' : '$'} values</div>
       </div>
 
-      <div className="mt-5 grid grid-cols-12 gap-2 items-end h-48">
+      <div className="mt-5 grid grid-cols-12 gap-2 items-end flex-1">
         {points.map((p) => {
           const h = Math.round((p.value / max) * 100)
 
           return (
-            <div key={p.key} className="col-span-3 sm:col-span-1 flex flex-col items-center gap-2">
-              <div className="w-full group relative">
+            <div key={p.key} className="col-span-3 h-full sm:col-span-1 flex flex-col items-center gap-2">
+              <div className="w-full h-full group relative flex flex-col justify-end">
                 <div
                   className={cn(
                     'w-full rounded-xl border border-black/10 dark:border-white/10 backdrop-blur-sm',
