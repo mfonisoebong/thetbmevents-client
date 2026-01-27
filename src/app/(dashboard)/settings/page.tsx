@@ -1,9 +1,26 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import SidebarLayout from '../../../components/layouts/SidebarLayout'
-import { cn } from '@lib/utils'
+import { cn, getEndpoint, getErrorMessage } from '@lib/utils'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
+import HTTP from '@lib/HTTP'
+import { errorToast, successToast } from '@components/Toast'
+
+type AuthMeResponse = {
+  id: string
+  full_name: string | null
+  business_name: string | null
+  completed_profile: number
+  avatar: string | null
+  auth_provider: string
+  email: string
+  role: string
+  country: string | null
+  phone_number: string | null
+  account_state: string
+  created_at: string
+}
 
 type BusinessProfile = {
   businessName: string
@@ -31,12 +48,14 @@ function Field({
   onChange,
   type = 'text',
   placeholder,
+  disabled,
 }: {
   label: string
   value: string
   onChange: (v: string) => void
   type?: string
   placeholder?: string
+  disabled?: boolean
 }) {
   return (
     <label className="block">
@@ -46,33 +65,82 @@ function Field({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+        disabled={disabled}
+        className={cn(
+          'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
+          disabled && 'opacity-60 cursor-not-allowed'
+        )}
       />
     </label>
   )
 }
 
+function normalizeMeToProfile(me: AuthMeResponse | null): BusinessProfile {
+  return {
+    businessName: me?.business_name ?? '',
+    email: me?.email ?? '',
+    phone: me?.phone_number ?? '',
+    country: me?.country ?? '',
+  }
+}
+
 export default function SettingsPage() {
-  const initialProfile = useMemo<BusinessProfile>(
+  const emptyProfile = useMemo<BusinessProfile>(
     () => ({
-      businessName: 'TBM Events',
-      email: 'support@tbmevents.com',
-      phone: '+234 800 000 0000',
-      country: 'Nigeria',
+      businessName: '',
+      email: '',
+      phone: '',
+      country: '',
     }),
     []
   )
 
-  const [profile, setProfile] = useState<BusinessProfile>(initialProfile)
-  const [draft, setDraft] = useState<BusinessProfile>(initialProfile)
+  const [loadingMe, setLoadingMe] = useState(true)
+  const [me, setMe] = useState<AuthMeResponse | null>(null)
+
+  const [profile, setProfile] = useState<BusinessProfile>(emptyProfile)
+  const [draft, setDraft] = useState<BusinessProfile>(emptyProfile)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [savingProfile, setSavingProfile] = useState(false)
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null)
+  const [changingPassword, setChangingPassword] = useState(false)
 
   const [showPasswords, setShowPasswords] = useState(false)
+
+  const loadMe = useCallback(async () => {
+    setLoadingMe(true)
+
+    const resp = await HTTP<AuthMeResponse, undefined>({
+      url: getEndpoint('/auth/me'),
+      method: 'get',
+    })
+
+    if (!resp.ok) {
+      errorToast(getErrorMessage(resp.error))
+      setMe(null)
+      setProfile(emptyProfile)
+      setDraft(emptyProfile)
+      setLoadingMe(false)
+      return
+    }
+
+    const data = resp.data
+    setMe(data)
+
+    const next = normalizeMeToProfile(data)
+    setProfile(next)
+    setDraft(next)
+
+    setLoadingMe(false)
+  }, [emptyProfile])
+
+  useEffect(() => {
+    void loadMe()
+  }, [loadMe])
 
   function onStartEdit() {
     setDraft(profile)
@@ -84,20 +152,57 @@ export default function SettingsPage() {
     setIsEditingProfile(false)
   }
 
-  function onSaveProfile() {
-    setProfile(draft)
+  const onSaveProfile = useCallback(async () => {
+    if (savingProfile) return
+
+    const payload = {
+      business_name: draft.businessName.trim(),
+      phone_number: draft.phone.trim(),
+      email: draft.email.trim(),
+    }
+
+    if (!payload.business_name) {
+      errorToast('Business name is required.')
+      return
+    }
+    if (!payload.email) {
+      errorToast('Email is required.')
+      return
+    }
+
+    setSavingProfile(true)
+
+    const resp = await HTTP<any, typeof payload>({
+      url: getEndpoint('/auth/update-profile'),
+      method: 'put',
+      data: payload,
+    })
+
+    if (!resp.ok) {
+      errorToast(getErrorMessage(resp.error))
+      setSavingProfile(false)
+      return
+    }
+
+    successToast(resp.data?.message ?? 'Profile updated successfully.')
+
+    setProfile((p) => ({ ...p, businessName: payload.business_name, phone: payload.phone_number, email: payload.email }))
     setIsEditingProfile(false)
-    console.log('Save business profile', draft)
-  }
+    setSavingProfile(false)
+
+    // Refresh /auth/me to keep other fields in sync
+    void loadMe()
+  }, [draft.businessName, draft.email, draft.phone, loadMe, savingProfile])
 
   function validatePassword(pw: string) {
-    // Simple, friendly demo validation.
     if (pw.length < 8) return 'Password must be at least 8 characters.'
     return null
   }
 
-  function onChangePassword() {
+  const onChangePassword = useCallback(async () => {
     setPasswordMessage(null)
+
+    if (changingPassword) return
 
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordMessage('Please fill in all password fields.')
@@ -115,16 +220,39 @@ export default function SettingsPage() {
       return
     }
 
-    // Mock server call.
-    console.log('Change password', { currentPassword: '***', newPassword: '***' })
+    setChangingPassword(true)
+
+    const payload = {
+      current_password: currentPassword,
+      new_password: newPassword,
+      new_password_confirmation: confirmPassword,
+    }
+
+    const resp = await HTTP<any, typeof payload>({
+      url: getEndpoint('/auth/change-password'),
+      method: 'post',
+      data: payload,
+    })
+
+    if (!resp.ok) {
+      const msg = getErrorMessage(resp.error)
+      errorToast(msg)
+      setPasswordMessage(msg)
+      setChangingPassword(false)
+      return
+    }
+
+    successToast(resp.data?.message ?? 'Password updated successfully.')
 
     setCurrentPassword('')
     setNewPassword('')
     setConfirmPassword('')
-    setPasswordMessage('Password updated successfully (demo).')
-  }
+    setPasswordMessage('Password updated successfully.')
+    setChangingPassword(false)
+  }, [changingPassword, confirmPassword, currentPassword, newPassword])
 
   const p = isEditingProfile ? draft : profile
+  const profileDisabled = loadingMe || savingProfile || !isEditingProfile
 
   return (
     <SidebarLayout>
@@ -145,31 +273,44 @@ export default function SettingsPage() {
                 <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">
                   Update your business details. Changes apply across your dashboard.
                 </p>
+
+                {me?.email ? (
+                  <div className="mt-2 text-xs text-text-muted-light dark:text-text-muted-dark">Signed in as {me.email}</div>
+                ) : null}
               </div>
 
               {!isEditingProfile ? (
                 <button
                   type="button"
                   onClick={onStartEdit}
-                  className="rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white"
+                  disabled={loadingMe || savingProfile}
+                  className={cn(
+                    'rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white',
+                    (loadingMe || savingProfile) && 'opacity-60 cursor-not-allowed'
+                  )}
                 >
-                  Edit
+                  {loadingMe ? 'Loading…' : 'Edit'}
                 </button>
               ) : (
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={onCancelEdit}
-                    className="rounded-xl bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-white/20"
+                    disabled={savingProfile}
+                    className={cn(
+                      'rounded-xl bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-white/20',
+                      savingProfile && 'opacity-60 cursor-not-allowed'
+                    )}
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={onSaveProfile}
-                    className="rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white"
+                    disabled={savingProfile}
+                    className={cn('rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white', savingProfile && 'opacity-60 cursor-not-allowed')}
                   >
-                    Save changes
+                    {savingProfile ? 'Saving…' : 'Save changes'}
                   </button>
                 </div>
               )}
@@ -180,15 +321,23 @@ export default function SettingsPage() {
                 label="Business name"
                 value={p.businessName}
                 onChange={(v) => setDraft((d) => ({ ...d, businessName: v }))}
+                disabled={profileDisabled}
               />
-              <Field label="Email" type="email" value={p.email} onChange={(v) => setDraft((d) => ({ ...d, email: v }))} />
+              <Field
+                label="Email"
+                type="email"
+                value={p.email}
+                onChange={(v) => setDraft((d) => ({ ...d, email: v }))}
+                disabled={profileDisabled}
+              />
               <Field
                 label="Phone number"
                 value={p.phone}
                 onChange={(v) => setDraft((d) => ({ ...d, phone: v }))}
                 placeholder="+234 ..."
+                disabled={profileDisabled}
               />
-              <Field label="Country" value={p.country} onChange={(v) => setDraft((d) => ({ ...d, country: v }))} />
+              <Field label="Country" value={p.country} onChange={() => {}} disabled={true} />
             </div>
 
             {!isEditingProfile ? (
@@ -218,7 +367,7 @@ export default function SettingsPage() {
               </button>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className={cn('mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4', changingPassword && 'opacity-60 pointer-events-none')}>
               <Field
                 label="Current password"
                 type={showPasswords ? 'text' : 'password'}
@@ -254,13 +403,14 @@ export default function SettingsPage() {
             ) : null}
 
             <div className="mt-6 flex items-center justify-end">
-              <button type="button" onClick={onChangePassword} className="rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white">
-                Update password
+              <button
+                type="button"
+                onClick={onChangePassword}
+                disabled={changingPassword}
+                className={cn('rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white', changingPassword && 'opacity-60 cursor-not-allowed')}
+              >
+                {changingPassword ? 'Updating…' : 'Update password'}
               </button>
-            </div>
-
-            <div className="mt-3 text-xs text-text-muted-light dark:text-text-muted-dark">
-              Demo only: this logs to the console. Hook up your API when ready.
             </div>
           </GlassCard>
         </div>
