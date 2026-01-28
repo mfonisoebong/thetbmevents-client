@@ -5,6 +5,7 @@ export default function useUser() {
     const [user, setUser] = useState<any>(null);
     const [role, setRole] = useState<string | null>(null);
     const [name, setName] = useState<string | null>(null);
+    const [adminToken, setAdminToken] = useState<string | null>(null);
 
     useEffect(() => {
         const rawUser = getCookie('user');
@@ -24,7 +25,9 @@ export default function useUser() {
 
         const derivedName = cookieRole === 'admin' ? 'Administrator' : parsedUser?.business_name ?? null;
         setName(derivedName);
+
+        setAdminToken(getCookie('admin_token'));
     }, []);
 
-    return { user, role, name };
+    return { user, role, name, adminToken };
 }

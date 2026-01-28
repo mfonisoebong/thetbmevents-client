@@ -43,7 +43,15 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
     });
   }
 
-  const { name } = useUser();
+    function switchToAdmin() {
+      setCookie('token', adminToken || '');
+      setCookie('role', 'admin');
+      deleteCookie('admin_token');
+
+      window.location.href = '/admin/dashboard';
+    }
+
+  const { name, adminToken } = useUser();
 
   return (
     <>
@@ -118,6 +126,17 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
                         </Link>
                       </MenuItem>
                     ))}
+
+                    {adminToken && (
+                        <MenuItem>
+                          <div
+                              className="block px-3 py-1 text-sm/6 text-gray-900 data-[focus]:bg-gray-50 data-[focus]:outline-none dark:text-white dark:data-[focus]:bg-gray-800 cursor-pointer"
+                              onClick={switchToAdmin}
+                          >
+                            Switch to Admin
+                          </div>
+                        </MenuItem>
+                    )}
                   </MenuItems>
                 </Menu>
               </div>
