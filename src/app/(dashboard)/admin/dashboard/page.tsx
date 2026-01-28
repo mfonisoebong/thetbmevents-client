@@ -101,7 +101,6 @@ export default function AdminDashboardPage() {
         const netRevenue = Math.round(revenue * ADMIN_NET_REVENUE_RATE)
         return { month, revenue, netRevenue }
       })
-      .sort((a, b) => a.month.localeCompare(b.month))
   }, [overview])
 
   const topOrganizers = useMemo((): AdminTopOrganizerRow[] => {
