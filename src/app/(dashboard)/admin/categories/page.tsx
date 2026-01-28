@@ -1,16 +1,18 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react'
 import SidebarLayout from '../../../../components/layouts/SidebarLayout'
 import GlassCard from '../../../../components/GlassCard'
 import DataTable, { type DataTableColumn } from '../../../../components/DataTable'
-import { useTableSearch } from '../../../../hooks/useTableSearch'
-import { categories as mockCategories, events as mockEvents } from '@lib/mockEvents'
-import { cn } from '@lib/utils'
+import AdminCategoriesShimmer from '../../../../components/dashboard/AdminCategoriesShimmer'
+import HTTP from '@lib/HTTP'
+import { cn, getEndpoint, getErrorMessage } from '@lib/utils'
+import type { ApiData, Category } from '@lib/types'
 
 type CategoryRow = {
   id: string
+  slug: string
   name: string
   eventsCount: number
 }
@@ -19,32 +21,13 @@ function normalizeName(name: string) {
   return name.trim().replace(/\s+/g, ' ')
 }
 
-function slugId(name: string) {
-  return normalizeName(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-}
-
-function uid() {
-  return `cat_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
-}
-
-function buildCategoryRows(): CategoryRow[] {
-  const base = (mockCategories ?? []).filter((c) => c && c.toLowerCase() !== 'all')
-  const unique = Array.from(new Set(base.map((c) => normalizeName(String(c)))))
-
-  const countByCategory = new Map<string, number>()
-  for (const e of mockEvents ?? []) {
-    const c = normalizeName(String((e as any)?.category ?? ''))
-    if (!c) continue
-    countByCategory.set(c, (countByCategory.get(c) ?? 0) + 1)
+function toRow(c: Category): CategoryRow {
+  return {
+    id: c.id,
+    slug: c.slug,
+    name: c.category,
+    eventsCount: c.events_count ?? 0,
   }
-
-  return unique
-    .map((name) => ({
-      id: slugId(name) || name,
-      name,
-      eventsCount: countByCategory.get(name) ?? 0,
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name))
 }
 
 function CategoryModal({
@@ -52,11 +35,13 @@ function CategoryModal({
   onClose,
   onCreate,
   existingNames,
+  isSubmitting,
 }: {
   open: boolean
   onClose: () => void
-  onCreate: (name: string) => void
+  onCreate: (name: string) => Promise<void> | void
   existingNames: string[]
+  isSubmitting?: boolean
 }) {
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -67,11 +52,12 @@ function CategoryModal({
   }
 
   function close() {
+    if (isSubmitting) return
     reset()
     onClose()
   }
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault()
 
     const n = normalizeName(name)
@@ -86,7 +72,7 @@ function CategoryModal({
       return
     }
 
-    onCreate(n)
+    await onCreate(n)
     close()
   }
 
@@ -104,7 +90,8 @@ function CategoryModal({
               <button
                 type="button"
                 onClick={close}
-                className="rounded-lg px-3 py-1.5 text-sm font-semibold bg-black/5 dark:bg-white/10 text-gray-900 dark:text-white hover:bg-black/10 dark:hover:bg-white/15"
+                disabled={isSubmitting}
+                className="rounded-lg px-3 py-1.5 text-sm font-semibold bg-black/5 dark:bg-white/10 text-gray-900 dark:text-white hover:bg-black/10 dark:hover:bg-white/15 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Close
               </button>
@@ -121,25 +108,29 @@ function CategoryModal({
                   setError(null)
                 }}
                 placeholder="e.g. Sports"
-                className="mt-2 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                disabled={isSubmitting}
+                className="mt-2 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow disabled:opacity-60 disabled:cursor-not-allowed"
               />
 
               {error ? (
-                <div className="mt-3 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-700 dark:text-rose-200">
-                  {error}
-                </div>
+                <div className="mt-3 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-700 dark:text-rose-200">{error}</div>
               ) : null}
 
               <div className="mt-5 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={close}
-                  className="rounded-xl bg-black/5 dark:bg-white/10 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-black/10 dark:hover:bg-white/15"
+                  disabled={isSubmitting}
+                  className="rounded-xl bg-black/5 dark:bg-white/10 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-black/10 dark:hover:bg-white/15 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
-                <button type="submit" className="rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white hover:opacity-95">
-                  Create
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white hover:opacity-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? 'Creating…' : 'Create'}
                 </button>
               </div>
             </form>
@@ -151,14 +142,49 @@ function CategoryModal({
 }
 
 export default function AdminCategoriesPage() {
-  const [rows, setRows] = useState<CategoryRow[]>(() => buildCategoryRows())
+  const [rows, setRows] = useState<CategoryRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [reloadToken, setReloadToken] = useState(0)
+
   const [createOpen, setCreateOpen] = useState(false)
+  const [creating, setCreating] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  const { query, setQuery, filtered } = useTableSearch(rows, (row, q) => {
-    const hay = `${row.name}`.toLowerCase()
-    return hay.includes(q)
-  })
+  const [query, setQuery] = useState('')
+
+  const loadCategories = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
+    const resp = await HTTP<ApiData<Category[]>, undefined>({
+      url: getEndpoint('/dashboard/admin/categories'),
+      method: 'get',
+    })
+
+    if (!resp.ok || !resp.data) {
+      setRows([])
+      setError(getErrorMessage(resp.error))
+      setLoading(false)
+      return
+    }
+
+    const items = Array.isArray(resp.data.data) ? resp.data.data : []
+    setRows(items.map(toRow).sort((a, b) => a.name.localeCompare(b.name)))
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    void loadCategories()
+  }, [loadCategories, reloadToken])
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return rows
+    return rows.filter((row) => row.name.toLowerCase().includes(q))
+  }, [rows, query])
+
+  const existingNames = useMemo(() => rows.map((r) => r.name), [rows])
 
   const columns = useMemo((): DataTableColumn<CategoryRow>[] => {
     return [
@@ -166,9 +192,9 @@ export default function AdminCategoriesPage() {
         key: 'name',
         header: 'Category',
         render: (r) => (
-          <div className="min-w-[200px]">
+          <div className="min-w-[220px]">
             <div className="font-semibold text-gray-900 dark:text-white">{r.name}</div>
-            <div className="mt-0.5 text-xs text-text-muted-light dark:text-text-muted-dark">ID: {r.id}</div>
+            <div className="mt-0.5 text-xs text-text-muted-light dark:text-text-muted-dark">Slug: {r.slug}</div>
           </div>
         ),
       },
@@ -182,52 +208,105 @@ export default function AdminCategoriesPage() {
         key: 'actions',
         header: 'Actions',
         className: 'whitespace-nowrap',
-        render: (r) => (
-          <button
-            type="button"
-            onClick={() => onDelete(r)}
-            className={cn(
-              'rounded-lg px-3 py-1.5 text-xs font-semibold border',
-              r.eventsCount > 0
-                ? 'border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 text-gray-900 dark:text-white hover:bg-black/10 dark:hover:bg-white/15'
-                : 'border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-200 hover:bg-rose-500/15'
-            )}
-            title={r.eventsCount > 0 ? 'Cannot delete categories that are used by events in demo data.' : 'Delete category'}
-          >
-            Delete
-          </button>
-        ),
+        render: (r) => {
+          const cannotDelete = r.eventsCount > 0
+
+          return (
+            <button
+              type="button"
+              onClick={() => {
+                if (cannotDelete) return
+                void onDelete(r)
+              }}
+              className={cn(
+                'rounded-lg px-3 py-1.5 text-xs font-semibold border border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-200 hover:bg-rose-500/15 disabled:opacity-60 disabled:cursor-not-allowed'
+              )}
+              title={cannotDelete ? 'Can’t delete a category with events.' : 'Delete category'}
+              disabled={cannotDelete}
+            >
+              Delete
+            </button>
+          )
+        },
       },
     ]
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows])
 
-  const existingNames = useMemo(() => rows.map((r) => r.name), [rows])
-
-  function onCreate(name: string) {
+  async function onCreate(name: string) {
     setToast(null)
+    setCreating(true)
 
-    const id = slugId(name) || uid()
-    const next: CategoryRow = { id, name, eventsCount: 0 }
+    const resp = await HTTP<ApiData<Category>, { name: string }>({
+      url: getEndpoint('/dashboard/admin/categories'),
+      method: 'post',
+      // Backend says only required field is name.
+      data: { name },
+    })
 
-    setRows((prev) => [next, ...prev].sort((a, b) => a.name.localeCompare(b.name)))
-    setToast({ type: 'success', text: `Category “${name}” created.` })
-  }
+    setCreating(false)
 
-  function onDelete(r: CategoryRow) {
-    setToast(null)
-
-    if (r.eventsCount > 0) {
-      setToast({ type: 'error', text: 'This category is used by existing events and cannot be deleted (demo constraint).' })
+    if (!resp.ok || !resp.data) {
+      setToast({ type: 'error', text: getErrorMessage(resp.error) })
       return
     }
+
+    const created = resp.data.data
+    setRows((prev) => [toRow(created), ...prev].sort((a, b) => a.name.localeCompare(b.name)))
+    setToast({ type: 'success', text: `Category “${normalizeName(name)}” created.` })
+  }
+
+  async function onDelete(r: CategoryRow) {
+    setToast(null)
 
     const ok = window.confirm(`Delete category “${r.name}”? This can’t be undone.`)
     if (!ok) return
 
+    const resp = await HTTP<ApiData<any>, undefined>({
+      url: getEndpoint(`/dashboard/admin/categories/${encodeURIComponent(r.id)}`),
+      method: 'delete',
+    })
+
+    if (!resp.ok) {
+      setToast({ type: 'error', text: getErrorMessage(resp.error) })
+      return
+    }
+
     setRows((prev) => prev.filter((x) => x.id !== r.id))
     setToast({ type: 'success', text: `Category “${r.name}” deleted.` })
+  }
+
+  if (loading) {
+    return (
+      <SidebarLayout>
+        <AdminCategoriesShimmer />
+      </SidebarLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <SidebarLayout>
+        <div className="w-full max-w-7xl mx-auto px-6 py-8">
+          <GlassCard className="p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Categories</h1>
+                <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">We couldn’t load categories right now.</p>
+                <div className="mt-3 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-700 dark:text-rose-200">{error}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReloadToken((n) => n + 1)}
+                className="shrink-0 rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white"
+              >
+                Retry
+              </button>
+            </div>
+          </GlassCard>
+        </div>
+      </SidebarLayout>
+    )
   }
 
   return (
@@ -236,7 +315,7 @@ export default function AdminCategoriesPage() {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Categories</h1>
-            <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">Create and manage event categories (demo data from mockEvents).</p>
+            <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">Create and manage event categories.</p>
           </div>
 
           <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
@@ -287,11 +366,8 @@ export default function AdminCategoriesPage() {
               rowKey={(r) => r.id}
               emptyTitle="No categories"
               emptyDescription="Create your first category to organize events."
+              pagination={{ enabled: true, pageSize: 25, pageSizeOptions: [10, 25, 50, 100] }}
             />
-          </div>
-
-          <div className="mt-4 text-xs text-text-muted-light dark:text-text-muted-dark">
-            Note: In this demo, categories referenced by mock events can’t be deleted.
           </div>
         </GlassCard>
 
@@ -300,6 +376,7 @@ export default function AdminCategoriesPage() {
           onClose={() => setCreateOpen(false)}
           onCreate={onCreate}
           existingNames={existingNames}
+          isSubmitting={creating}
         />
       </div>
     </SidebarLayout>

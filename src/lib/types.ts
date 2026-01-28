@@ -108,7 +108,6 @@ export interface ApiData<T> {
 
 export type Role = "admin" | "organizer" | (string & {});
 
-// Admin finance
 export interface AdminFinanceSummary {
     all_time_revenue: string;
     recent_transactions: RecentTransaction[];
@@ -136,7 +135,6 @@ export interface TopOrganizer {
     id: string;
 }
 
-// Admin dashboard
 export interface AdminDashboardOverview {
     revenue_this_month: string;
     total_events: number;
@@ -150,4 +148,12 @@ export interface RevenuePast12Month {
     month: string;
     year: number;
     revenue: number;
+}
+
+export interface Category {
+    id: string;
+    slug: string;
+    category: string;
+    icon?: any;
+    events_count: number;
 }
