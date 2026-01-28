@@ -1,10 +1,45 @@
 'use client'
 
-import React, { useEffect } from 'react'
-import type { ReactElement } from 'react'
+import React, {useEffect, useState, type ReactElement, useRef} from 'react'
 import Link from "next/link";
+import {Dialog, DialogBackdrop, DialogPanel, DialogTitle} from "@headlessui/react";
+import {getBaseURL} from "@lib/utils";
+
+import VideoJS from "@components/VideoJs";
+import videojs from "video.js";
+import Player from "video.js/dist/types/player";
 
 export default function Index(): ReactElement {
+  const [isOpen, setIsOpen] = useState<boolean>(false)
+
+  const playerRef = useRef<Player| null>(null);
+
+  const videoJsOptions = {
+    autoplay: true,
+    controls: true,
+    responsive: true,
+    fluid: true,
+    sources: [
+      {
+        src: `${getBaseURL()}/videos/hls/master.m3u8`,
+        type: "application/x-mpegURL"
+      }
+    ]
+  };
+
+  const handlePlayerReady = (player: Player) => {
+    playerRef.current = player;
+
+    // You can handle player events here, for example:
+    player.on('waiting', () => {
+      videojs.log('player is waiting');
+    });
+
+    player.on('dispose', () => {
+      videojs.log('player will dispose');
+    });
+  };
+
   useEffect(() => {
     if (typeof window === 'undefined') return
 
@@ -55,6 +90,7 @@ export default function Index(): ReactElement {
               </button>
             </Link>
             <button
+                onClick={() => setIsOpen(true)}
                 className="px-6 py-4 rounded-xl text-text-muted-light dark:text-text-muted-dark font-medium hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-2">
               <span className="material-icons-outlined">play_circle</span>
               See how it works
@@ -129,6 +165,31 @@ export default function Index(): ReactElement {
           </div>
         </div>
       </main>
+
+      <Dialog
+          open={isOpen}
+          onClose={() => setIsOpen(false)}
+          transition
+          className="relative z-50 transition-opacity data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in"
+      >
+        <DialogBackdrop className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <DialogPanel className="w-full max-w-2xl rounded-2xl bg-white/80 dark:bg-slate-950/70 border border-black/10 dark:border-white/10 backdrop-blur-xl shadow-xl p-6">
+            <DialogTitle className="text-lg font-extrabold text-gray-900 dark:text-white mb-6">See How it Works</DialogTitle>
+
+            {/*<MediaPlayer title="TBM Video" src={`${getBaseURL()}/videos/video_1080p.mp4`} streamType="on-demand">
+              <MediaProvider />
+              <PlyrLayout  icons={plyrLayoutIcons} />
+            </MediaPlayer>*/}
+
+            <VideoJS options={videoJsOptions} onReady={handlePlayerReady} />
+
+
+          </DialogPanel>
+        </div>
+
+      </Dialog>
     </>
   )
 }
