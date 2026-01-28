@@ -51,7 +51,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
       window.location.href = '/admin/dashboard';
     }
 
-  const { name, adminToken } = useUser();
+  const { name, role, adminToken } = useUser();
 
   return (
     <>
@@ -127,7 +127,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
                       </MenuItem>
                     ))}
 
-                    {adminToken && (
+                    {adminToken && role === 'organizer' && (
                         <MenuItem>
                           <div
                               className="block px-3 py-1 text-sm/6 text-gray-900 data-[focus]:bg-gray-50 data-[focus]:outline-none dark:text-white dark:data-[focus]:bg-gray-800 cursor-pointer"
