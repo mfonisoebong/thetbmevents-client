@@ -1,8 +1,9 @@
 import React from 'react';
 import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
-import "videojs-http-source-selector";
 
+// To provide quality control option in HLS Video
+import 'videojs-hls-quality-selector/src/plugin'
 
 export const VideoJS = (props) => {
   const videoRef = React.useRef(null);
@@ -20,8 +21,14 @@ export const VideoJS = (props) => {
       videoRef.current.appendChild(videoElement);
 
       const player = playerRef.current = videojs(videoElement, options, () => {
-        player.httpSourceSelector?.();
-        videojs.log('player is ready');
+        // Initialize quality selector plugin
+        if (player.hlsQualitySelector) {
+          player.hlsQualitySelector({
+            displayCurrentQuality: true
+          });
+        }
+
+        // videojs.log('player is ready');
         onReady && onReady(player);
       });
 

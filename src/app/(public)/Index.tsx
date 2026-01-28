@@ -6,7 +6,6 @@ import {Dialog, DialogBackdrop, DialogPanel, DialogTitle} from "@headlessui/reac
 import {getBaseURL} from "@lib/utils";
 
 import VideoJS from "@components/VideoJs";
-import videojs from "video.js";
 import Player from "video.js/dist/types/player";
 
 export default function Index(): ReactElement {
@@ -32,11 +31,11 @@ export default function Index(): ReactElement {
 
     // You can handle player events here, for example:
     player.on('waiting', () => {
-      videojs.log('player is waiting');
+      // videojs.log('player is waiting');
     });
 
     player.on('dispose', () => {
-      videojs.log('player will dispose');
+      // videojs.log('player will dispose');
     });
   };
 

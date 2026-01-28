@@ -27,7 +27,7 @@
     "react-quill-new": "^3.7.0",
     "sanitize-html": "^2.17.0",
     "tailwind-merge": "^1.13.2",
-    "videojs-http-source-selector": "^1.1.6"
+    "videojs-hls-quality-selector": "^2.0.0"
   },
   "devDependencies": {
     "@types/js-cookie": "^3.0.3",
