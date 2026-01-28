@@ -131,6 +131,23 @@ export interface TopOrganizer {
     organizer: string;
     avatar?: string;
     email: string;
-    tickets_sold: string;
+    tickets_sold: number;
+    total_sales: number;
     id: string;
+}
+
+// Admin dashboard
+export interface AdminDashboardOverview {
+    revenue_this_month: string;
+    total_events: number;
+    events_this_month: number;
+    total_organizers: number;
+    revenue_past_12_months: RevenuePast12Month[];
+    top_organizers: TopOrganizer[];
+}
+
+export interface RevenuePast12Month {
+    month: string;
+    year: number;
+    revenue: number;
 }

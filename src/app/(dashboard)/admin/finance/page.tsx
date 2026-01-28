@@ -33,8 +33,9 @@ type UiTransactionRow = {
 type UiTopOrganizerRow = {
   organizerId: string
   organizerName: string
-  ticketsSold: string
+  ticketsSold: number
   eventTitle: string
+  totalRevenue: number
   email: string
 }
 
@@ -109,6 +110,7 @@ export default function AdminFinancePage() {
       organizerName: o.organizer,
       ticketsSold: o.tickets_sold,
       eventTitle: o.title,
+      totalRevenue: o.total_sales,
       email: o.email,
     }))
   }, [overview])
@@ -178,9 +180,9 @@ export default function AdminFinancePage() {
       },
       {
         key: 'revenue',
-        header: 'Event',
+        header: 'Revenue',
         className: 'whitespace-nowrap',
-        render: (r) => <span className="font-semibold">{r.eventTitle}</span>,
+        render: (r) => <span className="font-semibold">{currencySymbol('NGN')}{formatNumber(r.totalRevenue)}</span>,
       },
     ]
   }, [])
@@ -350,7 +352,7 @@ export default function AdminFinancePage() {
           <GlassCard className="p-5">
             <div>
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">Top organizers</h2>
-              <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">By all-time ticket sales.</p>
+              <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">By all-time revenue.</p>
             </div>
 
             <div className="mt-4">
