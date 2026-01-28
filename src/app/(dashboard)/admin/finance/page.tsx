@@ -1,17 +1,13 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import SidebarLayout from '../../../../components/layouts/SidebarLayout'
 import GlassCard from '../../../../components/GlassCard'
 import DataTable, { type DataTableColumn } from '../../../../components/DataTable'
-import { events as mockEvents } from '@lib/mockEvents'
-import {
-  buildAdminFinanceSummary,
-  findTransactionByReference,
-  type AdminTopOrganizerByRevenueRow,
-  type AdminTransactionRow,
-} from '@lib/adminFinanceMock'
-import { cn, currencySymbol, formatNumber } from '@lib/utils'
+import AdminFinanceShimmer from '../../../../components/dashboard/AdminFinanceShimmer'
+import HTTP from '@lib/HTTP'
+import { cn, currencySymbol, formatNumber, getEndpoint, getErrorMessage } from '@lib/utils'
+import type { ApiData, AdminFinanceSummary, RecentTransaction, TopOrganizer } from '@lib/types'
 
 function StatCard({ title, value, sub }: { title: string; value: React.ReactNode; sub?: React.ReactNode }) {
   return (
@@ -23,22 +19,107 @@ function StatCard({ title, value, sub }: { title: string; value: React.ReactNode
   )
 }
 
-function statusPill(status: AdminTransactionRow['status']) {
+type UiTransactionRow = {
+  id: string
+  reference: string
+  eventName: string
+  email?: string
+  chargedAmount: number
+  currency: any
+  status: string
+  createdAt: string
+}
+
+type UiTopOrganizerRow = {
+  organizerId: string
+  organizerName: string
+  ticketsSold: string
+  eventTitle: string
+  email: string
+}
+
+function normalizeTxStatus(status: string): 'success' | 'pending' | 'failed' {
+  const s = (status ?? '').toLowerCase().trim()
+  if (['success', 'successful', 'paid', 'completed', 'complete'].includes(s)) return 'success'
+  if (['pending', 'processing', 'waiting'].includes(s)) return 'pending'
+  return 'failed'
+}
+
+function statusPill(status: 'success' | 'pending' | 'failed') {
   if (status === 'success') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200'
   if (status === 'pending') return 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200'
   return 'bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-200'
 }
 
-export default function AdminFinancePage() {
-  const summary = useMemo(() => buildAdminFinanceSummary(mockEvents, new Date()), [])
+function mapRecentTransaction(tx: RecentTransaction): UiTransactionRow {
+  return {
+    id: tx.id,
+    reference: tx.reference,
+    eventName: tx.event_name,
+    email: tx.email,
+    chargedAmount: tx.amount,
+    currency: tx.currency,
+    status: normalizeTxStatus(tx.status),
+    createdAt: tx.created_at,
+  }
+}
 
-  const columns = useMemo((): DataTableColumn<AdminTransactionRow>[] => {
+function sfNumber(input: string): number {
+  const n = Number.parseFloat(String(input ?? '').replace(/,/g, ''))
+  return Number.isFinite(n) ? n : 0
+}
+
+export default function AdminFinancePage() {
+  const [overview, setOverview] = useState<AdminFinanceSummary | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [reloadToken, setReloadToken] = useState(0)
+
+  const loadOverview = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
+    const resp = await HTTP<ApiData<AdminFinanceSummary>, undefined>({
+      url: getEndpoint('/dashboard/admin/finance/overview'),
+      method: 'get',
+    })
+
+    if (!resp.ok || !resp.data) {
+      setOverview(null)
+      setError(getErrorMessage(resp.error))
+      setLoading(false)
+      return
+    }
+
+    setOverview(resp.data.data)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    void loadOverview()
+  }, [loadOverview, reloadToken])
+
+  const transactions: UiTransactionRow[] = useMemo(() => {
+    return (overview?.recent_transactions ?? []).map(mapRecentTransaction)
+  }, [overview])
+
+  const topOrganizers: UiTopOrganizerRow[] = useMemo(() => {
+    return (overview?.top_organizers ?? []).map((o: TopOrganizer) => ({
+      organizerId: o.id,
+      organizerName: o.organizer,
+      ticketsSold: o.tickets_sold,
+      eventTitle: o.title,
+      email: o.email,
+    }))
+  }, [overview])
+
+  const columns = useMemo((): DataTableColumn<UiTransactionRow>[] => {
     return [
       {
-        key: 'orderId',
+        key: 'id',
         header: 'Order ID',
         className: 'whitespace-nowrap',
-        render: (r) => <span className="font-semibold">{r.orderId}</span>,
+        render: (r) => <span className="font-semibold">{r.id}</span>,
       },
       {
         key: 'event',
@@ -49,11 +130,14 @@ export default function AdminFinancePage() {
         key: 'email',
         header: 'Email',
         className: 'whitespace-nowrap',
-        render: (r) => (
-          <a className="text-sky-700 dark:text-sky-300 hover:underline" href={`mailto:${r.email}`}>
-            {r.email}
-          </a>
-        ),
+        render: (r) =>
+          r.email ? (
+            <a className="text-sky-700 dark:text-sky-300 hover:underline" href={`mailto:${r.email}`}>
+              {r.email}
+            </a>
+          ) : (
+            <span className="text-text-muted-light dark:text-text-muted-dark">—</span>
+          ),
       },
       {
         key: 'chargedAmount',
@@ -61,7 +145,7 @@ export default function AdminFinancePage() {
         className: 'whitespace-nowrap',
         render: (r) => (
           <span className="font-semibold">
-            {currencySymbol(r.currency)}
+            {currencySymbol(String(r.currency ?? ''))}
             {formatNumber(r.chargedAmount)}
           </span>
         ),
@@ -71,13 +155,15 @@ export default function AdminFinancePage() {
         header: 'Status',
         className: 'whitespace-nowrap',
         render: (r) => (
-          <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', statusPill(r.status))}>{r.status}</span>
+          <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', statusPill(r.status as any))}>
+            {r.status}
+          </span>
         ),
       },
     ]
   }, [])
 
-  const topOrganizerColumns = useMemo((): DataTableColumn<AdminTopOrganizerByRevenueRow>[] => {
+  const topOrganizerColumns = useMemo((): DataTableColumn<UiTopOrganizerRow>[] => {
     return [
       {
         key: 'organizer',
@@ -88,40 +174,88 @@ export default function AdminFinancePage() {
         key: 'ticketsSold',
         header: 'Tickets sold',
         className: 'whitespace-nowrap',
-        render: (r) => <span className="text-text-muted-light dark:text-text-muted-dark">{formatNumber(r.ticketsSold)}</span>,
+        render: (r) => <span className="text-text-muted-light dark:text-text-muted-dark">{r.ticketsSold}</span>,
       },
       {
         key: 'revenue',
-        header: 'Revenue',
+        header: 'Event',
         className: 'whitespace-nowrap',
-        render: (r) => (
-          <span className="font-semibold">
-            {currencySymbol('NGN')}
-            {formatNumber(r.revenue)}
-          </span>
-        ),
+        render: (r) => <span className="font-semibold">{r.eventTitle}</span>,
       },
     ]
   }, [])
 
   const [reference, setReference] = useState('')
-  const [verifyResult, setVerifyResult] = useState<AdminTransactionRow | null>(null)
+  const [verifying, setVerifying] = useState(false)
+  const [verifyResult, setVerifyResult] = useState<UiTransactionRow | null>(null)
   const [verifyMessage, setVerifyMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  function onVerify(e: React.FormEvent) {
+  async function onVerify(e: React.FormEvent) {
     e.preventDefault()
-    setVerifyMessage(null)
 
-    const tx = findTransactionByReference(mockEvents, reference, new Date())
-
-    if (!tx) {
+    const ref = reference.trim()
+    if (!ref) {
       setVerifyResult(null)
-      setVerifyMessage({ type: 'error', text: 'No transaction found for that reference (demo lookup).' })
+      setVerifyMessage({ type: 'error', text: 'Please enter a transaction reference.' })
       return
     }
 
+    setVerifying(true)
+    setVerifyMessage(null)
+
+    const resp = await HTTP<ApiData<RecentTransaction>, undefined>({
+      url: getEndpoint(`/dashboard/admin/verify-transaction/${encodeURIComponent(ref)}`),
+      method: 'get',
+    })
+
+    setVerifying(false)
+
+    if (!resp.ok || !resp.data) {
+      setVerifyResult(null)
+      setVerifyMessage({ type: 'error', text: getErrorMessage(resp.error) })
+      return
+    }
+
+    const tx = mapRecentTransaction(resp.data.data)
     setVerifyResult(tx)
     setVerifyMessage({ type: 'success', text: `Transaction found: ${tx.status.toUpperCase()}` })
+  }
+
+  const allTimeRevenue = useMemo(() => sfNumber(overview?.all_time_revenue ?? '0'), [overview?.all_time_revenue])
+
+  if (loading) {
+    return (
+      <SidebarLayout>
+        <AdminFinanceShimmer />
+      </SidebarLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <SidebarLayout>
+        <div className="w-full max-w-7xl mx-auto px-6 py-8">
+          <GlassCard className="p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Finance</h1>
+                <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">We couldn’t load finance overview right now.</p>
+                <div className="mt-3 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-700 dark:text-rose-200">
+                  {error}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReloadToken((n) => n + 1)}
+                className="shrink-0 rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white"
+              >
+                Retry
+              </button>
+            </div>
+          </GlassCard>
+        </div>
+      </SidebarLayout>
+    )
   }
 
   return (
@@ -140,7 +274,7 @@ export default function AdminFinancePage() {
             value={
               <>
                 {currencySymbol('NGN')}
-                {formatNumber(summary.totalRevenueAllTime)}
+                {formatNumber(allTimeRevenue)}
               </>
             }
             sub="Gross ticket revenue"
@@ -160,9 +294,14 @@ export default function AdminFinancePage() {
                 onChange={(e) => setReference(e.target.value)}
                 placeholder="e.g. TBM_1_0_123456"
                 className="w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                disabled={verifying}
               />
-              <button type="submit" className="shrink-0 rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white">
-                Verify
+              <button
+                type="submit"
+                className="shrink-0 rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={verifying}
+              >
+                {verifying ? 'Verifying…' : 'Verify'}
               </button>
             </form>
 
@@ -183,12 +322,12 @@ export default function AdminFinancePage() {
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 p-4">
                   <div className="text-xs font-semibold uppercase tracking-wider text-text-muted-light dark:text-text-muted-dark">Order ID</div>
-                  <div className="mt-1 text-gray-900 dark:text-white font-semibold">{verifyResult.orderId}</div>
+                  <div className="mt-1 text-gray-900 dark:text-white font-semibold">{verifyResult.id}</div>
                 </div>
                 <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 p-4">
                   <div className="text-xs font-semibold uppercase tracking-wider text-text-muted-light dark:text-text-muted-dark">Status</div>
                   <div className="mt-1">
-                    <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', statusPill(verifyResult.status))}>
+                    <span className={cn('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', statusPill(verifyResult.status as any))}>
                       {verifyResult.status}
                     </span>
                   </div>
@@ -200,7 +339,7 @@ export default function AdminFinancePage() {
                 <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 p-4">
                   <div className="text-xs font-semibold uppercase tracking-wider text-text-muted-light dark:text-text-muted-dark">Charged amount</div>
                   <div className="mt-1 text-gray-900 dark:text-white font-semibold">
-                    {currencySymbol(verifyResult.currency)}
+                    {currencySymbol(String(verifyResult.currency ?? ''))}
                     {formatNumber(verifyResult.chargedAmount)}
                   </div>
                 </div>
@@ -211,13 +350,13 @@ export default function AdminFinancePage() {
           <GlassCard className="p-5">
             <div>
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">Top organizers</h2>
-              <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">By all-time revenue.</p>
+              <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">By all-time ticket sales.</p>
             </div>
 
             <div className="mt-4">
-              <DataTable<AdminTopOrganizerByRevenueRow>
+              <DataTable<UiTopOrganizerRow>
                 columns={topOrganizerColumns}
-                rows={summary.topOrganizersByRevenue}
+                rows={topOrganizers}
                 rowKey={(r) => r.organizerId}
                 emptyTitle="No organizers"
                 emptyDescription="Organizer revenue will appear once tickets are sold."
@@ -230,17 +369,18 @@ export default function AdminFinancePage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">Recent transactions</h2>
-              <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">10 most recent transactions (demo data).</p>
+              <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">10 most recent transactions.</p>
             </div>
           </div>
 
           <div className="mt-4">
-            <DataTable<AdminTransactionRow>
+            <DataTable<UiTransactionRow>
               columns={columns}
-              rows={summary.recentTransactions}
-              rowKey={(r) => r.id}
+              rows={transactions}
+              rowKey={(r) => r.id || r.reference}
               emptyTitle="No transactions"
               emptyDescription="Transactions will appear once payments are processed."
+              pagination={{ enabled: true, pageSize: 10, pageSizeOptions: [10, 25, 50] }}
             />
           </div>
         </GlassCard>

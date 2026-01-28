@@ -107,3 +107,30 @@ export interface ApiData<T> {
 }
 
 export type Role = "admin" | "organizer" | (string & {});
+
+// Admin finance
+export interface AdminFinanceSummary {
+    all_time_revenue: string;
+    recent_transactions: RecentTransaction[];
+    top_organizers: TopOrganizer[];
+}
+
+export interface RecentTransaction {
+    id: string;
+    reference: string;
+    event_name: string;
+    email?: string;
+    amount: number;
+    currency: any;
+    status: string;
+    created_at: string;
+}
+
+export interface TopOrganizer {
+    title: string;
+    organizer: string;
+    avatar?: string;
+    email: string;
+    tickets_sold: string;
+    id: string;
+}

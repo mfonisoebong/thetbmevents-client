@@ -7,7 +7,6 @@ export type AdminTransactionStatus = 'success' | 'pending' | 'failed'
 export type AdminTransactionRow = {
   id: string
   reference: string
-  orderId: string
   eventName: string
   email: string
   chargedAmount: number
@@ -87,7 +86,6 @@ function buildAllTransactions(events: EventItem[], now = new Date()): AdminTrans
       txs.push({
         id: `${x.event.id}_${i}`,
         reference,
-        orderId,
         eventName: x.event.title,
         email,
         chargedAmount,
