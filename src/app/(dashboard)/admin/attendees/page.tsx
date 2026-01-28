@@ -1,15 +1,23 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react'
 import SidebarLayout from '../../../../components/layouts/SidebarLayout'
 import GlassCard from '../../../../components/GlassCard'
 import DataTable, { type DataTableColumn } from '../../../../components/DataTable'
-import { useTableSearch } from '../../../../hooks/useTableSearch'
-import { currencySymbol, formatNumber } from '@lib/utils'
-import { makeMockAttendees, type AdminAttendeeRow } from '@lib/adminAttendeesMock'
+import AdminAttendeesShimmer from '../../../../components/dashboard/AdminAttendeesShimmer'
+import HTTP from '@lib/HTTP'
+import { getEndpoint, getErrorMessage } from '@lib/utils'
+import type { ApiData, Attendee } from '@lib/types'
 
-function Modal({ open, onClose, row }: { open: boolean; onClose: () => void; row: AdminAttendeeRow | null }) {
+type AttendeeRow = {
+  id: string
+  full_name: string
+  email: string
+  ticket_name: string
+}
+
+function Modal({ open, onClose, row }: { open: boolean; onClose: () => void; row: AttendeeRow | null }) {
   return (
     <Dialog open={open} onClose={onClose} transition className="relative z-50 transition-opacity data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in">
       <DialogBackdrop className="fixed inset-0 bg-black/60" />
@@ -33,8 +41,8 @@ function Modal({ open, onClose, row }: { open: boolean; onClose: () => void; row
             {row ? (
               <div className="mt-4 grid grid-cols-1 gap-3">
                 <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wider text-text-muted-light dark:text-text-muted-dark">Name</div>
-                  <div className="mt-1 text-gray-900 dark:text-white font-semibold">{row.name}</div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-text-muted-light dark:text-text-muted-dark">Full name</div>
+                  <div className="mt-1 text-gray-900 dark:text-white font-semibold">{row.full_name}</div>
                 </div>
 
                 <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 p-4">
@@ -44,23 +52,9 @@ function Modal({ open, onClose, row }: { open: boolean; onClose: () => void; row
                   </a>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 p-4">
-                    <div className="text-xs font-semibold uppercase tracking-wider text-text-muted-light dark:text-text-muted-dark">Event</div>
-                    <div className="mt-1 text-gray-900 dark:text-white">{row.event}</div>
-                  </div>
-                  <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 p-4">
-                    <div className="text-xs font-semibold uppercase tracking-wider text-text-muted-light dark:text-text-muted-dark">Ticket</div>
-                    <div className="mt-1 text-gray-900 dark:text-white">{row.ticketPurchased}</div>
-                  </div>
-                </div>
-
                 <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wider text-text-muted-light dark:text-text-muted-dark">Total spent</div>
-                  <div className="mt-1 text-gray-900 dark:text-white font-semibold">
-                    {currencySymbol('NGN')}
-                    {formatNumber(row.totalSpent)}
-                  </div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-text-muted-light dark:text-text-muted-dark">Ticket</div>
+                  <div className="mt-1 text-gray-900 dark:text-white">{row.ticket_name}</div>
                 </div>
               </div>
             ) : (
@@ -73,54 +67,84 @@ function Modal({ open, onClose, row }: { open: boolean; onClose: () => void; row
   )
 }
 
-export default function AdminAttendeesPage() {
-  const all = useMemo(() => makeMockAttendees(60), [])
-  const recent = useMemo(() => all.slice(0, 10), [all])
+function toAttendeeRow(a: Attendee): AttendeeRow {
+  return {
+    id: String(a.id),
+    full_name: a.full_name,
+    email: a.email,
+    ticket_name: a.ticket_name,
+  }
+}
 
-  const columns = useMemo((): DataTableColumn<AdminAttendeeRow>[] => {
+export default function AdminAttendeesPage() {
+  const [rows, setRows] = useState<AttendeeRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [reloadToken, setReloadToken] = useState(0)
+
+  const loadAttendees = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
+    const resp = await HTTP<ApiData<Attendee[]>, undefined>({
+      url: getEndpoint('/dashboard/admin/attendees'),
+      method: 'get',
+    })
+
+    if (!resp.ok || !resp.data) {
+      setRows([])
+      setError(getErrorMessage(resp.error))
+      setLoading(false)
+      return
+    }
+
+    const list = Array.isArray(resp.data.data) ? resp.data.data : []
+    setRows(list.map(toAttendeeRow))
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    void loadAttendees()
+  }, [loadAttendees, reloadToken])
+
+  const columns = useMemo((): DataTableColumn<AttendeeRow>[] => {
     return [
       {
-        key: 'name',
-        header: 'Name',
+        key: 'email',
+        header: 'Email',
         render: (r) => (
-          <div className="min-w-[180px]">
-            <div className="font-semibold text-gray-900 dark:text-white">{r.name}</div>
-            <div className="mt-0.5 text-xs text-text-muted-light dark:text-text-muted-dark">{r.email}</div>
-          </div>
+          <a className="text-sky-700 dark:text-sky-300 hover:underline" href={`mailto:${r.email}`}>
+            {r.email}
+          </a>
         ),
       },
       {
-        key: 'event',
-        header: 'Event',
-        render: (r) => <span className="text-gray-900 dark:text-white">{r.event}</span>,
+        key: 'full_name',
+        header: 'Full name',
+        render: (r) => <span className="font-semibold text-gray-900 dark:text-white">{r.full_name}</span>,
       },
       {
-        key: 'ticketPurchased',
-        header: 'Ticket purchased',
+        key: 'ticket_name',
+        header: 'Ticket name',
         className: 'whitespace-nowrap',
-        render: (r) => <span className="text-text-muted-light dark:text-text-muted-dark">{r.ticketPurchased}</span>,
-      },
-      {
-        key: 'totalSpent',
-        header: 'Total spent',
-        className: 'whitespace-nowrap',
-        render: (r) => (
-          <span className="font-semibold">
-            {currencySymbol('NGN')}
-            {formatNumber(r.totalSpent)}
-          </span>
-        ),
+        render: (r) => <span className="text-text-muted-light dark:text-text-muted-dark">{r.ticket_name}</span>,
       },
     ]
   }, [])
 
-  const { query, setQuery, filtered } = useTableSearch(all, (row, q) => {
-    const hay = `${row.name} ${row.email}`.toLowerCase()
-    return hay.includes(q)
-  })
+  const [query, setQuery] = useState('')
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return rows
+    return rows.filter((row) => {
+      const hay = `${row.full_name} ${row.email} ${row.ticket_name}`.toLowerCase()
+      return hay.includes(q)
+    })
+  }, [rows, query])
 
   const [modalOpen, setModalOpen] = useState(false)
-  const [selected, setSelected] = useState<AdminAttendeeRow | null>(null)
+  const [selected, setSelected] = useState<AttendeeRow | null>(null)
   const [notFound, setNotFound] = useState(false)
 
   function onSearchSubmit(e: React.FormEvent) {
@@ -140,6 +164,39 @@ export default function AdminAttendeesPage() {
     setNotFound(false)
   }
 
+  if (loading) {
+    return (
+      <SidebarLayout>
+        <AdminAttendeesShimmer />
+      </SidebarLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <SidebarLayout>
+        <div className="w-full max-w-7xl mx-auto px-6 py-8">
+          <GlassCard className="p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Attendees</h1>
+                <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">We couldn’t load attendees right now.</p>
+                <div className="mt-3 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-sm text-rose-700 dark:text-rose-200">{error}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReloadToken((n) => n + 1)}
+                className="shrink-0 rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white"
+              >
+                Retry
+              </button>
+            </div>
+          </GlassCard>
+        </div>
+      </SidebarLayout>
+    )
+  }
+
   return (
     <SidebarLayout>
       <div className="w-full max-w-7xl mx-auto px-6 py-8">
@@ -153,7 +210,7 @@ export default function AdminAttendeesPage() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by name or email…"
+              placeholder="Search by name, email, or ticket…"
               className="w-full sm:w-[340px] rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
             />
             <button type="submit" className="shrink-0 rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white">
@@ -165,22 +222,23 @@ export default function AdminAttendeesPage() {
         <GlassCard className="mt-6 p-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">10 recent attendees</h2>
-              <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">Last 10 attendee purchases (demo data).</p>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Attendees</h2>
+              <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">All attendee purchases.</p>
             </div>
 
             <div className="text-sm text-text-muted-light dark:text-text-muted-dark">
-              Total in list: <span className="font-semibold">{recent.length}</span>
+              Total in list: <span className="font-semibold">{filtered.length}</span>
             </div>
           </div>
 
           <div className="mt-4">
-            <DataTable<AdminAttendeeRow>
+            <DataTable<AttendeeRow>
               columns={columns}
-              rows={recent}
+              rows={filtered}
               rowKey={(r) => r.id}
               emptyTitle="No attendees yet"
               emptyDescription="Attendees will appear once ticket purchases happen."
+              pagination={{ enabled: true, pageSize: 25, pageSizeOptions: [10, 25, 50, 100] }}
             />
           </div>
         </GlassCard>
