@@ -3,7 +3,7 @@
 import React, {useEffect, useState, type ReactElement, useRef} from 'react'
 import Link from "next/link";
 import {Dialog, DialogBackdrop, DialogPanel, DialogTitle} from "@headlessui/react";
-import {getBaseURL} from "@lib/utils";
+import {getBaseURL, getEndpoint} from "@lib/utils";
 
 import VideoJS from "@components/VideoJs";
 import Player from "video.js/dist/types/player";
@@ -184,7 +184,7 @@ export default function Index(): ReactElement {
           <DialogPanel className="w-full max-w-2xl rounded-2xl bg-white/80 dark:bg-slate-950/70 border border-black/10 dark:border-white/10 backdrop-blur-xl shadow-xl p-6">
             <DialogTitle className="text-lg font-extrabold text-gray-900 dark:text-white mb-6">See How it Works</DialogTitle>
 
-            <MediaPlayer title="What is TBM?" src={`${getBaseURL()}/videos/hls/master.m3u8`}>
+            <MediaPlayer title="What is TBM?" src={getEndpoint('/hls/master.m3u8')}>
               <MediaProvider />
               <DefaultVideoLayout icons={defaultLayoutIcons} />
             </MediaPlayer>
