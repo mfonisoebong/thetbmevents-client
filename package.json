@@ -11,9 +11,11 @@
   "dependencies": {
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
+    "@vidstack/react": "^1.12.13",
     "autoprefixer": "10.4.14",
     "axios": "^1.13.2",
     "clsx": "^2.1.1",
+    "hls.js": "^1.6.15",
     "html5-qrcode": "^2.3.8",
     "js-cookie": "^3.0.5",
     "moment": "^2.29.4",

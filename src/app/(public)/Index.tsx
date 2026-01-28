@@ -8,10 +8,16 @@ import {getBaseURL} from "@lib/utils";
 import VideoJS from "@components/VideoJs";
 import Player from "video.js/dist/types/player";
 
+import '@vidstack/react/player/styles/default/theme.css';
+import '@vidstack/react/player/styles/default/layouts/video.css';
+import { MediaPlayer, MediaProvider } from '@vidstack/react';
+import { defaultLayoutIcons, DefaultVideoLayout } from '@vidstack/react/player/layouts/default';
+
 export default function Index(): ReactElement {
   const [isOpen, setIsOpen] = useState<boolean>(false)
 
-  const playerRef = useRef<Player| null>(null);
+  // VideoJS Start
+  /*const playerRef = useRef<Player| null>(null);
 
   const videoJsOptions = {
     autoplay: true,
@@ -37,7 +43,8 @@ export default function Index(): ReactElement {
     player.on('dispose', () => {
       // videojs.log('player will dispose');
     });
-  };
+  };*/
+  // VideoJS End
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -177,13 +184,12 @@ export default function Index(): ReactElement {
           <DialogPanel className="w-full max-w-2xl rounded-2xl bg-white/80 dark:bg-slate-950/70 border border-black/10 dark:border-white/10 backdrop-blur-xl shadow-xl p-6">
             <DialogTitle className="text-lg font-extrabold text-gray-900 dark:text-white mb-6">See How it Works</DialogTitle>
 
-            {/*<MediaPlayer title="TBM Video" src={`${getBaseURL()}/videos/video_1080p.mp4`} streamType="on-demand">
+            <MediaPlayer title="What is TBM?" src={`${getBaseURL()}/videos/hls/master.m3u8`}>
               <MediaProvider />
-              <PlyrLayout  icons={plyrLayoutIcons} />
-            </MediaPlayer>*/}
+              <DefaultVideoLayout icons={defaultLayoutIcons} />
+            </MediaPlayer>
 
-            <VideoJS options={videoJsOptions} onReady={handlePlayerReady} />
-
+            {/*<VideoJS options={videoJsOptions} onReady={handlePlayerReady} />*/}
 
           </DialogPanel>
         </div>
