@@ -266,7 +266,7 @@ export default function AdminDashboardPage() {
             <div className="mt-4">
               <DataTable<AdminRevenueMonthRow>
                 columns={revenueColumns}
-                rows={[...revenueByMonth].reverse()}
+                rows={[...revenueByMonth]}
                 rowKey={(r) => r.month}
                 emptyTitle="No revenue yet"
                 emptyDescription="Revenue will appear once tickets are sold."
