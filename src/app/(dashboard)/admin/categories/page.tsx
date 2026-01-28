@@ -9,6 +9,7 @@ import AdminCategoriesShimmer from '../../../../components/dashboard/AdminCatego
 import HTTP from '@lib/HTTP'
 import { cn, getEndpoint, getErrorMessage } from '@lib/utils'
 import type { ApiData, Category } from '@lib/types'
+import { errorToast, successToast } from '@components/Toast'
 
 type CategoryRow = {
   id: string
@@ -149,7 +150,6 @@ export default function AdminCategoriesPage() {
 
   const [createOpen, setCreateOpen] = useState(false)
   const [creating, setCreating] = useState(false)
-  const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const [query, setQuery] = useState('')
 
@@ -234,7 +234,6 @@ export default function AdminCategoriesPage() {
   }, [rows])
 
   async function onCreate(name: string) {
-    setToast(null)
     setCreating(true)
 
     const resp = await HTTP<ApiData<Category>, { name: string }>({
@@ -247,33 +246,33 @@ export default function AdminCategoriesPage() {
     setCreating(false)
 
     if (!resp.ok || !resp.data) {
-      setToast({ type: 'error', text: getErrorMessage(resp.error) })
+      errorToast(getErrorMessage(resp.error))
       return
     }
 
     const created = resp.data.data
     setRows((prev) => [toRow(created), ...prev].sort((a, b) => a.name.localeCompare(b.name)))
-    setToast({ type: 'success', text: `Category “${normalizeName(name)}” created.` })
+    successToast(`Category “${normalizeName(name)}” created.`)
   }
 
   async function onDelete(r: CategoryRow) {
-    setToast(null)
-
     const ok = window.confirm(`Delete category “${r.name}”? This can’t be undone.`)
     if (!ok) return
 
+    const identifier = r.slug || r.name
+
     const resp = await HTTP<ApiData<any>, undefined>({
-      url: getEndpoint(`/dashboard/admin/categories/${encodeURIComponent(r.id)}`),
+      url: getEndpoint(`/dashboard/admin/categories/${encodeURIComponent(identifier)}`),
       method: 'delete',
     })
 
     if (!resp.ok) {
-      setToast({ type: 'error', text: getErrorMessage(resp.error) })
+      errorToast(getErrorMessage(resp.error))
       return
     }
 
     setRows((prev) => prev.filter((x) => x.id !== r.id))
-    setToast({ type: 'success', text: `Category “${r.name}” deleted.` })
+    successToast(`Category “${r.name}” deleted.`)
   }
 
   if (loading) {
@@ -335,19 +334,6 @@ export default function AdminCategoriesPage() {
             </button>
           </div>
         </div>
-
-        {toast ? (
-          <div
-            className={cn(
-              'mt-5 rounded-xl border p-3 text-sm',
-              toast.type === 'success'
-                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-200'
-                : 'bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-200'
-            )}
-          >
-            {toast.text}
-          </div>
-        ) : null}
 
         <GlassCard className="mt-6 p-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

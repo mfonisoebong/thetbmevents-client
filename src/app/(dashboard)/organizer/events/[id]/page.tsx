@@ -987,7 +987,6 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
   const [category, setCategory] = useState(event.category)
 
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   useEffect(() => {
     setTitle(event.title)
@@ -996,7 +995,6 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
     setTime(event.time ?? '')
     setLocation(event.location ?? '')
     setCategory(event.category)
-    setMessage(null)
     setSaving(false)
   }, [event])
 
@@ -1008,15 +1006,12 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
     setTime(event.time ?? '')
     setLocation(event.location ?? '')
     setCategory(event.category)
-    setMessage(null)
   }, [event, saving])
 
   const onSave = useCallback(async () => {
-    setMessage(null)
-
     const eventId = (event as any).id
     if (!eventId) {
-      setMessage({ type: 'error', text: 'Missing event id.' })
+      errorToast('Missing event id.')
       return
     }
 
@@ -1038,12 +1033,11 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
     })
 
     if (!resp.ok) {
-      setMessage({ type: 'error', text: getErrorMessage(resp.error) })
+      errorToast(getErrorMessage(resp.error))
       setSaving(false)
       return
     }
 
-    setMessage({ type: 'success', text: resp.data?.message ?? 'Changes saved.' })
     successToast(resp.data?.message ?? 'Changes saved.')
     setSaving(false)
   }, [category, date, description, event, location, time, title])
@@ -1054,19 +1048,6 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Settings</h2>
         <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Update event details and save changes.</p>
       </div>
-
-      {message ? (
-        <div
-          className={cn(
-            'rounded-xl border px-4 py-3 text-sm',
-            message.type === 'success'
-              ? 'border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-200'
-              : 'border-red-200 dark:border-red-900/40 bg-red-50/80 dark:bg-red-950/30 text-red-800 dark:text-red-200'
-          )}
-        >
-          {message.text}
-        </div>
-      ) : null}
 
       <div className="rounded-2xl bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 backdrop-blur-sm p-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

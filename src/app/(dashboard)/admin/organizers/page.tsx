@@ -1,7 +1,6 @@
 'use client'
 
 import React, {useCallback, useMemo, useState} from 'react'
-import {useRouter} from 'next/navigation'
 import SidebarLayout from '../../../../components/layouts/SidebarLayout'
 import GlassCard from '../../../../components/GlassCard'
 import DataTable, {type DataTableColumn} from '../../../../components/DataTable'
@@ -11,6 +10,7 @@ import HTTP from '@lib/HTTP'
 import {cn, formatDate, getCookie, getEndpoint, getErrorMessage, setCookie} from '@lib/utils'
 import type {ApiData} from '@lib/types'
 import AdminOrganizersShimmer from '../../../../components/dashboard/AdminOrganizersShimmer'
+import { errorToast, successToast } from '@components/Toast'
 
 type AdminOrganizer = {
     id: string
@@ -85,17 +85,13 @@ async function fetchOrganizers(): Promise<OrganizerRow[]> {
 }
 
 export default function AdminOrganizersPage() {
-    const router = useRouter()
-
     const [rows, setRows] = useState<OrganizerRow[]>([])
     const [loading, setLoading] = useState(true)
     const [actionId, setActionId] = useState<string | null>(null)
-    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
     const [loadError, setLoadError] = useState<string | null>(null)
 
     const load = useCallback(async () => {
         setLoading(true)
-        setMessage(null)
         setLoadError(null)
 
         try {
@@ -220,7 +216,6 @@ export default function AdminOrganizersPage() {
 
     async function onToggleActive(r: OrganizerRow) {
         setActionId(r.id)
-        setMessage(null)
 
         // Best effort: the backend expects "status" in the body. We'll toggle between "active" and "inactive".
         const nextStatus = r.isActive ? 'suspended' : 'active'
@@ -232,7 +227,10 @@ export default function AdminOrganizersPage() {
                 data: {status: nextStatus},
             })
 
-            if (!resp.ok) throw resp.error
+            if (!resp.ok) {
+                errorToast(getErrorMessage(resp.error))
+                return
+            }
 
             // Optimistic update for snappy UI.
             setRows((prev) =>
@@ -247,10 +245,10 @@ export default function AdminOrganizersPage() {
                 )
             )
 
-            setMessage({type: 'success', text: `Organizer ${nextStatus === 'active' ? 'activated' : 'deactivated'} successfully.`})
+            successToast(`Organizer ${nextStatus === 'active' ? 'activated' : 'deactivated'} successfully.`)
         } catch (e) {
             console.error(e)
-            setMessage({type: 'error', text: getErrorMessage(e)})
+            errorToast(getErrorMessage(e))
         } finally {
             setActionId(null)
         }
@@ -258,7 +256,6 @@ export default function AdminOrganizersPage() {
 
     async function onLoginAs(r: OrganizerRow) {
         setActionId(r.id)
-        setMessage(null)
 
         try {
             const resp = await HTTP<ApiData<{token: string; user: User}>, undefined>({
@@ -266,11 +263,15 @@ export default function AdminOrganizersPage() {
                 method: 'post',
             })
 
-            if (!resp.ok || !resp.data) throw resp.error
+            if (!resp.ok || !resp.data) {
+                errorToast(getErrorMessage(resp.error))
+                return
+            }
 
             const {token, user} = resp.data.data ?? ({} as any)
             if (!token || !user) {
-                throw new Error('Impersonation failed: missing token or user')
+                errorToast('Impersonation failed: missing token or user')
+                return
             }
 
             setCookie('admin_token', getCookie('token'))
@@ -281,7 +282,7 @@ export default function AdminOrganizersPage() {
             window.location.href = '/organizer/dashboard'
         } catch (e) {
             console.error(e)
-            setMessage({type: 'error', text: getErrorMessage(e)})
+            errorToast(getErrorMessage(e))
         } finally {
             setActionId(null)
         }
@@ -388,19 +389,6 @@ export default function AdminOrganizersPage() {
                                 <span className="font-semibold">{rows.length}</span>
                             </div>
                         </div>
-
-                        {message ? (
-                            <div
-                                className={cn(
-                                    'mt-4 rounded-xl border p-3 text-sm',
-                                    message.type === 'success'
-                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-200'
-                                        : 'bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-200'
-                                )}
-                            >
-                                {message.text}
-                            </div>
-                        ) : null}
 
                         <div className="mt-4">
                             <DataTable<OrganizerRow>
