@@ -397,6 +397,7 @@ export default function AdminOrganizersPage() {
                                 rowKey={(r: OrganizerRow) => r.id}
                                 emptyTitle="No organizers"
                                 emptyDescription="When organizers sign up, they’ll appear here."
+                                pagination={{ enabled: true, pageSize: 25, pageSizeOptions: [10, 25, 50, 100] }}
                             />
                         </div>
                     </GlassCard>

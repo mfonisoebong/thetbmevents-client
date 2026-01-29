@@ -90,6 +90,7 @@ export default function OrganizerEventDetailsPage() {
     const [blastSubject, setBlastSubject] = useState('')
     const [blastBody, setBlastBody] = useState('')
     const [sendingBlast, setSendingBlast] = useState(false)
+    const [deletingEvent, setDeletingEvent] = useState(false)
 
     const tab = (searchParams.get('tab') as TabKey) || 'overview'
 
@@ -281,15 +282,47 @@ export default function OrganizerEventDetailsPage() {
 
   function onCopyPublicLink() {
     try {
-      if (!event) return
-      const url = `${window.location.origin}/events/${event.slug}`
-      navigator.clipboard.writeText(url)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1600)
+    if (!event) return
+    const url = `${window.location.origin}/events/${event.slug}`
+    navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1600)
     } catch {
-      // ignore
+    // ignore
     }
   }
+
+  const onDeleteEvent = useCallback(async () => {
+    if (!event?.id) return
+
+    // Only allow deletion when no tickets sold — server should also enforce this.
+    const sold = (stats?.totalSold ?? computeEventStatsFromApi(event).totalSold)
+    if (sold > 0) {
+    errorToast('Cannot delete event: tickets have been sold.')
+    return
+    }
+
+    const ok = confirm('Delete this event? This action cannot be undone.')
+    if (!ok) return
+
+    setDeletingEvent(true)
+
+    const resp = await HTTP<ApiData<unknown>, undefined>({
+    url: getEndpoint(`/dashboard/organizer/event/${encodeURIComponent(String(event.id))}/delete`),
+    method: 'delete',
+    })
+
+    if (!resp.ok) {
+    errorToast(getErrorMessage(resp.error))
+    setDeletingEvent(false)
+    return
+    }
+
+    successToast(resp.data?.message ?? 'Event deleted.')
+    setDeletingEvent(false)
+
+    router.push('/organizer/events')
+  }, [event, router, stats])
 
   if (loading) {
     return (
@@ -375,6 +408,20 @@ export default function OrganizerEventDetailsPage() {
                 <ClipboardIcon className="w-4 h-4 mr-1" />
                 {copied ? 'Copied' : 'Copy link'}
               </button>
+              {/** Show delete only when there are no tickets sold */}
+              {(stats?.totalSold ?? 0) === 0 ? (
+                <button
+                  type="button"
+                  onClick={onDeleteEvent}
+                  disabled={deletingEvent}
+                  className={cn(
+                    'rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white hover:bg-rose-700',
+                    deletingEvent && 'opacity-60 cursor-not-allowed'
+                  )}
+                >
+                  {deletingEvent ? 'Deleting…' : 'Delete event'}
+                </button>
+              ) : null}
             </div>
           </div>
 
