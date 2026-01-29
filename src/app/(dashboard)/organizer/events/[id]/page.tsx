@@ -909,7 +909,7 @@ function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: st
         rows={rows as any}
         rowKey={(t) => t.id}
         emptyTitle="No tickets"
-        emptyDescription="Create your first ticket type to start selling."
+        emptyDescription="How come you created an event with no tickets? Contact support at admin@thetbmevents.com"
         pagination={{ enabled: true, pageSize: 10, pageSizeOptions: [10, 25, 50, 100] }}
       />
 
