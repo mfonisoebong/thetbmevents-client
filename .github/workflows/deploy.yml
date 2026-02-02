@@ -16,11 +16,21 @@ jobs:
       - name: Create .env.local file
         run: echo "${{ secrets.ENV }}" > .env
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '10'
+
       - name: Install dependencies and build
         run: |
-          
-          npm install --force
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm run build
 
       - name: Archive frontend files
         run: |
@@ -64,5 +74,7 @@ jobs:
           port: 22
           script: |
             cd /var/www/thetbmevents-client
-            npm install --force
+            corepack enable
+            corepack prepare pnpm@10 --activate
+            pnpm install --frozen-lockfile --prod
             pm2 restart thetbmevents-client
