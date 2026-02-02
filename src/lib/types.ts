@@ -16,9 +16,9 @@ export interface Ticket {
     start_selling_date: string;
     end_selling_date: string;
     quantity: number;
-    sold: number;
-    event_id: string;
-    organizer_id: string;
+    sold?: number;
+    event_id?: string;
+    organizer_id?: string;
     [key: string]: any;
 }
 
