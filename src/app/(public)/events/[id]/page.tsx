@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactElement } from 'react'
 import EventDetails from '../../../../components/events/EventDetails'
-import type { EventItem } from '@lib/types'
 import { stripHtml } from '@lib/utils'
 import { getEvent } from '@lib/getEvent'
 

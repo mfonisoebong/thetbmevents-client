@@ -130,6 +130,13 @@ export default function EventDetails({ event }: Props) {
 
                   const selling = getTicketSellingState(ticket.start_selling_date, ticket.end_selling_date)
 
+                  // Determine available tickets: quantity == 0 means unlimited
+                  const sold = ticket.sold ?? 0
+                  const quantity = ticket.quantity ?? 0
+                  const isUnlimited = quantity === 0
+                  const available = isUnlimited ? Infinity : Math.max(0, quantity - sold)
+                  const isSoldOut = !isUnlimited && sold >= quantity
+
                   return (
                     <div key={id} className="flex flex-col sm:flex-row sm:items-center justify-between max-sm:gap-4 bg-black/5 dark:bg-black/30 border border-black/5 dark:border-white/5 rounded-2xl p-4">
                       <div>
@@ -142,6 +149,11 @@ export default function EventDetails({ event }: Props) {
 
                         {selling.state === 'ended' && (
                           <div className="mt-1 text-xs text-red-500">This ticket has stopped sales since {formatDate(selling.endedAt.toISOString())}</div>
+                        )}
+
+                        {/* show sold out message when quantity is finite and sold >= quantity */}
+                        {isSoldOut && (
+                          <div className="mt-1 text-xs text-red-500">ticket has been sold out</div>
                         )}
                       </div>
 
@@ -158,8 +170,15 @@ export default function EventDetails({ event }: Props) {
                           <div className="w-10 text-center font-medium">{qty}</div>
                           <button
                             aria-label={`Add one ${ticket.name}`}
-                            onClick={() => selling.state === 'open' && setSelectedQuantities(s => ({ ...s, [id]: (s[id] ?? 0) + 1 }))}
-                            className="px-3 py-1 rounded-full bg-black/5 dark:bg-white/5"
+                            onClick={() => {
+                              if (selling.state !== 'open') return
+
+                              if (!isUnlimited && (qty >= available)) return
+
+                              setSelectedQuantities(s => ({ ...s, [id]: (s[id] ?? 0) + 1 }))
+                            }}
+                            className={`px-3 py-1 rounded-full ${selling.state !== 'open' || isSoldOut || (!isUnlimited && qty >= available) ? 'opacity-50 cursor-not-allowed' : 'bg-black/5 dark:bg-white/5'}`}
+                            disabled={selling.state !== 'open' || isSoldOut || (!isUnlimited && qty >= available)}
                           >
                             +
                           </button>
