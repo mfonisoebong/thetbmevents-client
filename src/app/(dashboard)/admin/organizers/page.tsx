@@ -275,8 +275,8 @@ export default function AdminOrganizersPage() {
             }
 
             setCookie('admin_token', getCookie('token'))
-            setCookie('token', String(token))
-            setCookie('user', encodeURIComponent(JSON.stringify(user)))
+            setCookie('token', token)
+            setCookie('user', JSON.stringify(user))
             setCookie('role', 'organizer')
 
             window.location.href = '/organizer/dashboard'
