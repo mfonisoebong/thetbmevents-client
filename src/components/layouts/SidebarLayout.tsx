@@ -127,7 +127,6 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
                       </MenuItem>
                     ))}
 
-                    {/*TODO: review why cookie doesn't delete on live website*/}
                     {adminToken && role === 'organizer' && (
                         <MenuItem>
                           <div

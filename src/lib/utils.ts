@@ -6,7 +6,7 @@ import {EventStatus} from "@lib/eventStats";
 export const formatDate = (isoDate: string) => {
     const d = new Date(isoDate)
 
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
     const day = String(d.getDate()).padStart(2, '0')
     const month = months[d.getMonth()] || ''
@@ -44,32 +44,32 @@ export function parseApiDateTime(input?: string | null): Date | null {
 }
 
 export type TicketSellingState =
-  | { state: 'open' }
-  | { state: 'not_started' }
-  | { state: 'ended'; endedAt: Date };
+    | { state: 'open' }
+    | { state: 'not_started' }
+    | { state: 'ended'; endedAt: Date };
 
 export function getTicketSellingState(start?: string | null, end?: string | null, now: Date = new Date()): TicketSellingState {
-  const startDt = parseApiDateTime(start);
-  const endDt = parseApiDateTime(end);
+    const startDt = parseApiDateTime(start);
+    const endDt = parseApiDateTime(end);
 
-  if (startDt && now.getTime() < startDt.getTime()) return { state: 'not_started' };
-  if (endDt && now.getTime() > endDt.getTime()) return { state: 'ended', endedAt: endDt };
+    if (startDt && now.getTime() < startDt.getTime()) return {state: 'not_started'};
+    if (endDt && now.getTime() > endDt.getTime()) return {state: 'ended', endedAt: endDt};
 
-  return { state: 'open' };
+    return {state: 'open'};
 }
 
 export const currencySymbol = (code?: string) => {
-  if (!code) return ''
+    if (!code) return ''
 
-  const map: Record<string, string> = {
-    NGN: '₦',
-    USD: '$',
-  }
+    const map: Record<string, string> = {
+        NGN: '₦',
+        USD: '$',
+    }
 
-  return map[code.toUpperCase()] ?? code
+    return map[code.toUpperCase()] ?? code
 }
 
-export function getGatewayFee(amount : number, gateway: PaymentGateway): number {
+export function getGatewayFee(amount: number, gateway: PaymentGateway): number {
     const calcPaystackCharges = (price: number): number => {
         const flatFee = price >= 2500 ? 100 : 0;
         const feeCap = 2000;
@@ -106,7 +106,7 @@ export function calculatePlatformFee(amount: number): number {
     return amount * feePercentage;
 }
 
-export function classNames(...classes : string[]) {
+export function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(' ')
 }
 
@@ -136,9 +136,9 @@ export function getTLD() {
 }
 
 export function deleteCookie(name: string) {
-    if (typeof window !== "undefined") {
-        document.cookie = name + '=; Max-Age=-99999999;path=/';
-    }
+    if (typeof window === "undefined") return;
+
+    document.cookie = `${name}=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${getTLD()}; SameSite=Strict; secure`;
 }
 
 export function getBaseURL() {
