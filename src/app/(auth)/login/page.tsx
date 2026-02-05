@@ -25,12 +25,13 @@ export default function LoginPage() {
 		});
 
 		if (response.ok) {
-			// todo: properly implement remember me with cookie expiration
-			setCookie('token', response.data.access_token)
-			setCookie('user', JSON.stringify(response.data.user))
+			const expiresIn = Number(response.data.expires_in);
+
+			setCookie('token', response.data.access_token, expiresIn)
+			setCookie('user', JSON.stringify(response.data.user), expiresIn)
 
 			const role = response.data.user.role
-			setCookie('role', role)
+			setCookie('role', role, expiresIn)
 
 			window.location.href = `/${role}/dashboard`;
 		} else {

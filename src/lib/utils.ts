@@ -118,8 +118,20 @@ export function formatNumber(num: number) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-export function setCookie(name: string, value: string) {
-    document.cookie = `${name}=${value}; domain=${getTLD()}; path=/; SameSite=Strict; secure`;
+export function setCookie(name: string, value: string, expiresInSeconds?: number) {
+    const tld = getTLD();
+
+    let cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Strict; secure`;
+
+    if (tld) cookie += `; domain=${tld}`;
+
+    if (typeof expiresInSeconds === 'number' && Number.isFinite(expiresInSeconds) && expiresInSeconds > 0) {
+        const maxAge = Math.floor(expiresInSeconds);
+        const expires = new Date(Date.now() + maxAge * 1000).toUTCString();
+        cookie += `; Max-Age=${maxAge}; Expires=${expires}`;
+    }
+
+    document.cookie = cookie;
 }
 
 export function getTLD() {
