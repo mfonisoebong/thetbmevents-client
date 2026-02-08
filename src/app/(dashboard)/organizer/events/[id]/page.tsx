@@ -9,7 +9,8 @@ import { cn, currencySymbol, formatDate, formatNumber, getEndpoint, getErrorMess
 import { exportToCsv } from '@lib/csv'
 import { useTableSearch } from '../../../../../hooks/useTableSearch'
 import DataTable from '../../../../../components/DataTable'
-import { ClipboardIcon } from '@heroicons/react/24/outline'
+import { ClipboardIcon, QrCodeIcon } from '@heroicons/react/24/outline'
+import QRCode from 'qrcode'
 import OrganizerEventDetailsShimmer from '../../../../../components/dashboard/OrganizerEventDetailsShimmer'
 import GlassCard from '../../../../../components/GlassCard'
 import HTTP from '@lib/HTTP'
@@ -85,19 +86,20 @@ export default function OrganizerEventDetailsPage() {
     return Array.isArray(raw) ? raw[0] : raw
   }, [routeParams?.id])
 
-    const [copied, setCopied] = useState(false)
-    // removed unused manual check-in draft state
-    const [blastSubject, setBlastSubject] = useState('')
-    const [blastBody, setBlastBody] = useState('')
-    const [sendingBlast, setSendingBlast] = useState(false)
-    const [deletingEvent, setDeletingEvent] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [downloadingQr, setDownloadingQr] = useState(false)
+  // removed unused manual check-in draft state
+  const [blastSubject, setBlastSubject] = useState('')
+  const [blastBody, setBlastBody] = useState('')
+  const [sendingBlast, setSendingBlast] = useState(false)
+  const [deletingEvent, setDeletingEvent] = useState(false)
 
-    const tab = (searchParams.get('tab') as TabKey) || 'overview'
+  const tab = (searchParams.get('tab') as TabKey) || 'overview'
 
-    const [event, setEvent] = useState<OrganizerEvent | null>(null)
-    const [ordersAndAttendees, setOrdersAndAttendees] = useState<OrdersAndAttendees | null>(null)
+  const [event, setEvent] = useState<OrganizerEvent | null>(null)
+  const [ordersAndAttendees, setOrdersAndAttendees] = useState<OrdersAndAttendees | null>(null)
 
-    const onSendBlastEmail = useCallback(async () => {
+  const onSendBlastEmail = useCallback(async () => {
     if (!event?.id) return
 
     const subject = blastSubject.trim()
@@ -280,17 +282,54 @@ export default function OrganizerEventDetailsPage() {
     router.replace(`?${nextParams.toString()}`)
   }
 
+  const publicEventUrl = useMemo(() => {
+    if (!event) return ''
+
+    if (typeof window === 'undefined') return ''
+
+    return `${window.location.origin}/events/${event.slug || event.id}`
+  }, [event])
+
   function onCopyPublicLink() {
     try {
-    if (!event) return
-    const url = `${window.location.origin}/events/${event.slug}`
-    navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1600)
+      navigator.clipboard.writeText(publicEventUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1600)
     } catch {
-    // ignore
+      // ignore
     }
   }
+
+  const onDownloadQrCode = useCallback(async () => {
+    try {
+      setDownloadingQr(true)
+
+      // Generate data URL PNG
+      const dataUrl = await QRCode.toDataURL(publicEventUrl, {
+        errorCorrectionLevel: 'M',
+        margin: 2,
+        scale: 8,
+        type: 'image/png',
+        color: {
+          dark: '#111827', // slate-900-ish
+          light: '#FFFFFF',
+        },
+      })
+
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = `event-qr-${event?.slug}.png`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+
+      successToast('QR code downloaded.')
+    } catch (e) {
+      errorToast(getErrorMessage(e))
+    } finally {
+      setDownloadingQr(false)
+    }
+  }, [event?.slug, publicEventUrl])
 
   const onDeleteEvent = useCallback(async () => {
     if (!event?.id) return
@@ -407,6 +446,19 @@ export default function OrganizerEventDetailsPage() {
               <button onClick={onCopyPublicLink} className="inline-flex items-center rounded-lg bg-brand-yellow px-3 py-2 text-sm font-medium text-white">
                 <ClipboardIcon className="w-4 h-4 mr-1" />
                 {copied ? 'Copied' : 'Copy link'}
+              </button>
+              <button
+                type="button"
+                onClick={onDownloadQrCode}
+                disabled={downloadingQr || !publicEventUrl}
+                className={cn(
+                  'inline-flex items-center rounded-lg bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-white/20',
+                  (downloadingQr || !publicEventUrl) && 'opacity-60 cursor-not-allowed'
+                )}
+                title={!publicEventUrl ? 'Public link not available yet' : undefined}
+              >
+                <QrCodeIcon className="w-4 h-4 mr-1" />
+                {downloadingQr ? 'Generating…' : 'Get QR code'}
               </button>
               {/** Show delete only when there are no tickets sold */}
               {(stats?.totalSold ?? 0) === 0 ? (
