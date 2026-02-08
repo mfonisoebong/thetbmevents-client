@@ -110,7 +110,7 @@ export default function EventDetails({ event }: Props) {
               <h2 className="text-lg font-semibold dark:text-white">About this event</h2>
               <SafeHtml
                 html={event.description || ''}
-                className="text-text-muted-light dark:text-text-muted-dark mt-3 whitespace-pre-line"
+                className="text-text-muted-light dark:text-text-muted-dark mt-3 whitespace-pre-line break-words"
               />
 
               <div className="mt-4 flex flex-wrap gap-2">
@@ -196,7 +196,7 @@ export default function EventDetails({ event }: Props) {
           </main>
 
           <aside className="lg:col-span-1">
-            <div className="sticky top-6 bg-white/10 dark:bg-slate-900/40 backdrop-blur-sm border border-white/10 rounded-2xl p-5">
+            <div className="sticky top-6 bg-white/10 dark:bg-slate-900/40 backdrop-blur-sm border border-black/10 dark:border-white/10 rounded-2xl p-5">
               <div className="text-text-muted-light text-sm">When</div>
               <div className="font-medium text-gray-900 dark:text-white mt-1">{formatDate(event.date)} • {event.time}</div>
 

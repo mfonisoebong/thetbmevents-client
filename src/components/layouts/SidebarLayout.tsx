@@ -48,7 +48,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
       setCookie('role', 'admin');
       deleteCookie('admin_token');
 
-      window.location.href = '/admin/dashboard';
+      window.location.href = '/admin/organizers';
     }
 
   const { name, role, adminToken } = useUser();
