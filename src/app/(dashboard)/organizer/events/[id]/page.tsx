@@ -420,14 +420,14 @@ export default function OrganizerEventDetailsPage() {
     <SidebarLayout>
       <div className="w-full max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="flex flex-col gap-8">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-8">
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">{event.title}</h1>
                 <span className={cn('px-3 py-1 rounded-full text-sm font-medium', headerStatusClass)}>{status}</span>
               </div>
-              <div className="mt-2 text-sm text-text-muted-light dark:text-text-muted-dark">
+              <div className="mt-4 text-sm text-text-muted-light dark:text-text-muted-dark">
                 <div>
                   {formatDate(event.date)}{event.time ? ` • ${event.time}` : ''}
                 </div>
