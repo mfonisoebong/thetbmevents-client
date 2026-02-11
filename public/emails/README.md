@@ -16,6 +16,8 @@ They use **table layout + inline styles** for maximum email client compatibility
 - `payment-notification-organizer.html` – Brief organizer notification for a new ticket purchase
 - `coupon-referral-notification.html` – Brief notification to the coupon referrer when code is used
 - `blast-attendee.html` – Organizer “blast email” to all event attendees (subject + rich HTML body)
+- `account-suspended.html` – Account suspended notice (generic; works for attendee/organizer)
+- `account-reinstated.html` – Account reinstated notice (generic; works for attendee/organizer)
 
 ## Placeholder variables
 These templates use Mustache/Handlebars-style placeholders like `{{variable}}`. Replace them using whatever templating approach your email service supports.
@@ -114,6 +116,29 @@ Blast email (attendee):
 - `{{eventName}}`
 - `{{bodyHtml}}` (rich HTML)
 - `{{unsubscribeUrl}}` (optional)
+- `{{companyAddress}}`
+
+Account suspended:
+- `{{brandLogoUrl}}` (recommended: absolute URL in production)
+- `{{timestamp}}`
+- `{{recipientName}}`
+- `{{suspendedAt}}`
+- `{{caseId}}`
+- `{{suspensionReason}}`
+- `{{appealUrl}}`
+- `{{supportEmail}}`
+- `{{currentYear}}`
+- `{{companyAddress}}`
+
+Account reinstated:
+- `{{brandLogoUrl}}` (recommended: absolute URL in production)
+- `{{timestamp}}`
+- `{{recipientName}}`
+- `{{reinstatedAt}}`
+- `{{caseId}}`
+- `{{dashboardUrl}}`
+- `{{supportEmail}}`
+- `{{currentYear}}`
 - `{{companyAddress}}`
 
 ## Notes
