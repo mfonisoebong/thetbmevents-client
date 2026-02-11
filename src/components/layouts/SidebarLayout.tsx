@@ -15,10 +15,7 @@ import Sidebar from "../dashboard/Sidebar";
 import {Bars3Icon, XMarkIcon} from "@heroicons/react/24/outline";
 import {deleteCookie, getEndpoint, getInitials, setCookie} from "@lib/utils";
 import HTTP from "@lib/HTTP";
-import api from "@lib/axios";
-import {useQuery} from "react-query";
 import useUser from "../../hooks/useUser";
-import {Role} from "@lib/types";
 import Link from "next/link";
 
 const userNavigation = [
@@ -30,18 +27,18 @@ type SidebarLayoutProps = {
   children: ReactNode
 }
 
+export function logout() {
+  HTTP({url: getEndpoint('/auth/logout')}).then(() => {
+    deleteCookie('token');
+    deleteCookie('role');
+    deleteCookie('user');
+
+    window.location.href = '/login';
+  });
+}
+
 export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  function logout() {
-    HTTP({url: getEndpoint('/auth/logout')}).then(() => {
-      deleteCookie('token');
-      deleteCookie('role');
-      deleteCookie('user');
-
-      window.location.href = '/login';
-    });
-  }
 
     function switchToAdmin() {
       setCookie('token', adminToken || '');

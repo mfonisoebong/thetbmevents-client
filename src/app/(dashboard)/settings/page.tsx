@@ -7,7 +7,7 @@ import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import HTTP from '@lib/HTTP'
 import { errorToast, successToast } from '@components/Toast'
 
-type AuthMeResponse = {
+export type AuthMeResponse = {
   id: string
   full_name: string | null
   business_name: string | null
