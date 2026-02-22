@@ -177,6 +177,7 @@ export default function DataTable<T>({
             >
               First
             </button>
+
             <button
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -197,6 +198,20 @@ export default function DataTable<T>({
 
             <button
                 type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className={cn(
+                    'rounded-lg px-3 py-1.5 text-xs font-semibold border border-black/10 dark:border-white/10',
+                    page >= totalPages
+                        ? 'opacity-50 cursor-not-allowed text-text-muted-light dark:text-text-muted-dark bg-white/10 dark:bg-white/5'
+                        : 'text-gray-900 dark:text-white bg-white/10 dark:bg-white/5 hover:bg-white/20'
+                )}
+            >
+              Next
+            </button>
+
+            <button
+                type="button"
                 onClick={() => setPage(totalPages)}
                 disabled={page >= totalPages}
                 className={cn(
@@ -207,20 +222,6 @@ export default function DataTable<T>({
                 )}
             >
               Last
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className={cn(
-                'rounded-lg px-3 py-1.5 text-xs font-semibold border border-black/10 dark:border-white/10',
-                page >= totalPages
-                  ? 'opacity-50 cursor-not-allowed text-text-muted-light dark:text-text-muted-dark bg-white/10 dark:bg-white/5'
-                  : 'text-gray-900 dark:text-white bg-white/10 dark:bg-white/5 hover:bg-white/20'
-              )}
-            >
-              Next
             </button>
           </div>
         </div>
