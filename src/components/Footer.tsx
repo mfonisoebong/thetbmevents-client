@@ -18,7 +18,7 @@ export default function Footer(): JSX.Element {
         <p className="text-center">
           Like the website?{' '}
           <Link
-              className="hover:text-text-light dark:hover:text-white transition-colors underline underline-offset-4"
+              className="text-brand-teal dark:text-brand-yellow underline underline-offset-4"
               href="https://wa.link/mfm7ht"
               target="_blank"
               rel="noreferrer"

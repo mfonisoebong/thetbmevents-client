@@ -311,7 +311,7 @@ export default function OrganizerEventDetailsPage() {
         scale: 8,
         type: 'image/png',
         color: {
-          dark: '#111827', // slate-900-ish
+          dark: '#000000', // slate-900-ish
           light: '#FFFFFF',
         },
       })
