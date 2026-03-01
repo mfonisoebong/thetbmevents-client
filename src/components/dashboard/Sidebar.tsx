@@ -37,6 +37,7 @@ type RoleBasedNavigation = Record<string, ReadonlyArray<NavItem>>;
 const roleBasedNavigation: RoleBasedNavigation = {
   admin: [
     {name: 'Dashboard', href: '/dashboard', icon: HomeIcon},
+    {name: 'Events', href: '/events', icon: GlobeAltIcon},
     {name: 'Organizers', href: '/organizers', icon: UsersIcon},
     {name: 'Finance', href: '/finance', icon: CurrencyDollarIcon},
     {name: 'Attendees', href: '/attendees', icon: UsersIcon},

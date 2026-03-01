@@ -56,6 +56,7 @@ export interface OrganizerTicket {
 
 export interface OrganizerEvent {
     id: string
+    organizer: Organizer
     title: string
     slug: string
     description: string
@@ -72,6 +73,22 @@ export interface OrganizerEvent {
     updated_at: string
     total_tickets_sold: number
     total_revenue: number
+}
+
+export interface Organizer {
+    id: string
+    full_name?: string
+    business_name?: string
+    completed_profile: number
+    avatar?: string
+    auth_provider: string
+    email: string
+    role: string
+    country?: string
+    phone_number?: string
+    account_state: string
+    created_at: string
+    email_verified_at: string
 }
 
 export interface OrdersAndAttendees {
