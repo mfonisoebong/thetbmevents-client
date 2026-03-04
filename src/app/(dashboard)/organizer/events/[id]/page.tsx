@@ -41,6 +41,7 @@ type AttendeeRow = {
   name: string
   email: string
   ticketType: string
+  ticketBoughtCount: number
   orderId: string
   checkedIn: boolean
 }
@@ -226,6 +227,7 @@ export default function OrganizerEventDetailsPage() {
       name: a.full_name,
       email: a.email,
       ticketType: a.ticket_name,
+      ticketBoughtCount: a.tickets_bought_count,
       orderId: '',
       checkedIn: Boolean(a.checked_in),
     }))
@@ -718,6 +720,7 @@ export default function OrganizerEventDetailsPage() {
                   { key: 'name', header: 'Name', render: (a) => <span className="font-semibold">{a.name}</span> },
                   { key: 'email', header: 'Email', render: (a) => <span className="text-sm">{a.email}</span> },
                   { key: 'ticket', header: 'Ticket type', render: (a) => a.ticketType },
+                  { key: 'quantity', header: 'Ticket Quantity', render: (a) => a.ticketBoughtCount },
                   {
                     key: 'checkin',
                     header: 'Check-in status',

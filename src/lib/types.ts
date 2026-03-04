@@ -117,6 +117,7 @@ export interface Attendee {
     full_name: string
     email: string
     ticket_name: string
+    tickets_bought_count: number
     checked_in: boolean
 }
 

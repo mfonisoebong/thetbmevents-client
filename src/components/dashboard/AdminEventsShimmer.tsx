@@ -52,7 +52,7 @@ export default function AdminEventsShimmer() {
               <div
                 // biome-ignore lint/suspicious/noArrayIndexKey: shimmer placeholder
                 key={i}
-                className="grid grid-cols-12 gap-3 items-center"
+                className="grid sm:grid-cols-12 gap-3 items-center max-sm:overflow-hidden"
               >
                 <div className="col-span-4">
                   <ShimmerBlock className="h-4 w-64" />
