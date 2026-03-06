@@ -11,8 +11,11 @@ export const formatDate = (isoDate: string) => {
     const day = String(d.getDate()).padStart(2, '0')
     const month = months[d.getMonth()] || ''
     const year = d.getFullYear()
+    const hour = d.getHours() % 12 || 12
+    const minutes = String(d.getMinutes()).padStart(2, '0')
+    const ampm = d.getHours() >= 12 ? 'PM' : 'AM'
 
-    return `${day} ${month} ${year}`
+    return `${day} ${month} ${year}, ${hour}:${minutes} ${ampm}`
 }
 
 // Parse API datetime safely.
