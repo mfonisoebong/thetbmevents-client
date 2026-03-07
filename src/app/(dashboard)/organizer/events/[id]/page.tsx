@@ -902,6 +902,8 @@ function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: st
 
     setSavingEndDate(false)
     setEditEndDateForTicketId(null)
+
+    successToast('End selling date updated.')
   }, [editEndDateForTicketId, endSellingDate])
 
   return (
