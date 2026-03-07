@@ -30,6 +30,7 @@ type ScanResult = {
   decodedId: string | null
   status: ValidationStatus
   details?: ScanQrResult | null
+  message?: string
 }
 
 function base64Decode(input: string): string | null {
@@ -153,7 +154,7 @@ export default function OrganizerScanQrPage() {
           ? 'used'
           : 'invalid'
 
-      setScanResult({ raw: '', decodedId, status, details: null })
+      setScanResult({ raw: '', decodedId, status, message: lower, details: null })
       setIsModalOpen(true)
       setIsCheckingIn(false)
       return
@@ -294,7 +295,9 @@ export default function OrganizerScanQrPage() {
       return
     }
 
-    setScanResult({ raw, decodedId, status: 'invalid', details: null })
+    // Show modal immediately with loading state while we check in the attendee
+    setScanResult(null)
+    setIsModalOpen(true)
     void checkIn(decodedId)
   }
 
@@ -567,7 +570,7 @@ export default function OrganizerScanQrPage() {
                           ? 'Success — checked in'
                           : scanResult.status === 'used'
                             ? 'Already checked in'
-                            : 'Not found'}
+                            : scanResult.message || 'Not found'}
                       </div>
                     </div>
                     <div className="text-right">
@@ -596,7 +599,29 @@ export default function OrganizerScanQrPage() {
                   </div>
                 </div>
               ) : (
-                <div className="mt-5 text-sm text-text-muted-light dark:text-text-muted-dark">No scan result.</div>
+                <div className="mt-5 flex flex-col items-center justify-center gap-3 py-6">
+                  {isCheckingIn ? (
+                    <>
+                      <svg
+                        className="animate-spin h-8 w-8 text-brand-yellow"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">Checking in attendee…</div>
+                      <div className="text-xs text-text-muted-light dark:text-text-muted-dark">Validating ticket with the server.</div>
+                    </>
+                  ) : (
+                    <div className="text-sm text-text-muted-light dark:text-text-muted-dark">No scan result.</div>
+                  )}
+                </div>
               )}
             </DialogPanel>
           </div>
