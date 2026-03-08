@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import {FormEvent, useState} from 'react';
+import React, {FormEvent, useState} from 'react';
 import TextLogo from "../../../components/TextLogo";
 import HTTP from "@lib/HTTP";
 import {getEndpoint, getErrorMessage, setCookie} from "@lib/utils";
@@ -80,7 +80,7 @@ export default function LoginPage() {
 								type="email"
 								value={email}
 								onChange={(e) => setEmail(e.target.value)}
-								className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 focus:ring-offset-0 shadow-sm"
+								className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 focus:ring-offset-0 shadow-sm border border-gray-200 dark:border-slate-700"
 								placeholder="you@example.com"
 								aria-required
 								required
@@ -98,7 +98,7 @@ export default function LoginPage() {
 									type={showPassword ? 'text' : 'password'}
 									value={password}
 									onChange={(e) => setPassword(e.target.value)}
-									className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 focus:ring-offset-0 shadow-sm"
+									className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 focus:ring-offset-0 shadow-sm border border-gray-200 dark:border-slate-700"
 									placeholder="Your password"
 									aria-required
 									required
@@ -137,6 +137,9 @@ export default function LoginPage() {
 
 							<Link href="/forgot-password" className="text-sm text-sky-600 hover:underline">Forgot password?</Link>
 						</div>
+
+						<p className="text-sm">By signing in, you consent to our <Link href="/terms" className="text-brand-teal underline" target="_blank">Terms of Use</Link> and <Link href="/privacy" className="text-brand-teal underline" target="_blank">Privacy Policy.</Link></p>
+
 						<button
 							type="submit"
 							disabled={loading}

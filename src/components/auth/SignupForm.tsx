@@ -8,6 +8,7 @@ import {ApiData, SelectOption} from "@lib/types";
 import { Dropdown } from "../Dropdown";
 import HTTP from "@lib/HTTP";
 import {getEndpoint, getErrorMessage, setCookie} from "@lib/utils";
+import Link from "next/link";
 
 type Step = 'signup' | 'verify';
 
@@ -294,7 +295,7 @@ export default function SignupForm() {
 				<input
 					value={state.values.businessName}
 					onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'businessName', value: e.target.value })}
-					className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 shadow-sm"
+					className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 shadow-sm border border-gray-200 dark:border-slate-700"
 					placeholder="Your business name"
 				/>
 				{state.errors.businessName && <p className="text-sm text-red-600 mt-1">{state.errors.businessName}</p>}
@@ -306,7 +307,7 @@ export default function SignupForm() {
 					value={state.values.email}
 					onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'email', value: e.target.value })}
 					type="email"
-					className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 shadow-sm"
+					className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 shadow-sm border border-gray-200 dark:border-slate-700"
 					placeholder="you@example.com"
 				/>
 				{state.errors.email && <p className="text-sm text-red-600 mt-1">{state.errors.email}</p>}
@@ -346,7 +347,7 @@ export default function SignupForm() {
 						value={state.values.password}
 						onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'password', value: e.target.value })}
 						type={state.ui.showPassword ? 'text' : 'password'}
-						className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 shadow-sm"
+						className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 shadow-sm border border-gray-200 dark:border-slate-700"
 						placeholder="Choose a strong password"
 					/>
 					<button
@@ -371,6 +372,8 @@ export default function SignupForm() {
 				</div>
 				{state.errors.password && <p className="text-sm text-red-600 mt-1">{state.errors.password}</p>}
 			</div>
+
+			<p className="text-sm">By signing up, you consent to our <Link href="/terms" className="text-brand-teal underline" target="_blank">Terms of Use</Link> and <Link href="/privacy" className="text-brand-teal underline" target="_blank">Privacy Policy.</Link></p>
 
 			<button
 				type="submit"
