@@ -66,7 +66,8 @@ export default function LoginPage() {
 					<header className="mb-8 text-center">
 						<h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">Sign in to your account</h1>
 						<p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-							Enter your credentials to access your dashboard.
+							Don&apos;t have an account?{' '}
+							<Link href="/signup" className="text-sky-600 font-medium hover:underline">Sign up</Link>
 						</p>
 					</header>
 
@@ -138,8 +139,6 @@ export default function LoginPage() {
 							<Link href="/forgot-password" className="text-sm text-sky-600 hover:underline">Forgot password?</Link>
 						</div>
 
-						<p className="text-sm">By signing in, you consent to our <Link href="/terms" className="text-brand-teal underline" target="_blank">Terms of Use</Link> and <Link href="/privacy" className="text-brand-teal underline" target="_blank">Privacy Policy.</Link></p>
-
 						<button
 							type="submit"
 							disabled={loading}
@@ -149,12 +148,7 @@ export default function LoginPage() {
 					</form>
 
 					<footer className="mt-6 text-center text-sm text-slate-700 dark:text-slate-300">
-						<p>
-							Don&apos;t have an account?{' '}
-							<Link href="/signup" className="text-sky-600 font-medium hover:underline">
-								Sign up
-							</Link>
-						</p>
+						<p className="text-sm">By signing in, you consent to our <Link href="/terms" className="text-brand-teal underline" target="_blank">Terms of Use</Link> and <Link href="/privacy" className="text-brand-teal underline" target="_blank">Privacy Policy.</Link></p>
 					</footer>
 				</div>
 			</div>
