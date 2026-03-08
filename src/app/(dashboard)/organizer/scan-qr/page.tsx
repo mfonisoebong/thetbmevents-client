@@ -243,6 +243,7 @@ export default function OrganizerScanQrPage() {
           disableFlip: true,
         },
         async (decodedText: string) => {
+          navigator.vibrate(100)
           await stopScanner()
           onDecoded(decodedText)
         },
