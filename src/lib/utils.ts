@@ -3,7 +3,7 @@ import {twMerge} from "tailwind-merge";
 import clsx from "clsx";
 import {EventStatus} from "@lib/eventStats";
 
-export const formatDate = (isoDate: string) => {
+export const formatDate = (isoDate: string, time : boolean = true) => {
     const d = new Date(isoDate)
 
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -14,6 +14,10 @@ export const formatDate = (isoDate: string) => {
     const hour = d.getHours() % 12 || 12
     const minutes = String(d.getMinutes()).padStart(2, '0')
     const ampm = d.getHours() >= 12 ? 'PM' : 'AM'
+
+    if (!time) {
+        return `${day} ${month} ${year}`
+    }
 
     return `${day} ${month} ${year}, ${hour}:${minutes} ${ampm}`
 }

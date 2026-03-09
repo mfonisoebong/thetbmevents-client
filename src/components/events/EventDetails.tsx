@@ -87,7 +87,7 @@ export default function EventDetails({ event }: Props) {
               <div className="inline-block bg-black/40 text-white text-xs px-3 py-1 rounded-full">{event.category}</div>
               <h1 className="mt-3 text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight">{event.title}</h1>
               <div className="mt-2 text-sm text-white/90">
-                <span className="mr-3">{formatDate(event.date)}</span>
+                <span className="mr-3">{formatDate(event.date, false)}</span>
                 <span className="mx-2">•</span>
                 <span>{event.time}</span>
                 <span className="mx-2">•</span>
@@ -198,7 +198,7 @@ export default function EventDetails({ event }: Props) {
           <aside className="lg:col-span-1">
             <div className="sticky top-6 bg-white/10 dark:bg-slate-900/40 backdrop-blur-sm border border-black/10 dark:border-white/10 rounded-2xl p-5">
               <div className="text-text-muted-light text-sm">When</div>
-              <div className="font-medium text-gray-900 dark:text-white mt-1">{formatDate(event.date)} • {event.time}</div>
+              <div className="font-medium text-gray-900 dark:text-white mt-1">{formatDate(event.date, false)} • {event.time}</div>
 
               <div className="mt-4 text-text-muted-light text-sm">Where</div>
               <div className="font-medium text-gray-900 dark:text-white mt-1">{event.location}</div>
