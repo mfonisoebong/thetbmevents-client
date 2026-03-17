@@ -3,7 +3,7 @@
 import React from 'react'
 import { EventItem } from '@lib/types'
 import Link from 'next/link'
-import {formatDate, stripHtml} from "@lib/utils";
+import {formatDate, formatTime, stripHtml} from "@lib/utils";
 import SafeHtml from "../SafeHtml";
 
 interface Props {
@@ -33,7 +33,7 @@ export default function EventCard({ event }: Props) {
           <div className="mt-4 flex items-center justify-between text-sm">
             <div className="text-text-muted-light dark:text-text-muted-dark">
               <div>{formatDate(event.date)}</div>
-              <div className="mt-1">{event.time} • {event.location}</div>
+              <div className="mt-1">{formatTime(event.time)} • {event.location}</div>
             </div>
             <div>
               <button className="px-3 py-2 rounded-lg bg-brand-teal text-white text-sm font-medium">Book</button>

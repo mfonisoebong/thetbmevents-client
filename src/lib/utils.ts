@@ -3,7 +3,7 @@ import {twMerge} from "tailwind-merge";
 import clsx from "clsx";
 import {EventStatus} from "@lib/eventStats";
 
-export const formatDate = (isoDate: string, time : boolean = true) => {
+export const formatDate = (isoDate: string, time : boolean = false) => {
     const d = new Date(isoDate)
 
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -20,6 +20,20 @@ export const formatDate = (isoDate: string, time : boolean = true) => {
     }
 
     return `${day} ${month} ${year}, ${hour}:${minutes} ${ampm}`
+}
+
+export const formatTime = (time?: string) => {
+    if (!time) return '';
+
+    const m = time.match(/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/);
+    if (!m) return '';
+
+    const hours24 = Number(m[1]);
+    const minutes = m[2];
+    const ampm = hours24 >=12 ? 'PM' : 'AM';
+    const hour12 = hours24 %12 ||12;
+
+    return `${hour12}:${minutes} ${ampm}`;
 }
 
 // Parse API datetime safely.

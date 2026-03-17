@@ -3,7 +3,15 @@
 import React, {useMemo, useState, useEffect, useCallback} from 'react'
 import Link from 'next/link'
 import SidebarLayout from "../../../../components/layouts/SidebarLayout"
-import {formatDate, currencySymbol, formatNumber, getEndpoint, getErrorMessage, normalizeStatus} from '@lib/utils'
+import {
+  formatDate,
+  currencySymbol,
+  formatNumber,
+  getEndpoint,
+  getErrorMessage,
+  normalizeStatus,
+  formatTime
+} from '@lib/utils'
 import {ClipboardIcon} from "@heroicons/react/24/outline";
 import SafeHtml from "../../../../components/SafeHtml";
 import HTTP from '@lib/HTTP'
@@ -186,7 +194,7 @@ export default function OrganizerEventsPage() {
                           />
 
                           <div className="mt-3 text-sm text-text-muted-light dark:text-text-muted-dark">
-                            <div>{formatDate(event.date)} • {event.time}</div>
+                            <div>{formatDate(event.date)} • {formatTime(event.time)}</div>
                             <div className="mt-1">{event.location}</div>
                           </div>
                         </div>

@@ -3,7 +3,16 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import SidebarLayout from '../../../../components/layouts/SidebarLayout'
-import {cn, currencySymbol, formatDate, formatNumber, getEndpoint, getErrorMessage, normalizeStatus} from '@lib/utils'
+import {
+  cn,
+  currencySymbol,
+  formatDate,
+  formatNumber,
+  formatTime,
+  getEndpoint,
+  getErrorMessage,
+  normalizeStatus
+} from '@lib/utils'
 import {
   ArrowTrendingUpIcon,
   CalendarDaysIcon,
@@ -177,7 +186,7 @@ export default function Page() {
       {
         label: 'Upcoming events',
         value: formatNumber(derived.upcoming.length),
-        sub: derived.upcoming[0] ? <span>Next: {formatDate(derived.upcoming[0].event.date)}</span> : <span>—</span>,
+        sub: derived.upcoming[0] ? <span>Next: {formatDate(derived.upcoming[0].event.date) + ", " + formatTime(derived.upcoming[0].event.time)}</span> : <span>—</span>,
         icon: <ClipboardDocumentCheckIcon className="w-5 h-5" />,
       },
     ],
@@ -412,7 +421,7 @@ export default function Page() {
                 <div key={event.id} className="rounded-2xl bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10 p-4">
                   <div className="text-xs text-text-muted-light dark:text-text-muted-dark">Upcoming</div>
                   <div className="mt-1 font-semibold text-gray-900 dark:text-white">{event.title}</div>
-                  <div className="mt-2 text-sm text-text-muted-light dark:text-text-muted-dark">{formatDate(event.date)} • {event.time}</div>
+                  <div className="mt-2 text-sm text-text-muted-light dark:text-text-muted-dark">{`${formatDate(event.date)} • ${formatTime(event.time)}`}</div>
                   <div className="mt-3 text-sm text-gray-900 dark:text-white">
                     <span className="font-semibold">{formatNumber(stats.totalSold)}</span> tickets sold so far
                   </div>
@@ -423,7 +432,7 @@ export default function Page() {
                 <div key={event.id} className="rounded-2xl bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10 p-4">
                   <div className="text-xs text-text-muted-light dark:text-text-muted-dark">Ended</div>
                   <div className="mt-1 font-semibold text-gray-900 dark:text-white">{event.title}</div>
-                  <div className="mt-2 text-sm text-text-muted-light dark:text-text-muted-dark">{formatDate(event.date)}</div>
+                  <div className="mt-2 text-sm text-text-muted-light dark:text-text-muted-dark">{formatDate(event.date)}, {formatTime(event.time)}</div>
                   <div className="mt-3 text-sm text-gray-900 dark:text-white">
                     Revenue: <span className="font-semibold">{currencySymbol(currency)}{formatNumber(stats.totalRevenue)}</span>
                   </div>

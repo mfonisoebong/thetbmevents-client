@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import SidebarLayout from '../../../../../components/layouts/SidebarLayout'
 import type { ApiData, OrganizerEvent, OrdersAndAttendees } from '@lib/types'
-import { cn, currencySymbol, formatDate, formatNumber, getEndpoint, getErrorMessage } from '@lib/utils'
+import {cn, currencySymbol, formatDate, formatNumber, formatTime, getEndpoint, getErrorMessage} from '@lib/utils'
 import { exportToCsv } from '@lib/csv'
 import { useTableSearch } from '../../../../../hooks/useTableSearch'
 import DataTable from '../../../../../components/DataTable'
@@ -431,7 +431,7 @@ export default function OrganizerEventDetailsPage() {
               </div>
               <div className="mt-4 text-sm text-text-muted-light dark:text-text-muted-dark">
                 <div>
-                  {formatDate(event.date)}{event.time ? ` • ${event.time}` : ''}
+                  {formatDate(event.date)}{event.time ? ` • ${formatTime(event.time)}` : ''}
                 </div>
                 {event.location ? <div className="mt-1">{event.location}</div> : null}
               </div>

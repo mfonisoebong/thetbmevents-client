@@ -7,7 +7,7 @@ import GlassCard from '../../../../components/GlassCard'
 import DataTable, { type DataTableColumn } from '../../../../components/DataTable'
 import AdminEventsShimmer from '../../../../components/dashboard/AdminEventsShimmer'
 import HTTP from '@lib/HTTP'
-import { cn, formatDate, getCookie, getEndpoint, getErrorMessage, setCookie } from '@lib/utils'
+import {cn, formatDate, formatTime, getCookie, getEndpoint, getErrorMessage, setCookie} from '@lib/utils'
 import type { ApiData, OrganizerEvent } from '@lib/types'
 import { errorToast, successToast } from '@components/Toast'
 
@@ -17,6 +17,7 @@ type AdminEventRow = {
   id: string
   title: string
   date: string
+  time: string
   organizerId: string
   organizerName: string
   organizerEmail: string
@@ -36,6 +37,7 @@ function toRow(e: OrganizerEvent): AdminEventRow {
     id: String(e.id),
     title: String(e.title ?? '—'),
     date: String(e.date ?? e.created_at ?? new Date().toISOString()),
+    time: e.time,
     organizerId: String(org?.id ?? ''),
     organizerName,
     organizerEmail: String(org?.email ?? '—'),
@@ -172,15 +174,9 @@ export default function AdminEventsPage() {
         render: (r) => (
           <div className="min-w-[240px]">
             <div className="font-semibold text-gray-900 dark:text-white">{r.title}</div>
-            <div className="mt-0.5 text-xs text-text-muted-light dark:text-text-muted-dark">{formatDate(r.date)}</div>
+            <div className="mt-0.5 text-xs text-text-muted-light dark:text-text-muted-dark">{formatDate(r.date) + ", " + formatTime(r.time)}</div>
           </div>
         ),
-      },
-      {
-        key: 'date',
-        header: 'Date',
-        className: 'whitespace-nowrap',
-        render: (r) => <span className="text-text-muted-light dark:text-text-muted-dark">{formatDate(r.date)}</span>,
       },
       {
         key: 'organizer',
