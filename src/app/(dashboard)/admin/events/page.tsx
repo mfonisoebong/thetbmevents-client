@@ -23,6 +23,7 @@ type AdminEventRow = {
   organizerEmail: string
   revenue: number
   status: string
+  createdAt: string
 }
 
 function toRow(e: OrganizerEvent): AdminEventRow {
@@ -43,6 +44,7 @@ function toRow(e: OrganizerEvent): AdminEventRow {
     organizerEmail: String(org?.email ?? '—'),
     revenue: Number(e.total_revenue ?? 0),
     status: String(e.status ?? '—'),
+    createdAt: e.created_at
   }
 }
 
@@ -177,6 +179,12 @@ export default function AdminEventsPage() {
             <div className="mt-0.5 text-xs text-text-muted-light dark:text-text-muted-dark">{formatDate(r.date) + ", " + formatTime(r.time)}</div>
           </div>
         ),
+      },
+      {
+        key: 'date-added',
+        header: 'Date Added',
+        className: 'whitespace-nowrap',
+        render: (r) => <span className="text-text-muted-light dark:text-text-muted-dark">{formatDate(r.createdAt, true)}</span>,
       },
       {
         key: 'organizer',
