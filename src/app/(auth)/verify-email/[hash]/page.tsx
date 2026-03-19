@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import VerifyEmailSuccessClient from '@components/auth/VerifyEmailSuccessClient';
+import TextLogo from '@components/TextLogo';
 import { getEndpoint } from '@lib/utils';
 
 export const metadata: Metadata = {
@@ -87,7 +88,15 @@ export default async function VerifyEmailPage({ params }: PageProps) {
 function VerifyEmailFeedback({ title, message }: { title: string; message: string }) {
 	return (
 		<main className="min-h-screen flex flex-col items-center justify-center light:bg-gradient-to-br light:from-slate-100 light:via-white light:to-sky-50 p-6">
-			<div className="w-full max-w-md rounded-2xl bg-white/30 dark:bg-slate-800/30 backdrop-blur-xl shadow-2xl p-8 sm:p-10 text-center space-y-6">
+			<TextLogo className="mb-6" />
+
+			<div className="w-full max-w-md rounded-2xl bg-white/30 dark:bg-slate-800/30 backdrop-blur-xl border border-slate-200 dark:border-slate-700 p-8 sm:p-10 text-center space-y-6">
+				<div className="mx-auto h-12 w-12 rounded-full border border-red-200 bg-red-50 flex items-center justify-center">
+					<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+						<path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+					</svg>
+				</div>
+
 				<div className="space-y-2">
 					<h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">{title}</h1>
 					<p className="text-sm text-slate-700 dark:text-slate-300">{message}</p>
