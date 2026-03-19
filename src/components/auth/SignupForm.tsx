@@ -4,10 +4,10 @@ import React, { FormEvent, useEffect, useReducer } from 'react';
 import PhoneInput from './PhoneInput';
 import { FormErrors, validateAll } from '../../hooks/useFormValidation';
 import useCountries from '../../hooks/useCountries';
-import {ApiData, SelectOption} from "@lib/types";
+import { SelectOption } from "@lib/types";
 import { Dropdown } from "../Dropdown";
 import HTTP from "@lib/HTTP";
-import {getEndpoint, getErrorMessage, setCookie} from "@lib/utils";
+import { getEndpoint, getErrorMessage } from "@lib/utils";
 import Link from "next/link";
 
 type Step = 'signup' | 'verify';
@@ -22,12 +22,10 @@ type SignupFormState = {
 	};
 	selectedCountry: SelectOption;
 	errors: FormErrors;
-	otp: string;
 	message: string | null;
 	ui: {
 		loading: boolean;
 		showPassword: boolean;
-		otpLoading: boolean;
 		resendLoading: boolean;
 		resendSecondsLeft: number;
 	};
@@ -40,9 +38,7 @@ type SignupFormAction =
 	| { type: 'SET_ERRORS'; value: FormErrors }
 	| { type: 'SET_LOADING'; value: boolean }
 	| { type: 'TOGGLE_SHOW_PASSWORD' }
-	| { type: 'SET_OTP'; value: string }
 	| { type: 'SET_MESSAGE'; value: string | null }
-	| { type: 'SET_OTP_LOADING'; value: boolean }
 	| { type: 'SET_RESEND_LOADING'; value: boolean }
 	| { type: 'SET_RESEND_SECONDS'; value: number };
 
@@ -57,12 +53,10 @@ function getInitialState(): SignupFormState {
 		},
 		selectedCountry: { label: "Nigeria (+234)", value: "NG" },
 		errors: {},
-		otp: '',
 		message: null,
 		ui: {
 			loading: false,
 			showPassword: false,
-			otpLoading: false,
 			resendLoading: false,
 			resendSecondsLeft: 0,
 		},
@@ -92,12 +86,8 @@ function reducer(state: SignupFormState, action: SignupFormAction): SignupFormSt
 			return { ...state, ui: { ...state.ui, loading: action.value } };
 		case 'TOGGLE_SHOW_PASSWORD':
 			return { ...state, ui: { ...state.ui, showPassword: !state.ui.showPassword } };
-		case 'SET_OTP':
-			return { ...state, otp: action.value };
 		case 'SET_MESSAGE':
 			return { ...state, message: action.value };
-		case 'SET_OTP_LOADING':
-			return { ...state, ui: { ...state.ui, otpLoading: action.value } };
 		case 'SET_RESEND_LOADING':
 			return { ...state, ui: { ...state.ui, resendLoading: action.value } };
 		case 'SET_RESEND_SECONDS':
@@ -158,41 +148,6 @@ export default function SignupForm() {
 		dispatch({ type: 'SET_LOADING', value: false });
 	}
 
-	async function onVerifyOtp(e: FormEvent) {
-		e.preventDefault();
-		dispatch({ type: 'SET_MESSAGE', value: null });
-
-		const otp = state.otp.trim();
-		if (!otp) {
-			dispatch({ type: 'SET_MESSAGE', value: 'Please enter the verification code.' });
-			return;
-		}
-
-		dispatch({ type: 'SET_OTP_LOADING', value: true });
-
-		const resp = await HTTP<ApiData<any>, { email: string; otp: string }>({
-			url: getEndpoint('/auth/verify-email-otp'),
-			data: { email: state.values.email.trim(), otp },
-		});
-
-		if (resp.ok) {
-			setCookie('token', resp.data?.data.token)
-			setCookie('user', JSON.stringify(resp.data?.data.user))
-
-			const role = resp.data?.data.user.role
-
-			setCookie('role', role)
-
-			dispatch({ type: 'SET_MESSAGE', value: 'Email verified successfully. Logging you in...' });
-
-			window.location.href = `/${role}/dashboard`
-		} else {
-			dispatch({ type: 'SET_MESSAGE', value: getErrorMessage(resp.error) });
-		}
-
-		dispatch({ type: 'SET_OTP_LOADING', value: false });
-	}
-
 	async function onResendOtp() {
 		dispatch({ type: 'SET_MESSAGE', value: null });
 
@@ -201,13 +156,13 @@ export default function SignupForm() {
 		dispatch({ type: 'SET_RESEND_LOADING', value: true });
 
 		const resp = await HTTP<any, { email: string }>({
-			url: getEndpoint('/auth/resend-email-otp'),
+			url: getEndpoint('/auth/resend-email-verification-link'),
 			data: { email: state.values.email.trim() },
 		});
 
 		if (resp.ok) {
 			dispatch({ type: 'SET_RESEND_SECONDS', value: 60 });
-			dispatch({ type: 'SET_MESSAGE', value: 'A new verification code has been sent.' });
+			dispatch({ type: 'SET_MESSAGE', value: resp.data?.message ?? 'A new verification link has been sent.' });
 		} else {
 			dispatch({ type: 'SET_MESSAGE', value: getErrorMessage(resp.error) });
 		}
@@ -219,11 +174,11 @@ export default function SignupForm() {
 
 	if (state.step === 'verify') {
 		return (
-			<form onSubmit={onVerifyOtp} className="space-y-6">
+			<div className="space-y-6">
 				<div className="space-y-1">
-					<h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Verify your email</h2>
+					<h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Check your email</h2>
 					<p className="text-sm text-slate-600 dark:text-slate-300">
-						Enter the code sent to <span className="font-medium">{state.values.email}</span>.
+						We sent a verification link to <span className="font-medium">{state.values.email}</span>. Open the link to activate your account.
 					</p>
 				</div>
 
@@ -233,38 +188,18 @@ export default function SignupForm() {
 					</p>
 				)}
 
-				<div>
-					<label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Verification code</label>
-					<input
-						value={state.otp}
-						onChange={(e) => dispatch({ type: 'SET_OTP', value: e.target.value.replace(/\s+/g, '') })}
-						inputMode="numeric"
-						autoComplete="one-time-code"
-						className="mt-1 w-full rounded-lg bg-white/60 dark:bg-slate-900/50 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-yellow focus:duration-200 shadow-sm"
-						placeholder="Enter OTP"
-					/>
-				</div>
-
-				<button
-					type="submit"
-					disabled={state.ui.otpLoading}
-					className="mt-2 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-brand-yellow hover:bg-yellow-600 text-white px-4 py-2 font-medium shadow-lg disabled:opacity-60"
-				>
-					{state.ui.otpLoading ? 'Verifying…' : 'Verify email'}
-				</button>
-
 				<div className="flex items-center justify-between text-sm">
 					<button
 						type="button"
 						onClick={onResendOtp}
 						disabled={state.ui.resendLoading || state.ui.resendSecondsLeft > 0}
-						className="text-slate-700 dark:text-slate-200 hover:underline disabled:opacity-60"
+						className="font-bold text-slate-700 dark:text-slate-200 hover:underline disabled:opacity-60"
 					>
 						{state.ui.resendLoading
 							? 'Sending…'
 							: state.ui.resendSecondsLeft > 0
-								? `Resend code in ${state.ui.resendSecondsLeft}s`
-								: 'Resend code'}
+								? `Resend link in ${state.ui.resendSecondsLeft}s`
+								: 'Resend verification link'}
 					</button>
 
 					<button
@@ -278,7 +213,7 @@ export default function SignupForm() {
 						Back
 					</button>
 				</div>
-			</form>
+			</div>
 		);
 	}
 
