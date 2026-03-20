@@ -10,6 +10,7 @@ import HTTP from "@lib/HTTP";
 import {getEndpoint, getErrorMessage} from "@lib/utils";
 import Link from "next/link";
 import {ArrowLeftIcon, ArrowPathIcon} from "@heroicons/react/24/outline";
+import {errorToast} from "@components/Toast";
 
 type Step = 'signup' | 'verify';
 
@@ -143,7 +144,8 @@ export default function SignupForm() {
             dispatch({type: 'SET_STEP', value: 'verify'});
             dispatch({type: 'SET_RESEND_SECONDS', value: 60});
         } else {
-            dispatch({type: 'SET_MESSAGE', value: getErrorMessage(response.error)});
+            errorToast(getErrorMessage(response.error))
+            // dispatch({type: 'SET_MESSAGE', value: getErrorMessage(response.error)});
         }
 
         dispatch({type: 'SET_LOADING', value: false});
@@ -241,12 +243,6 @@ export default function SignupForm() {
 
     return (
         <form onSubmit={onSubmit} className="space-y-6">
-            {state.message && (
-                <p className="text-sm text-red-700 bg-red-50 rounded-lg px-4 py-3">
-                    {state.message}
-                </p>
-            )}
-
             <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Business name</label>
                 <input
