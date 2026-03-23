@@ -23,6 +23,7 @@
     "nextjs-toploader": "^3.9.17",
     "qrcode": "^1.5.4",
     "react": "18.2.0",
+    "react-confetti": "^6.4.0",
     "react-dom": "18.2.0",
     "react-dropzone": "^14.2.3",
     "react-hot-toast": "^2.6.0",
