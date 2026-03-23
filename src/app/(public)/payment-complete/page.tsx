@@ -103,7 +103,7 @@ function PaymentCompleteContent() {
                                 </div>
                                 <ul className="list-disc space-y-1 pl-5 text-text-muted-light dark:text-text-muted-dark">
                                     <li>Please check your email for the ticket and event details.</li>
-                                    <li>If you cannot find the mail in your inbox, check your spam folder.</li>
+                                    <li>If you cannot find the mail in your inbox, <strong className="text-black">check your spam folder</strong> and mark it as "Not Spam".</li>
                                     <li>
                                         Feel free to contact support if you need any help:{' '}
                                         <a href="mailto:support@thetbmevents.com" className="underline text-sm">
