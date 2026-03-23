@@ -21,7 +21,7 @@ function PaymentCompleteContent() {
 
     useEffect(() => {
         const updateViewportSize = () => {
-            setViewportSize({width: window.innerWidth, height: window.innerHeight})
+            setViewportSize({width: Math.min(848, document.documentElement.clientWidth), height: document.documentElement.clientHeight})
         }
 
         updateViewportSize()
@@ -74,7 +74,7 @@ function PaymentCompleteContent() {
                 )}
 
                 {status === 'success' && (
-                    <div className="relative">
+                    <div id="success-bx" className="relative">
                         {viewportSize.width > 0 && viewportSize.height > 0 && (
                             <Confetti
                                 width={viewportSize.width}
@@ -106,8 +106,8 @@ function PaymentCompleteContent() {
                                     <li>If you cannot find the mail in your inbox, check your spam folder.</li>
                                     <li>
                                         Feel free to contact support if you need any help:{' '}
-                                        <a href="mailto:support@thetbmevents.com" className="underline">
-                                            admin@thetbmevents.com
+                                        <a href="mailto:support@thetbmevents.com" className="underline text-sm">
+                                            support@thetbmevents.com
                                         </a>
                                     </li>
                                 </ul>
