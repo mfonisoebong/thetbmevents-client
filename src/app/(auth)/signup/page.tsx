@@ -26,7 +26,7 @@ export default function SignupPage() {
 					</svg>
 				</div>
 
-				<div className="relative z-10 rounded-2xl bg-white/30 dark:bg-slate-800/30 backdrop-blur-xl shadow-2xl p-8 sm:p-10">
+				<div className="relative z-10 rounded-2xl bg-white/30 dark:bg-slate-800/30 backdrop-blur-xl shadow-2xl p-6 sm:p-10">
 					{/* soft vignette for extra depth */}
 					<div className="absolute inset-0 pointer-events-none rounded-2xl shadow-inner" />
 

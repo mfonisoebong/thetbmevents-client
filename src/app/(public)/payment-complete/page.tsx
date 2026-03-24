@@ -8,7 +8,7 @@ import SuccessCheckIcon from '@components/SuccessCheckIcon'
 import {InformationCircleIcon} from '@heroicons/react/24/solid'
 import Confetti from 'react-confetti'
 import HTTP from '@lib/HTTP'
-import {getEndpoint} from '@lib/utils'
+import {getEndpoint, getErrorMessage} from '@lib/utils'
 
 type Status = 'loading' | 'success' | 'error'
 
@@ -17,11 +17,15 @@ function PaymentCompleteContent() {
 
     const reference = useMemo(() => searchParams?.get('reference') ?? '', [searchParams])
     const [status, setStatus] = useState<Status>('loading')
+    const [errorMessage, setErrorMessage] = useState('')
     const [viewportSize, setViewportSize] = useState({width: 0, height: 0})
 
     useEffect(() => {
         const updateViewportSize = () => {
-            setViewportSize({width: Math.min(848, document.documentElement.clientWidth), height: document.documentElement.clientHeight})
+            setViewportSize({
+                width: Math.min(848, document.documentElement.clientWidth),
+                height: document.documentElement.clientHeight
+            })
         }
 
         updateViewportSize()
@@ -33,15 +37,14 @@ function PaymentCompleteContent() {
     }, [])
 
     useEffect(() => {
-        // Missing/invalid reference – don't hit the API.
         if (!reference) {
             setStatus('error')
             return
         }
 
-        let isCurrent = true
+        let isCurrent = true;
 
-        ;(async () => {
+        (async () => {
             const response = await HTTP({url: getEndpoint(`/manual-verify-payment/${reference}`), method: 'GET'})
 
             if (!isCurrent) return
@@ -50,6 +53,7 @@ function PaymentCompleteContent() {
                 setStatus('success')
             } else {
                 setStatus('error')
+                setErrorMessage(getErrorMessage(response.error))
             }
         })()
 
@@ -74,7 +78,7 @@ function PaymentCompleteContent() {
                 )}
 
                 {status === 'success' && (
-                    <div id="success-bx" className="relative">
+                    <div className="relative">
                         {viewportSize.width > 0 && viewportSize.height > 0 && (
                             <Confetti
                                 width={viewportSize.width}
@@ -82,7 +86,7 @@ function PaymentCompleteContent() {
                                 numberOfPieces={120}
                                 recycle={false}
                                 gravity={0.5}
-                                tweenDuration={1000 /2}
+                                tweenDuration={500}
                                 style={{position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 20}}
                             />
                         )}
@@ -101,12 +105,12 @@ function PaymentCompleteContent() {
                                     <InformationCircleIcon className="h-5 w-5 flex-none" aria-hidden="true" />
                                     <p className="text-sm font-semibold">Next steps</p>
                                 </div>
-                                <ul className="list-disc space-y-1 pl-5 text-text-muted-light dark:text-text-muted-dark">
-                                    <li>Please check your email for the ticket and event details.</li>
-                                    <li>If you cannot find the mail in your inbox, <strong className="text-black">check your spam folder</strong> and mark it as "Not Spam".</li>
+                                <ul className="list-disc space-y-1 pl-5 text-sm text-text-muted-light dark:text-text-muted-dark">
+                                    <li>Check your email for the ticket and event details.</li>
+                                    <li>If you cannot find the mail in your inbox, <strong className="text-black-1c dark:text-white">check your spam folder</strong> and mark it as "Not Spam".</li>
                                     <li>
                                         Feel free to contact support if you need any help:{' '}
-                                        <a href="mailto:support@thetbmevents.com" className="underline text-sm">
+                                        <a href="mailto:support@thetbmevents.com" className="underline text-xs">
                                             support@thetbmevents.com
                                         </a>
                                     </li>
@@ -133,7 +137,7 @@ function PaymentCompleteContent() {
                     <div>
                         <h1 className="text-xl font-semibold text-text-light dark:text-text-dark">We couldn’t confirm your payment</h1>
                         <p className="mt-2 text-text-muted-light dark:text-text-muted-dark">
-                            Missing or invalid reference. Please try again.
+                            {errorMessage}
                         </p>
                         <div className="mt-6">
                             <Link
