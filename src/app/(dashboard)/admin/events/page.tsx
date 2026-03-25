@@ -110,7 +110,7 @@ export default function AdminEventsPage() {
 
     try {
       const resp = await HTTP<ApiData<unknown>, undefined>({
-        url: getEndpoint(`/dashboard/event/${encodeURIComponent(row.id)}/change-status/${encodeURIComponent(status)}`),
+        url: getEndpoint(`/dashboard/admin/event/${encodeURIComponent(row.id)}/change-status/${encodeURIComponent(status)}`),
         method: 'put',
       })
 
