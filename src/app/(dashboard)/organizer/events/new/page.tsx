@@ -13,6 +13,8 @@ import Select from "../../../../../components/Select";
 import Input from "../../../../../components/Input";
 import HTTP from "@lib/HTTP";
 import {errorToast, successToast} from "@components/Toast";
+import { Tooltip } from 'react-tooltip'
+
 
 const ReactQuill = dynamic(() => import('react-quill-new'), {ssr: false})
 
@@ -863,7 +865,10 @@ export default function CreateEventPage() {
                                                     } : x)),
                                                 }))}
                                                 note="0 = unlimited"
+                                                data-tooltip-id="quantity-note-tooltip"
+                                                data-tooltip-content="How many tickets are available for this type?"
                                             />
+                                            <Tooltip id="quantity-note-tooltip" />
 
                                             <Input
                                                 label="Start selling date"

@@ -5,7 +5,16 @@ import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import SidebarLayout from '../../../../../components/layouts/SidebarLayout'
 import type { ApiData, OrganizerEvent, OrdersAndAttendees } from '@lib/types'
-import {cn, currencySymbol, formatDate, formatNumber, formatTime, getEndpoint, getErrorMessage} from '@lib/utils'
+import {
+  cn,
+  currencySymbol,
+  formatDate,
+  formatNumber,
+  formatTime,
+  getEndpoint,
+  getErrorMessage,
+  toDateTimeLocalValue
+} from '@lib/utils'
 import { exportToCsv } from '@lib/csv'
 import { useTableSearch } from '../../../../../hooks/useTableSearch'
 import DataTable from '../../../../../components/DataTable'
@@ -820,11 +829,19 @@ function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: st
     setTickets(event.tickets ?? [])
   }, [event.tickets])
 
-  const [editEndDateForTicketId, setEditEndDateForTicketId] = useState<string | null>(null)
-  const [endSellingDate, setEndSellingDate] = useState('')
+  // General ticket edit modal
+  const [editTicketId, setEditTicketId] = useState<string | null>(null)
+  const [editDraft, setEditDraft] = useState({
+    name: '',
+    price: '',
+    description: '',
+    quantity: '',
+    endSellingDate: '',
+  })
+
   const [deleted, setDeleted] = useState<Record<string, boolean>>({})
 
-  const [savingEndDate, setSavingEndDate] = useState(false)
+  const [savingTicketEdit, setSavingTicketEdit] = useState(false)
   const [deletingTicketId, setDeletingTicketId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
@@ -840,11 +857,24 @@ function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: st
   }, [rows])
 
   const editingTicket = useMemo(() => {
-    if (!editEndDateForTicketId) return null
-    return tickets.find((t) => String(t.id) === String(editEndDateForTicketId)) ?? null
-  }, [editEndDateForTicketId, tickets])
+    if (!editTicketId) return null
+    return tickets.find((t) => t.id === editTicketId)
+  }, [editTicketId, tickets])
 
-  const canCloseModal = !savingEndDate
+  const canCloseModal = !savingTicketEdit
+
+  const openEditModal = useCallback((t: any) => {
+      setActionError(null)
+      setEditTicketId(t.id)
+
+      setEditDraft({
+        name: t.name,
+        price: t.price,
+        description: t.description,
+        quantity: t.quantity,
+        endSellingDate: toDateTimeLocalValue(t.end_selling_date),
+      })
+  }, [setEditTicketId])
 
   const onDeleteTicket = useCallback(
     async (ticketId: string) => {
@@ -874,37 +904,78 @@ function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: st
     [setDeleted]
   )
 
-  const onSaveEndDate = useCallback(async () => {
-    if (!editEndDateForTicketId) return
+  const onSaveTicketEdit = useCallback(async () => {
+    if (!editTicketId) return
+
+    const name = editDraft.name.trim()
+    const description = editDraft.description
+    const priceNum = Number(editDraft.price)
+    const quantityNum = Number(editDraft.quantity)
+    const endSellingDate = editDraft.endSellingDate
+
+    if (!name) {
+      setActionError('Please enter a ticket name.')
+      return
+    }
+
+    if (!Number.isFinite(priceNum) || priceNum < 0) {
+      setActionError('Please enter a valid price (0 or more).')
+      return
+    }
+
+    if (!Number.isFinite(quantityNum) || quantityNum < 0) {
+      setActionError('Please enter a valid quantity (0 or more).')
+      return
+    }
+
     if (!endSellingDate) {
-      setActionError('Please select an end date')
+      setActionError('Please select an end selling date.')
       return
     }
 
     setActionError(null)
-    setSavingEndDate(true)
+    setSavingTicketEdit(true)
 
-    const resp = await HTTP<ApiData<unknown>, undefined>({
-      url: getEndpoint(
-        `/dashboard/organizer/ticket/edit-end-date/${encodeURIComponent(String(editEndDateForTicketId))}/${encodeURIComponent(String(endSellingDate))}`
-      ),
+    const payload = {
+      name,
+      price: priceNum,
+      description,
+      quantity: quantityNum,
+      end_selling_date: endSellingDate,
+    }
+
+    const resp = await HTTP<ApiData<any>, typeof payload>({
+      url: getEndpoint(`/dashboard/organizer/ticket/${encodeURIComponent(editTicketId)}/edit`),
       method: 'put',
+      data: payload,
     })
 
     if (!resp.ok) {
       setActionError(getErrorMessage(resp.error))
-      setSavingEndDate(false)
+      setSavingTicketEdit(false)
       return
     }
 
-    // Update local state so the table reflects the new date immediately.
-    setTickets((prev) => prev.map((t) => (String(t.id) === String(editEndDateForTicketId) ? { ...t, end_selling_date: endSellingDate } : t)))
+    // Update local state so the table reflects the edits immediately.
+    setTickets((prev) =>
+      prev.map((t) =>
+        t.id === editTicketId
+          ? {
+              ...t,
+              name,
+              price: priceNum,
+              description,
+              quantity: quantityNum,
+              end_selling_date: endSellingDate,
+            }
+          : t
+      )
+    )
 
-    setSavingEndDate(false)
-    setEditEndDateForTicketId(null)
-
-    successToast('End selling date updated.')
-  }, [editEndDateForTicketId, endSellingDate])
+    setSavingTicketEdit(false)
+    setEditTicketId(null)
+    successToast(resp.data?.message ?? 'Ticket updated.')
+  }, [editDraft, editTicketId])
 
   return (
     <div className="space-y-4">
@@ -979,18 +1050,14 @@ function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: st
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      setActionError(null)
-                      setEditEndDateForTicketId(t.id)
-                      setEndSellingDate((t.end_selling_date ?? '').slice(0, 10))
-                    }}
+                    onClick={() => openEditModal(t)}
                     className={cn(
                       'rounded-lg bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-2 text-xs font-semibold text-gray-900 dark:text-white hover:bg-white/20',
-                      savingEndDate && 'opacity-60 cursor-not-allowed'
+                      savingTicketEdit && 'opacity-60 cursor-not-allowed'
                     )}
-                    disabled={savingEndDate}
+                    disabled={savingTicketEdit}
                   >
-                    Edit end date
+                    Edit ticket
                   </button>
 
                   <button
@@ -1018,10 +1085,10 @@ function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: st
       />
 
       <Dialog
-        open={Boolean(editEndDateForTicketId)}
+        open={Boolean(editTicketId)}
         onClose={(open) => {
           if (!open && canCloseModal) {
-            setEditEndDateForTicketId(null)
+            setEditTicketId(null)
             setActionError(null)
           }
         }}
@@ -1032,22 +1099,73 @@ function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: st
 
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <DialogPanel className="w-full max-w-lg rounded-2xl bg-white/80 dark:bg-slate-950/70 border border-black/10 dark:border-white/10 backdrop-blur-xl shadow-xl p-6">
-            <DialogTitle className="text-lg font-extrabold text-gray-900 dark:text-white">Edit end selling date</DialogTitle>
+            <DialogTitle className="text-lg font-extrabold text-gray-900 dark:text-white">Edit ticket</DialogTitle>
             <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">
-              Update the end date for <span className="font-semibold">{editingTicket?.name ?? 'this ticket'}</span>.
+              Update details for <span className="font-semibold">{editingTicket?.name ?? 'this ticket'}</span>.
             </p>
 
-            <div className="mt-5">
-              <label className="block text-sm font-semibold text-gray-900 dark:text-white">End selling date</label>
-              <input
-                type="datetime-local"
-                value={endSellingDate}
-                onChange={(e) => setEndSellingDate(e.target.value)}
-                className="mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
-                disabled={savingEndDate}
-              />
+            <div className="mt-5 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 dark:text-white">Name</label>
+                <input
+                  value={editDraft.name}
+                  onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))}
+                  className="mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                  disabled={savingTicketEdit}
+                />
+              </div>
 
-              {actionError ? <div className="mt-3 text-sm text-red-700 dark:text-red-200">{actionError}</div> : null}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 dark:text-white">Price</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={editDraft.price}
+                    onChange={(e) => setEditDraft((d) => ({ ...d, price: e.target.value }))}
+                    className="mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                    disabled={savingTicketEdit}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 dark:text-white">Quantity (0 = unlimited)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step="1"
+                    value={editDraft.quantity}
+                    onChange={(e) => setEditDraft((d) => ({ ...d, quantity: e.target.value }))}
+                    className="mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                    disabled={savingTicketEdit}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 dark:text-white">End selling date</label>
+                <input
+                  type="datetime-local"
+                  value={editDraft.endSellingDate}
+                  onChange={(e) => setEditDraft((d) => ({ ...d, endSellingDate: e.target.value }))}
+                  className="mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                  disabled={savingTicketEdit}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 dark:text-white">Description</label>
+                <textarea
+                  value={editDraft.description}
+                  onChange={(e) => setEditDraft((d) => ({ ...d, description: e.target.value }))}
+                  rows={4}
+                  className="mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                  disabled={savingTicketEdit}
+                />
+              </div>
+
+              {actionError ? <div className="text-sm text-red-700 dark:text-red-200">{actionError}</div> : null}
             </div>
 
             <div className="mt-6 flex items-center justify-end gap-3">
@@ -1055,7 +1173,7 @@ function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: st
                 type="button"
                 onClick={() => {
                   if (!canCloseModal) return
-                  setEditEndDateForTicketId(null)
+                  setEditTicketId(null)
                   setActionError(null)
                 }}
                 disabled={!canCloseModal}
@@ -1068,11 +1186,11 @@ function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: st
               </button>
               <button
                 type="button"
-                onClick={onSaveEndDate}
-                disabled={savingEndDate}
-                className={cn('rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white', savingEndDate && 'opacity-60 cursor-not-allowed')}
+                onClick={onSaveTicketEdit}
+                disabled={savingTicketEdit}
+                className={cn('rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white', savingTicketEdit && 'opacity-60 cursor-not-allowed')}
               >
-                {savingEndDate ? 'Saving…' : 'Save'}
+                {savingTicketEdit ? 'Saving…' : 'Save'}
               </button>
             </div>
           </DialogPanel>

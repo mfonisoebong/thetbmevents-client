@@ -36,6 +36,23 @@ export const formatTime = (time?: string) => {
     return `${hour12}:${minutes} ${ampm}`;
 }
 
+// Convert API datetimes (ISO, incl. Zulu timestamps) to a value suitable for
+// <input type="datetime-local"> which expects local time formatted as "YYYY-MM-DDTHH:mm".
+export function toDateTimeLocalValue(input?: string | null): string {
+    const d = parseApiDateTime(input);
+    if (!d) return '';
+
+    const pad2 = (n: number) => String(n).padStart(2, '0');
+
+    const year = d.getFullYear();
+    const month = pad2(d.getMonth() + 1);
+    const day = pad2(d.getDate());
+    const hour = pad2(d.getHours());
+    const minute = pad2(d.getMinutes());
+
+    return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
 // Parse API datetime safely.
 // Supports:
 // - ISO strings (e.g. 2025-11-29T22:46:00Z)
