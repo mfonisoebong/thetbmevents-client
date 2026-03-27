@@ -24,7 +24,7 @@ type UiTransactionRow = {
   reference: string
   eventName: string
   email?: string
-  chargedAmount: number
+  amount: number
   currency: any
   status: string
   createdAt: string
@@ -58,7 +58,7 @@ function mapRecentTransaction(tx: RecentTransaction): UiTransactionRow {
     reference: tx.reference,
     eventName: tx.event_name,
     email: tx.email,
-    chargedAmount: tx.amount,
+    amount: tx.amount,
     currency: tx.currency,
     status: normalizeTxStatus(tx.status),
     createdAt: tx.created_at,
@@ -143,12 +143,12 @@ export default function AdminFinancePage() {
       },
       {
         key: 'chargedAmount',
-        header: 'Charged amount',
+        header: 'Amount',
         className: 'whitespace-nowrap',
         render: (r) => (
           <span className="font-semibold">
             {currencySymbol(String(r.currency ?? ''))}
-            {formatNumber(r.chargedAmount)}
+            {formatNumber(r.amount)}
           </span>
         ),
       },
@@ -167,6 +167,11 @@ export default function AdminFinancePage() {
 
   const topOrganizerColumns = useMemo((): DataTableColumn<UiTopOrganizerRow>[] => {
     return [
+      {
+        key: 'sn',
+        header: 'S/N',
+        render: (_, i) => <span className="text-text-muted-light dark:text-text-muted-dark">{i + 1}</span>,
+      },
       {
         key: 'organizer',
         header: 'Organizer',
@@ -206,7 +211,7 @@ export default function AdminFinancePage() {
     setVerifyMessage(null)
 
     const resp = await HTTP<ApiData<RecentTransaction>, undefined>({
-      url: getEndpoint(`/dashboard/admin/verify-transaction/${encodeURIComponent(ref)}`),
+      url: getEndpoint(`/dashboard/admin/finance/verify-transaction/${encodeURIComponent(ref)}`),
       method: 'get',
     })
 
@@ -283,8 +288,28 @@ export default function AdminFinancePage() {
           />
         </div>
 
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <GlassCard className="p-5 lg:col-span-2">
+        <GlassCard className="mt-6 p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Recent transactions</h2>
+              <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">100 most recent transactions.</p>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <DataTable<UiTransactionRow>
+                columns={columns}
+                rows={transactions}
+                rowKey={(r) => r.id || r.reference}
+                emptyTitle="No transactions"
+                emptyDescription="Transactions will appear once payments are processed."
+                pagination={{ enabled: true, pageSize: 10, pageSizeOptions: [10, 25, 50] }}
+            />
+          </div>
+        </GlassCard>
+
+        <div className="mt-6 space-y-6">
+          <GlassCard className="p-5">
             <div>
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">Verify a transaction</h2>
               <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">Enter a reference to manually check transaction status.</p>
@@ -342,7 +367,7 @@ export default function AdminFinancePage() {
                   <div className="text-xs font-semibold uppercase tracking-wider text-text-muted-light dark:text-text-muted-dark">Charged amount</div>
                   <div className="mt-1 text-gray-900 dark:text-white font-semibold">
                     {currencySymbol(String(verifyResult.currency ?? ''))}
-                    {formatNumber(verifyResult.chargedAmount)}
+                    {formatNumber(verifyResult.amount)}
                   </div>
                 </div>
               </div>
@@ -366,26 +391,6 @@ export default function AdminFinancePage() {
             </div>
           </GlassCard>
         </div>
-
-        <GlassCard className="mt-6 p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Recent transactions</h2>
-              <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">10 most recent transactions.</p>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <DataTable<UiTransactionRow>
-              columns={columns}
-              rows={transactions}
-              rowKey={(r) => r.id || r.reference}
-              emptyTitle="No transactions"
-              emptyDescription="Transactions will appear once payments are processed."
-              pagination={{ enabled: true, pageSize: 10, pageSizeOptions: [10, 25, 50] }}
-            />
-          </div>
-        </GlassCard>
       </div>
     </SidebarLayout>
   )

@@ -14,6 +14,7 @@ import Input from "../../../../../components/Input";
 import HTTP from "@lib/HTTP";
 import {errorToast, successToast} from "@components/Toast";
 import { Tooltip } from 'react-tooltip'
+import {useRouter} from "next/navigation";
 
 
 const ReactQuill = dynamic(() => import('react-quill-new'), {ssr: false})
@@ -382,6 +383,8 @@ export default function CreateEventPage() {
 
     const [uploading, setUploading] = useState<boolean>(false)
 
+    const router = useRouter()
+
     async function publishEvent() {
         const formData = new FormData();
 
@@ -440,8 +443,7 @@ export default function CreateEventPage() {
         // Clear draft on successful publish
         localStorage.removeItem(STORAGE_KEY)
         successToast('Event Created Successfully!')
-        setStep(1)
-        setDraft(defaultDraft)
+        router.push('/organizer/events')
     }
 
     return (
@@ -477,14 +479,14 @@ export default function CreateEventPage() {
                                                 : 'text-text-muted-light dark:text-text-muted-dark hover:bg-black/5 dark:hover:bg-white/5'
                                         )}
                                     >
-                    <span
-                        className={cn(
-                            'inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold',
-                            done ? 'bg-emerald-100 text-emerald-800' : active ? 'bg-brand-yellow text-white' : 'bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white'
-                        )}
-                    >
-                      {s.key}
-                    </span>
+                                        <span
+                                            className={cn(
+                                                'inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold',
+                                                done ? 'bg-emerald-100 text-emerald-800' : active ? 'bg-brand-yellow text-white' : 'bg-black/10 dark:bg-white/10 text-gray-900 dark:text-white'
+                                            )}
+                                        >
+                                            {s.key}
+                                        </span>
                                         {s.label}
                                     </button>
                                 )

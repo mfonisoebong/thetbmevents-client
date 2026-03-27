@@ -43,9 +43,16 @@ module.exports = {
         'glass-light': 'linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%)',
         'glass-dark': 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.4) 100%)',
       },
+      keyframes: {
+        shimmer: {
+          '0%': { backgroundPosition: '200% 0' },
+          '100%': { backgroundPosition: '-200% 0' },
+        },
+      },
       animation: {
         toastIn: "toastIn 1000ms cubic-bezier(0.16, 1, 0.3, 1) both",
         toastOut: "toastOut 1000ms ease-in both",
+        shimmer: 'shimmer 1.2s linear infinite',
       },
     },
   },

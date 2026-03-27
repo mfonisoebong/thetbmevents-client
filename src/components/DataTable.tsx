@@ -5,7 +5,7 @@ export type DataTableColumn<T> = {
   key: string
   header: React.ReactNode
   className?: string
-  render: (row: T) => React.ReactNode
+  render: (row: T, rowIndex: number) => React.ReactNode
 }
 
 type PaginationConfig = {
@@ -119,11 +119,11 @@ export default function DataTable<T>({
                 </td>
               </tr>
             ) : (
-              pagedRows.map((row) => (
+              pagedRows.map((row, rowIndex) => (
                 <tr key={rowKey(row)} className="hover:bg-black/5 dark:hover:bg-white/5">
                   {columns.map((c) => (
                     <td key={c.key} className={cn('px-4 py-3 text-sm text-gray-900 dark:text-white', c.className ?? '')}>
-                      {c.render(row)}
+                      {c.render(row, rowIndex)}
                     </td>
                   ))}
                 </tr>
