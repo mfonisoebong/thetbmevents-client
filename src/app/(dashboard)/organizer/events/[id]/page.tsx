@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react'
+import React, { useMemo, useState, useEffect, useCallback, useRef, useReducer } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import SidebarLayout from '../../../../../components/layouts/SidebarLayout'
@@ -122,6 +122,73 @@ function parseTagsCsv(input: string): string[] {
   return out
 }
 
+// ── Page-level state & reducer ──────────────────────────────────────────────
+type PageState = {
+  copied: boolean
+  downloadingQr: boolean
+  blastSubject: string
+  blastBody: string
+  sendingBlast: boolean
+  deletingEvent: boolean
+  event: OrganizerEvent | null
+  ordersAndAttendees: OrdersAndAttendees | null
+  loadingOverview: boolean
+  loadingOrders: boolean
+  error: string | null
+  reloadToken: number
+}
+
+type PageAction =
+  | { type: 'SET_COPIED'; payload: boolean }
+  | { type: 'SET_DOWNLOADING_QR'; payload: boolean }
+  | { type: 'SET_BLAST_SUBJECT'; payload: string }
+  | { type: 'SET_BLAST_BODY'; payload: string }
+  | { type: 'SET_SENDING_BLAST'; payload: boolean }
+  | { type: 'SET_DELETING_EVENT'; payload: boolean }
+  | { type: 'SET_EVENT'; payload: OrganizerEvent | null }
+  | { type: 'SET_ORDERS_AND_ATTENDEES'; payload: OrdersAndAttendees | null }
+  | { type: 'SET_LOADING_OVERVIEW'; payload: boolean }
+  | { type: 'SET_LOADING_ORDERS'; payload: boolean }
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'RELOAD' }
+  | { type: 'RESET_DATA' }
+  | { type: 'BLAST_SENT' }
+
+const initialPageState: PageState = {
+  copied: false,
+  downloadingQr: false,
+  blastSubject: '',
+  blastBody: '',
+  sendingBlast: false,
+  deletingEvent: false,
+  event: null,
+  ordersAndAttendees: null,
+  loadingOverview: true,
+  loadingOrders: true,
+  error: null,
+  reloadToken: 0,
+}
+
+function pageReducer(state: PageState, action: PageAction): PageState {
+  switch (action.type) {
+    case 'SET_COPIED': return { ...state, copied: action.payload }
+    case 'SET_DOWNLOADING_QR': return { ...state, downloadingQr: action.payload }
+    case 'SET_BLAST_SUBJECT': return { ...state, blastSubject: action.payload }
+    case 'SET_BLAST_BODY': return { ...state, blastBody: action.payload }
+    case 'SET_SENDING_BLAST': return { ...state, sendingBlast: action.payload }
+    case 'SET_DELETING_EVENT': return { ...state, deletingEvent: action.payload }
+    case 'SET_EVENT': return { ...state, event: action.payload }
+    case 'SET_ORDERS_AND_ATTENDEES': return { ...state, ordersAndAttendees: action.payload }
+    case 'SET_LOADING_OVERVIEW': return { ...state, loadingOverview: action.payload }
+    case 'SET_LOADING_ORDERS': return { ...state, loadingOrders: action.payload }
+    case 'SET_ERROR': return { ...state, error: action.payload }
+    case 'RELOAD': return { ...state, reloadToken: state.reloadToken + 1 }
+    case 'RESET_DATA': return { ...state, event: null, ordersAndAttendees: null, error: null, loadingOverview: true, loadingOrders: true }
+    case 'BLAST_SENT': return { ...state, blastSubject: '', blastBody: '', sendingBlast: false }
+    default: return state
+  }
+}
+
 export default function OrganizerEventDetailsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -132,18 +199,10 @@ export default function OrganizerEventDetailsPage() {
     return Array.isArray(raw) ? raw[0] : raw
   }, [routeParams?.id])
 
-  const [copied, setCopied] = useState(false)
-  const [downloadingQr, setDownloadingQr] = useState(false)
-  // removed unused manual check-in draft state
-  const [blastSubject, setBlastSubject] = useState('')
-  const [blastBody, setBlastBody] = useState('')
-  const [sendingBlast, setSendingBlast] = useState(false)
-  const [deletingEvent, setDeletingEvent] = useState(false)
+  const [state, dispatch] = useReducer(pageReducer, initialPageState)
+  const { copied, downloadingQr, blastSubject, blastBody, sendingBlast, deletingEvent, event, ordersAndAttendees, loadingOverview, loadingOrders, error, reloadToken } = state
 
   const tab = (searchParams.get('tab') as TabKey) || 'overview'
-
-  const [event, setEvent] = useState<OrganizerEvent | null>(null)
-  const [ordersAndAttendees, setOrdersAndAttendees] = useState<OrdersAndAttendees | null>(null)
 
   const onSendBlastEmail = useCallback(async () => {
     if (!event?.id) return
@@ -161,7 +220,7 @@ export default function OrganizerEventDetailsPage() {
       return
     }
 
-    setSendingBlast(true)
+    dispatch({ type: 'SET_SENDING_BLAST', payload: true })
 
     const payload = {
       subject,
@@ -177,26 +236,19 @@ export default function OrganizerEventDetailsPage() {
 
     if (!resp.ok) {
       errorToast(getErrorMessage(resp.error))
-      setSendingBlast(false)
+      dispatch({ type: 'SET_SENDING_BLAST', payload: false })
       return
     }
 
     successToast(resp.data?.message ?? 'Blast email sent successfully.')
-    setBlastSubject('')
-    setBlastBody('')
-    setSendingBlast(false)
-    }, [blastBody, blastSubject, event?.id])
-
-  const [loadingOverview, setLoadingOverview] = useState(true)
-  const [loadingOrders, setLoadingOrders] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [reloadToken, setReloadToken] = useState(0)
+    dispatch({ type: 'BLAST_SENT' })
+  }, [blastBody, blastSubject, event?.id])
 
   const loadOverview = useCallback(async () => {
     if (!id) return
 
-    setLoadingOverview(true)
-    setError(null)
+    dispatch({ type: 'SET_LOADING_OVERVIEW', payload: true })
+    dispatch({ type: 'SET_ERROR', payload: null })
 
     const resp = await HTTP<ApiData<OrganizerEvent[]>, undefined>({
       url: getEndpoint('/dashboard/organizer/overview'),
@@ -204,23 +256,23 @@ export default function OrganizerEventDetailsPage() {
     })
 
     if (!resp.ok) {
-      setEvent(null)
-      setError(getErrorMessage(resp.error))
-      setLoadingOverview(false)
+      dispatch({ type: 'SET_EVENT', payload: null })
+      dispatch({ type: 'SET_ERROR', payload: getErrorMessage(resp.error) })
+      dispatch({ type: 'SET_LOADING_OVERVIEW', payload: false })
       return
     }
 
     const list = resp.data?.data ?? []
     const found = Array.isArray(list) ? list.find((e) => String(e.id) === String(id)) ?? null : null
 
-    setEvent(found)
-    setLoadingOverview(false)
+    dispatch({ type: 'SET_EVENT', payload: found })
+    dispatch({ type: 'SET_LOADING_OVERVIEW', payload: false })
   }, [id])
 
   const loadOrdersAndAttendees = useCallback(async () => {
     if (!id) return
 
-    setLoadingOrders(true)
+    dispatch({ type: 'SET_LOADING_ORDERS', payload: true })
 
     const resp = await HTTP<ApiData<OrdersAndAttendees>, undefined>({
       url: getEndpoint(`/dashboard/organizer/event-orders-and-attendees/${encodeURIComponent(id)}`),
@@ -228,23 +280,19 @@ export default function OrganizerEventDetailsPage() {
     })
 
     if (!resp.ok) {
-      setOrdersAndAttendees(null)
-      setError(getErrorMessage(resp.error))
-      setLoadingOrders(false)
+      dispatch({ type: 'SET_ORDERS_AND_ATTENDEES', payload: null })
+      dispatch({ type: 'SET_ERROR', payload: getErrorMessage(resp.error) })
+      dispatch({ type: 'SET_LOADING_ORDERS', payload: false })
       return
     }
 
-    setOrdersAndAttendees(resp.data?.data ?? null)
-    setLoadingOrders(false)
+    dispatch({ type: 'SET_ORDERS_AND_ATTENDEES', payload: resp.data?.data ?? null })
+    dispatch({ type: 'SET_LOADING_ORDERS', payload: false })
   }, [id])
 
   useEffect(() => {
     // reset between event id changes or retries
-    setEvent(null)
-    setOrdersAndAttendees(null)
-    setError(null)
-    setLoadingOverview(true)
-    setLoadingOrders(true)
+    dispatch({ type: 'RESET_DATA' })
 
     loadOverview()
     loadOrdersAndAttendees()
@@ -340,8 +388,8 @@ export default function OrganizerEventDetailsPage() {
   function onCopyPublicLink() {
     try {
       navigator.clipboard.writeText(publicEventUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1600)
+      dispatch({ type: 'SET_COPIED', payload: true })
+      setTimeout(() => dispatch({ type: 'SET_COPIED', payload: false }), 1600)
     } catch {
       // ignore
     }
@@ -349,7 +397,7 @@ export default function OrganizerEventDetailsPage() {
 
   const onDownloadQrCode = useCallback(async () => {
     try {
-      setDownloadingQr(true)
+      dispatch({ type: 'SET_DOWNLOADING_QR', payload: true })
 
       // Generate data URL PNG
       const dataUrl = await QRCode.toDataURL(publicEventUrl, {
@@ -374,7 +422,7 @@ export default function OrganizerEventDetailsPage() {
     } catch (e) {
       errorToast(getErrorMessage(e))
     } finally {
-      setDownloadingQr(false)
+      dispatch({ type: 'SET_DOWNLOADING_QR', payload: false })
     }
   }, [event?.slug, publicEventUrl])
 
@@ -391,7 +439,7 @@ export default function OrganizerEventDetailsPage() {
     const ok = confirm('Delete this event? This action cannot be undone.')
     if (!ok) return
 
-    setDeletingEvent(true)
+    dispatch({ type: 'SET_DELETING_EVENT', payload: true })
 
     const resp = await HTTP<ApiData<unknown>, undefined>({
     url: getEndpoint(`/dashboard/organizer/event/${encodeURIComponent(String(event.id))}/delete`),
@@ -400,12 +448,12 @@ export default function OrganizerEventDetailsPage() {
 
     if (!resp.ok) {
     errorToast(getErrorMessage(resp.error))
-    setDeletingEvent(false)
+    dispatch({ type: 'SET_DELETING_EVENT', payload: false })
     return
     }
 
     successToast(resp.data?.message ?? 'Event deleted.')
-    setDeletingEvent(false)
+    dispatch({ type: 'SET_DELETING_EVENT', payload: false })
 
     router.push('/organizer/events')
   }, [event, router, stats])
@@ -432,7 +480,7 @@ export default function OrganizerEventDetailsPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setReloadToken((t) => t + 1)}
+                onClick={() => dispatch({ type: 'RELOAD' })}
                 className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
               >
                 Retry
@@ -825,7 +873,7 @@ export default function OrganizerEventDetailsPage() {
                   <div className="mt-4 space-y-3">
                     <input
                       value={blastSubject}
-                      onChange={(e) => setBlastSubject(e.target.value)}
+                      onChange={(e) => dispatch({ type: 'SET_BLAST_SUBJECT', payload: e.target.value })}
                       placeholder="Subject"
                       className="w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
                       disabled={sendingBlast}
@@ -834,7 +882,7 @@ export default function OrganizerEventDetailsPage() {
                     <ReactQuill
                       theme="snow"
                       value={blastBody}
-                      onChange={(value) => setBlastBody(value)}
+                      onChange={(value) => dispatch({ type: 'SET_BLAST_BODY', payload: value })}
                       placeholder="Write your message…"
                       readOnly={sendingBlast}
                     />
@@ -1238,71 +1286,121 @@ function TicketsPanel({ event, currency }: { event: OrganizerEvent; currency: st
   )
 }
 
+// ── Settings-level state & reducer ──────────────────────────────────────────
+type SettingsState = {
+  title: string
+  description: string
+  date: string
+  time: string
+  image: string
+  type: 'physical' | 'virtual'
+  eventLink: string
+  location: string
+  category: string
+  tagsInput: string
+  uploadedImageFile: File | null
+  uploadedObjectUrl: string | null
+  saving: boolean
+  imageModified: boolean
+}
+
+type SettingsAction =
+  | { type: 'SET_FIELD'; field: keyof SettingsState; payload: string }
+  | { type: 'SET_TYPE'; payload: 'physical' | 'virtual' }
+  | { type: 'SET_SAVING'; payload: boolean }
+  | { type: 'UPLOAD_IMAGE'; file: File; objectUrl: string }
+  | { type: 'SET_IMAGE_URL'; payload: string }
+  | { type: 'RESET'; event: OrganizerEvent }
+  | { type: 'SAVE_SUCCESS'; nextImage?: string }
+
+function buildSettingsState(event: OrganizerEvent): SettingsState {
+  return {
+    title: event.title,
+    description: event.description ?? '',
+    date: event.date,
+    time: event.time ?? '',
+    image: event.image ?? '',
+    type: event.isOnline ? 'virtual' : 'physical',
+    eventLink: (event as any).virtual_link ?? (event.isOnline ? event.location ?? '' : ''),
+    location: event.location ?? '',
+    category: event.category,
+    tagsInput: normalizeTagsForInput(event.tags),
+    uploadedImageFile: null,
+    uploadedObjectUrl: null,
+    saving: false,
+    imageModified: false,
+  }
+}
+
+function settingsReducer(state: SettingsState, action: SettingsAction): SettingsState {
+  switch (action.type) {
+    case 'SET_FIELD':
+      return { ...state, [action.field]: action.payload }
+    case 'SET_TYPE':
+      return { ...state, type: action.payload }
+    case 'SET_SAVING':
+      return { ...state, saving: action.payload }
+    case 'UPLOAD_IMAGE':
+      return {
+        ...state,
+        uploadedImageFile: action.file,
+        uploadedObjectUrl: action.objectUrl,
+        image: action.objectUrl,
+        imageModified: true,
+      }
+    case 'SET_IMAGE_URL': {
+      const needsClear = state.uploadedObjectUrl && action.payload !== state.uploadedObjectUrl
+      return {
+        ...state,
+        image: action.payload,
+        imageModified: true,
+        uploadedObjectUrl: needsClear ? null : state.uploadedObjectUrl,
+        uploadedImageFile: needsClear ? null : state.uploadedImageFile,
+      }
+    }
+    case 'RESET':
+      return buildSettingsState(action.event)
+    case 'SAVE_SUCCESS': {
+      const nextImage = action.nextImage
+      return {
+        ...state,
+        image: (nextImage && nextImage.trim()) ? nextImage : state.image,
+        uploadedImageFile: null,
+        uploadedObjectUrl: null,
+        saving: false,
+        imageModified: false,
+      }
+    }
+    default:
+      return state
+  }
+}
+
 function SettingsPanel({ event }: { event: OrganizerEvent }) {
-  const [title, setTitle] = useState(event.title)
-  const [description, setDescription] = useState(event.description ?? '')
-  const [date, setDate] = useState(event.date)
-  const [time, setTime] = useState(event.time ?? '')
-  const [image, setImage] = useState(event.image ?? '')
-  const [type, setType] = useState<'physical' | 'virtual'>(event.isOnline ? 'virtual' : 'physical')
-  const [eventLink, setEventLink] = useState((event as any).virtual_link ?? (event.isOnline ? event.location ?? '' : ''))
-  const [location, setLocation] = useState(event.location ?? '')
-  const [category, setCategory] = useState(event.category)
-  const [tagsInput, setTagsInput] = useState(normalizeTagsForInput(event.tags))
+  const [state, dispatch] = useReducer(settingsReducer, event, buildSettingsState)
+  const { title, description, date, time, image, type, eventLink, location, category, tagsInput, uploadedImageFile, uploadedObjectUrl, saving, imageModified } = state
 
   const categories = useMemo(() => (mockCategories ?? []).filter((c) => c !== 'All'), [])
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const [uploadedImageFile, setUploadedImageFile] = useState<File | null>(null)
-  const [uploadedObjectUrl, setUploadedObjectUrl] = useState<string | null>(null)
 
-  const [saving, setSaving] = useState(false)
-
+  // Cleanup blob URL on unmount
   useEffect(() => {
     return () => {
       if (uploadedObjectUrl) URL.revokeObjectURL(uploadedObjectUrl)
     }
   }, [uploadedObjectUrl])
 
+  // Sync when the event prop changes
   useEffect(() => {
-    if (uploadedObjectUrl) {
-      URL.revokeObjectURL(uploadedObjectUrl)
-      setUploadedObjectUrl(null)
-    }
-
-    setUploadedImageFile(null)
-    setTitle(event.title)
-    setDescription(event.description ?? '')
-    setDate(event.date)
-    setTime(event.time ?? '')
-    setImage(event.image ?? '')
-    setType(event.isOnline ? 'virtual' : 'physical')
-    setEventLink((event as any).virtual_link ?? (event.isOnline ? event.location ?? '' : ''))
-    setLocation(event.location ?? '')
-    setCategory(event.category)
-    setTagsInput(normalizeTagsForInput(event.tags))
-    setSaving(false)
+    if (uploadedObjectUrl) URL.revokeObjectURL(uploadedObjectUrl)
+    dispatch({ type: 'RESET', event })
   }, [event])
 
   const onReset = useCallback(() => {
     if (saving) return
-
-    if (uploadedObjectUrl) {
-      URL.revokeObjectURL(uploadedObjectUrl)
-      setUploadedObjectUrl(null)
-    }
-
-    setUploadedImageFile(null)
-    setTitle(event.title)
-    setDescription(event.description ?? '')
-    setDate(event.date)
-    setTime(event.time ?? '')
-    setImage(event.image ?? '')
-    setType(event.isOnline ? 'virtual' : 'physical')
-    setEventLink((event as any).virtual_link ?? (event.isOnline ? event.location ?? '' : ''))
-    setLocation(event.location ?? '')
-    setCategory(event.category)
-    setTagsInput(normalizeTagsForInput(event.tags))
+    if (uploadedObjectUrl) URL.revokeObjectURL(uploadedObjectUrl)
+    dispatch({ type: 'RESET', event })
   }, [event, saving, uploadedObjectUrl])
 
   const onSave = useCallback(async () => {
@@ -1323,11 +1421,6 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
       return
     }
 
-    if (!uploadedImageFile && !normalizedImage) {
-      errorToast('Please select an image or add an image URL.')
-      return
-    }
-
     if (type === 'virtual' && !normalizedEventLink) {
       errorToast('Please add an event link for a virtual event.')
       return
@@ -1338,7 +1431,7 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
       return
     }
 
-    setSaving(true)
+    dispatch({ type: 'SET_SAVING', payload: true })
 
     const formData = new FormData()
     formData.append('title', normalizedTitle)
@@ -1348,53 +1441,43 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
     formData.append('category', category)
     formData.append('type', type)
 
-    if (tags.length === 0) {
-      formData.append('tags', '[]')
-    } else {
+    if (tags.length !== 0) {
       tags.forEach((tag) => formData.append('tags[]', tag))
     }
 
     if (type === 'virtual') {
       formData.append('virtual_link', normalizedEventLink)
-      formData.append('location', '')
     } else {
       formData.append('location', normalizedLocation)
-      formData.append('virtual_link', '')
     }
 
-    if (uploadedImageFile) {
-      formData.append('image', uploadedImageFile)
-    } else {
-      formData.append('image_url', normalizedImage)
+    // Only send image data when the user has actually modified it
+    if (imageModified) {
+      if (uploadedImageFile) {
+        formData.append('image', uploadedImageFile)
+      } else if (normalizedImage) {
+        formData.append('image_url', normalizedImage)
+      }
     }
 
     const resp = await HTTP<ApiData<OrganizerEvent>, FormData>({
-      url: getEndpoint(`/dashboard/organizer/event/${encodeURIComponent(String(eventId))}`),
-      method: 'put',
+      url: getEndpoint(`/dashboard/organizer/event/${encodeURIComponent(eventId)}`),
+      method: 'post',
       data: formData,
       headers: { 'Content-Type': 'multipart/form-data' },
     })
 
     if (!resp.ok) {
       errorToast(getErrorMessage(resp.error))
-      setSaving(false)
+      dispatch({ type: 'SET_SAVING', payload: false })
       return
     }
 
-    const nextImage = (resp.data?.data as any)?.image
-    if (typeof nextImage === 'string' && nextImage.trim()) {
-      setImage(nextImage)
-    }
+    if (uploadedObjectUrl) URL.revokeObjectURL(uploadedObjectUrl)
 
-    if (uploadedObjectUrl) {
-      URL.revokeObjectURL(uploadedObjectUrl)
-      setUploadedObjectUrl(null)
-    }
-
-    setUploadedImageFile(null)
     successToast(resp.data?.message ?? 'Changes saved.')
-    setSaving(false)
-  }, [category, date, description, event, eventLink, image, location, tagsInput, time, title, type, uploadedImageFile, uploadedObjectUrl])
+    dispatch({ type: 'SAVE_SUCCESS', nextImage: (resp.data?.data as any)?.image })
+  }, [category, date, description, event, eventLink, image, imageModified, location, tagsInput, time, title, type, uploadedImageFile, uploadedObjectUrl])
 
   return (
     <div className="space-y-4">
@@ -1425,24 +1508,6 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
                 >
                   Upload image
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (uploadedObjectUrl) {
-                      URL.revokeObjectURL(uploadedObjectUrl)
-                      setUploadedObjectUrl(null)
-                    }
-                    setUploadedImageFile(null)
-                    setImage('')
-                  }}
-                  disabled={saving || (!uploadedObjectUrl && !image.trim())}
-                  className={cn(
-                    'rounded-xl bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-white/20',
-                    (saving || (!uploadedObjectUrl && !image.trim())) && 'opacity-60 cursor-not-allowed'
-                  )}
-                >
-                  Clear image
-                </button>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -1455,9 +1520,7 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
                     if (uploadedObjectUrl) URL.revokeObjectURL(uploadedObjectUrl)
 
                     const url = URL.createObjectURL(file)
-                    setUploadedObjectUrl(url)
-                    setUploadedImageFile(file)
-                    setImage(url)
+                    dispatch({ type: 'UPLOAD_IMAGE', file, objectUrl: url })
                   }}
                 />
               </div>
@@ -1466,15 +1529,7 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
                 <label className="block text-sm font-semibold text-gray-900 dark:text-white">Image URL</label>
                 <input
                   value={image}
-                  onChange={(e) => {
-                    const next = e.target.value
-                    if (uploadedObjectUrl && next !== uploadedObjectUrl) {
-                      URL.revokeObjectURL(uploadedObjectUrl)
-                      setUploadedObjectUrl(null)
-                      setUploadedImageFile(null)
-                    }
-                    setImage(next)
-                  }}
+                  onChange={(e) => dispatch({ type: 'SET_IMAGE_URL', payload: e.target.value })}
                   disabled={saving}
                   placeholder="https://..."
                   className={cn(
@@ -1490,7 +1545,7 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
             <label className="block text-sm font-semibold text-gray-900 dark:text-white">Title</label>
             <input
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'title', payload: e.target.value })}
               disabled={saving}
               className={cn(
                 'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
@@ -1502,7 +1557,7 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
           <div className="sm:col-span-2">
             <label className="block text-sm font-semibold text-gray-900 dark:text-white">Description</label>
             <div className={cn(saving && 'pointer-events-none opacity-60')}>
-              <ReactQuill theme="snow" value={description} onChange={(value) => setDescription(value)} />
+              <ReactQuill theme="snow" value={description} onChange={(value) => dispatch({ type: 'SET_FIELD', field: 'description', payload: value })} />
             </div>
           </div>
 
@@ -1511,7 +1566,7 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
             <input
               type="date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
+              onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'date', payload: e.target.value })}
               disabled={saving}
               className={cn(
                 'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
@@ -1525,7 +1580,7 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
             <input
               type="time"
               value={time}
-              onChange={(e) => setTime(e.target.value)}
+              onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'time', payload: e.target.value })}
               placeholder="e.g. 19:00"
               disabled={saving}
               className={cn(
@@ -1539,7 +1594,7 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
             <label className="block text-sm font-semibold text-gray-900 dark:text-white">Type</label>
             <select
               value={type}
-              onChange={(e) => setType(e.target.value as 'physical' | 'virtual')}
+              onChange={(e) => dispatch({ type: 'SET_TYPE', payload: e.target.value as 'physical' | 'virtual' })}
               disabled={saving}
               className={cn(
                 'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
@@ -1556,7 +1611,7 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
               <label className="block text-sm font-semibold text-gray-900 dark:text-white">Event link</label>
               <input
                 value={eventLink}
-                onChange={(e) => setEventLink(e.target.value)}
+                onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'eventLink', payload: e.target.value })}
                 disabled={saving}
                 placeholder="https://meet.google.com/..."
                 className={cn(
@@ -1570,7 +1625,7 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
               <label className="block text-sm font-semibold text-gray-900 dark:text-white">Location</label>
               <input
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'location', payload: e.target.value })}
                 disabled={saving}
                 placeholder="Street, City, State"
                 className={cn(
@@ -1585,7 +1640,7 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
             <label className="block text-sm font-semibold text-gray-900 dark:text-white">Category</label>
             <select
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'category', payload: e.target.value })}
               disabled={saving}
               className={cn(
                 'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
@@ -1603,7 +1658,7 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
             <label className="block text-sm font-semibold text-gray-900 dark:text-white">Tags</label>
             <input
               value={tagsInput}
-              onChange={(e) => setTagsInput(e.target.value)}
+              onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'tagsInput', payload: e.target.value })}
               disabled={saving}
               placeholder="music, networking, startup"
               className={cn(

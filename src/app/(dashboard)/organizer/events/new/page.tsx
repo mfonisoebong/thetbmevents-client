@@ -436,6 +436,7 @@ export default function CreateEventPage() {
         })
 
         if (!response.ok) {
+            setUploading(false)
             errorToast(getErrorMessage(response.error))
             return
         }
@@ -557,9 +558,7 @@ export default function CreateEventPage() {
                                 <TagInput tags={draft.tags} onChange={(tags) => setDraft((d) => ({...d, tags}))}/>
 
                                 <div>
-                                    <div className="text-sm font-semibold text-gray-900 dark:text-white">Event banner
-                                        image
-                                    </div>
+                                    <div className="text-sm font-semibold text-gray-900 dark:text-white">Event banner image</div>
 
                                     <div className="mt-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
                                         {/* Preview */}
@@ -572,42 +571,26 @@ export default function CreateEventPage() {
                                                         alt="Selected event banner"
                                                         className="w-full h-[16.5rem] object-cover"
                                                     />
-                                                    <div
-                                                        className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
-                                                        <div
-                                                            className="text-sm font-semibold text-white truncate">{draft.title || 'Event banner preview'}</div>
-                                                        <div className="text-xs text-white/80">Recommended: 1600×900
-                                                            (16:9)
-                                                        </div>
+                                                    <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+                                                        <div className="text-sm font-semibold text-white truncate">{draft.title || 'Event banner preview'}</div>
+                                                        <div className="text-xs text-white/80">Recommended: 1600×900 (16:9)</div>
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className="h-56 flex items-center justify-center p-6">
-                                                    <div
-                                                        className="w-full h-full rounded-xl border border-dashed border-black/20 dark:border-white/20 bg-white/30 dark:bg-black/20 flex flex-col items-center justify-center text-center">
-                                                        <PhotoIcon
-                                                            className="w-10 h-10 text-text-muted-light dark:text-text-muted-dark"/>
-                                                        <div
-                                                            className="mt-2 text-sm font-semibold text-gray-900 dark:text-white">No
-                                                            image selected
-                                                        </div>
-                                                        <div
-                                                            className="mt-1 text-xs text-text-muted-light dark:text-text-muted-dark">
-                                                            Upload a banner or paste an image URL.
-                                                        </div>
+                                                <div className="h-56 flex items-center justify-center p-6 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                                                    <div className="w-full h-full rounded-xl border border-dashed border-black/20 dark:border-white/20 bg-white/30 dark:bg-black/20 flex flex-col items-center justify-center text-center">
+                                                        <PhotoIcon className="w-10 h-10 text-text-muted-light dark:text-text-muted-dark"/>
+                                                        <div className="mt-2 text-sm font-semibold text-gray-900 dark:text-white">No image selected</div>
+                                                        <div className="mt-1 text-xs text-text-muted-light dark:text-text-muted-dark">Upload a banner or paste an image URL.</div>
                                                     </div>
                                                 </div>
                                             )}
                                         </div>
 
                                         {/* Controls */}
-                                        <div
-                                            className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/10 dark:bg-white/5 p-4">
-                                            <div className="text-sm font-semibold text-gray-900 dark:text-white">Choose
-                                                image
-                                            </div>
-                                            <div
-                                                className="mt-1 text-xs text-text-muted-light dark:text-text-muted-dark">
+                                        <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/10 dark:bg-white/5 p-4">
+                                            <div className="text-sm font-semibold text-gray-900 dark:text-white">Choose image</div>
+                                            <div className="mt-1 text-xs text-text-muted-light dark:text-text-muted-dark">
                                                 We store the chosen image URL in the draft.
                                             </div>
 
