@@ -109,6 +109,7 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
                 ...state,
                 purchaser: action.payload.purchaser,
                 attendees: nextAttendees,
+                touchedAny: true,
             }
         }
 

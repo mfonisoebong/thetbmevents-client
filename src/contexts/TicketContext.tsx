@@ -47,6 +47,7 @@ interface TicketContextValue {
 const TicketContext = createContext<TicketContextValue | undefined>(undefined)
 
 const STORAGE_KEY = 'tbm_ticket_context_v1'
+const CUSTOMER_STORAGE_KEY = 'tbm_ticket_customer_v1'
 
 export function useTicketContext() {
   const ctx = useContext(TicketContext)
@@ -63,8 +64,22 @@ export function TicketProvider({ children }: { children: ReactNode }) {
   const [attendees, setAttendees] = useState<AttendeeInfo[]>([])
   const [sendToDifferentEmail, setSendToDifferentEmail] = useState<boolean>(false)
 
-  // load persisted state from sessionStorage
+  // load persisted state
   useEffect(() => {
+    // 1) Load customer from localStorage
+    try {
+      const rawCustomer = localStorage.getItem(CUSTOMER_STORAGE_KEY)
+      if (rawCustomer) {
+        const parsedCustomer = JSON.parse(rawCustomer)
+        if (parsedCustomer?.fullname || parsedCustomer?.email || parsedCustomer?.phone) {
+          setCustomer(parsedCustomer)
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load customer info from localStorage', err)
+    }
+
+    // 2) Load the rest from sessionStorage
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY)
 
@@ -76,7 +91,7 @@ export function TicketProvider({ children }: { children: ReactNode }) {
 
       if (parsed.ticketMeta) setTicketMeta(parsed.ticketMeta)
 
-      if (parsed.customer) setCustomer(parsed.customer)
+      // if (parsed.customer) setCustomer(parsed.customer)
 
       if (parsed.attendees) setAttendees(parsed.attendees)
     } catch (err) {
@@ -84,16 +99,24 @@ export function TicketProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // persist to sessionStorage on changes
+  // persist customer to localStorage on changes
   useEffect(() => {
     try {
-      const payload = JSON.stringify({ selectedQuantities, ticketMeta, customer, attendees })
+      localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(customer))
+    } catch (err) {
+      console.warn('Failed to persist customer info to localStorage', err)
+    }
+  }, [customer])
 
+  // persist non-customer ticket context to sessionStorage on changes
+  useEffect(() => {
+    try {
+      const payload = JSON.stringify({ selectedQuantities, ticketMeta, attendees })
       sessionStorage.setItem(STORAGE_KEY, payload)
     } catch (err) {
       console.warn('Failed to persist ticket context to sessionStorage', err)
     }
-  }, [selectedQuantities, ticketMeta, customer, attendees])
+  }, [selectedQuantities, ticketMeta, attendees])
 
   // derive ticketInstances from selectedQuantities and ticketMeta
   const ticketInstances: TicketInstance[] = useMemo(() => {
@@ -116,7 +139,13 @@ export function TicketProvider({ children }: { children: ReactNode }) {
     setCustomer({ fullname: '', email: '', phone: '' })
     setAttendees([])
 
-    try { sessionStorage.removeItem(STORAGE_KEY) } catch {}
+    try {
+      sessionStorage.removeItem(STORAGE_KEY)
+    } catch {}
+
+    try {
+      localStorage.removeItem(CUSTOMER_STORAGE_KEY)
+    } catch {}
   }
 
   const value: TicketContextValue = {
