@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState, useEffect, useCallback } from 'react'
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import SidebarLayout from '../../../../../components/layouts/SidebarLayout'
@@ -29,6 +29,7 @@ import dynamic from 'next/dynamic'
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import { successToast, errorToast } from "@components/Toast";
 import sanitizeHtml from "sanitize-html";
+import { categories as mockCategories } from '@lib/mockEvents'
 
 const ReactQuill = dynamic(() => import('react-quill-new'), {ssr: false})
 
@@ -84,6 +85,41 @@ function StatCard({ title, value, sub }: { title: string; value: React.ReactNode
       {sub ? <div className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">{sub}</div> : null}
     </div>
   )
+}
+
+function normalizeTagsForInput(tags: unknown): string {
+  if (Array.isArray(tags)) {
+    return tags
+      .filter((t) => typeof t === 'string')
+      .map((t) => t.trim().replace(/^#/, ''))
+      .filter(Boolean)
+      .join(', ')
+  }
+
+  if (typeof tags === 'string') {
+    return tags
+      .split(',')
+      .map((t) => t.trim().replace(/^#/, ''))
+      .filter(Boolean)
+      .join(', ')
+  }
+
+  return ''
+}
+
+function parseTagsCsv(input: string): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+
+  for (const raw of input.split(',')) {
+    const tag = raw.trim().replace(/^#/, '')
+    const key = tag.toLowerCase()
+    if (!tag || seen.has(key)) continue
+    seen.add(key)
+    out.push(tag)
+  }
+
+  return out
 }
 
 export default function OrganizerEventDetailsPage() {
@@ -373,6 +409,8 @@ export default function OrganizerEventDetailsPage() {
 
     router.push('/organizer/events')
   }, [event, router, stats])
+
+  // Settings editing state lives in SettingsPanel; keep page component focused on overview/tabs.
 
   if (loading) {
     return (
@@ -1205,30 +1243,67 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
   const [description, setDescription] = useState(event.description ?? '')
   const [date, setDate] = useState(event.date)
   const [time, setTime] = useState(event.time ?? '')
+  const [image, setImage] = useState(event.image ?? '')
+  const [type, setType] = useState<'physical' | 'virtual'>(event.isOnline ? 'virtual' : 'physical')
+  const [eventLink, setEventLink] = useState((event as any).virtual_link ?? (event.isOnline ? event.location ?? '' : ''))
   const [location, setLocation] = useState(event.location ?? '')
   const [category, setCategory] = useState(event.category)
+  const [tagsInput, setTagsInput] = useState(normalizeTagsForInput(event.tags))
+
+  const categories = useMemo(() => (mockCategories ?? []).filter((c) => c !== 'All'), [])
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [uploadedImageFile, setUploadedImageFile] = useState<File | null>(null)
+  const [uploadedObjectUrl, setUploadedObjectUrl] = useState<string | null>(null)
 
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
+    return () => {
+      if (uploadedObjectUrl) URL.revokeObjectURL(uploadedObjectUrl)
+    }
+  }, [uploadedObjectUrl])
+
+  useEffect(() => {
+    if (uploadedObjectUrl) {
+      URL.revokeObjectURL(uploadedObjectUrl)
+      setUploadedObjectUrl(null)
+    }
+
+    setUploadedImageFile(null)
     setTitle(event.title)
     setDescription(event.description ?? '')
     setDate(event.date)
     setTime(event.time ?? '')
+    setImage(event.image ?? '')
+    setType(event.isOnline ? 'virtual' : 'physical')
+    setEventLink((event as any).virtual_link ?? (event.isOnline ? event.location ?? '' : ''))
     setLocation(event.location ?? '')
     setCategory(event.category)
+    setTagsInput(normalizeTagsForInput(event.tags))
     setSaving(false)
   }, [event])
 
   const onReset = useCallback(() => {
     if (saving) return
+
+    if (uploadedObjectUrl) {
+      URL.revokeObjectURL(uploadedObjectUrl)
+      setUploadedObjectUrl(null)
+    }
+
+    setUploadedImageFile(null)
     setTitle(event.title)
     setDescription(event.description ?? '')
     setDate(event.date)
     setTime(event.time ?? '')
+    setImage(event.image ?? '')
+    setType(event.isOnline ? 'virtual' : 'physical')
+    setEventLink((event as any).virtual_link ?? (event.isOnline ? event.location ?? '' : ''))
     setLocation(event.location ?? '')
     setCategory(event.category)
-  }, [event, saving])
+    setTagsInput(normalizeTagsForInput(event.tags))
+  }, [event, saving, uploadedObjectUrl])
 
   const onSave = useCallback(async () => {
     const eventId = (event as any).id
@@ -1237,21 +1312,67 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
       return
     }
 
-    setSaving(true)
+    const normalizedTitle = title.trim()
+    const normalizedImage = image.trim()
+    const normalizedEventLink = eventLink.trim()
+    const normalizedLocation = location.trim()
+    const tags = parseTagsCsv(tagsInput)
 
-    const payload = {
-      title: title.trim(),
-      description,
-      date,
-      time,
-      location,
-      category,
+    if (!normalizedTitle) {
+      errorToast('Please enter an event title.')
+      return
     }
 
-    const resp = await HTTP<ApiData<OrganizerEvent>, typeof payload>({
+    if (!uploadedImageFile && !normalizedImage) {
+      errorToast('Please select an image or add an image URL.')
+      return
+    }
+
+    if (type === 'virtual' && !normalizedEventLink) {
+      errorToast('Please add an event link for a virtual event.')
+      return
+    }
+
+    if (type === 'physical' && !normalizedLocation) {
+      errorToast('Please add a location for a physical event.')
+      return
+    }
+
+    setSaving(true)
+
+    const formData = new FormData()
+    formData.append('title', normalizedTitle)
+    formData.append('description', description)
+    formData.append('date', date)
+    formData.append('time', time)
+    formData.append('category', category)
+    formData.append('type', type)
+
+    if (tags.length === 0) {
+      formData.append('tags', '[]')
+    } else {
+      tags.forEach((tag) => formData.append('tags[]', tag))
+    }
+
+    if (type === 'virtual') {
+      formData.append('virtual_link', normalizedEventLink)
+      formData.append('location', '')
+    } else {
+      formData.append('location', normalizedLocation)
+      formData.append('virtual_link', '')
+    }
+
+    if (uploadedImageFile) {
+      formData.append('image', uploadedImageFile)
+    } else {
+      formData.append('image_url', normalizedImage)
+    }
+
+    const resp = await HTTP<ApiData<OrganizerEvent>, FormData>({
       url: getEndpoint(`/dashboard/organizer/event/${encodeURIComponent(String(eventId))}`),
       method: 'put',
-      data: payload,
+      data: formData,
+      headers: { 'Content-Type': 'multipart/form-data' },
     })
 
     if (!resp.ok) {
@@ -1260,9 +1381,20 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
       return
     }
 
+    const nextImage = (resp.data?.data as any)?.image
+    if (typeof nextImage === 'string' && nextImage.trim()) {
+      setImage(nextImage)
+    }
+
+    if (uploadedObjectUrl) {
+      URL.revokeObjectURL(uploadedObjectUrl)
+      setUploadedObjectUrl(null)
+    }
+
+    setUploadedImageFile(null)
     successToast(resp.data?.message ?? 'Changes saved.')
     setSaving(false)
-  }, [category, date, description, event, location, time, title])
+  }, [category, date, description, event, eventLink, image, location, tagsInput, time, title, type, uploadedImageFile, uploadedObjectUrl])
 
   return (
     <div className="space-y-4">
@@ -1274,13 +1406,94 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
       <div className="rounded-2xl bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 backdrop-blur-sm p-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
+            <label className="block text-sm font-semibold text-gray-900 dark:text-white">Event banner image</label>
+            <div className="mt-2 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 p-3">
+              <img
+                src={uploadedObjectUrl || image || '/images/placeholder-event.svg'}
+                alt="Event banner preview"
+                className="w-full h-48 rounded-lg object-cover"
+              />
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={saving}
+                  className={cn(
+                    'rounded-xl bg-brand-teal px-4 py-2 text-sm font-semibold text-white hover:opacity-95',
+                    saving && 'opacity-60 cursor-not-allowed'
+                  )}
+                >
+                  Upload image
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (uploadedObjectUrl) {
+                      URL.revokeObjectURL(uploadedObjectUrl)
+                      setUploadedObjectUrl(null)
+                    }
+                    setUploadedImageFile(null)
+                    setImage('')
+                  }}
+                  disabled={saving || (!uploadedObjectUrl && !image.trim())}
+                  className={cn(
+                    'rounded-xl bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-white/20',
+                    (saving || (!uploadedObjectUrl && !image.trim())) && 'opacity-60 cursor-not-allowed'
+                  )}
+                >
+                  Clear image
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+
+                    if (uploadedObjectUrl) URL.revokeObjectURL(uploadedObjectUrl)
+
+                    const url = URL.createObjectURL(file)
+                    setUploadedObjectUrl(url)
+                    setUploadedImageFile(file)
+                    setImage(url)
+                  }}
+                />
+              </div>
+
+              <div className="mt-3">
+                <label className="block text-sm font-semibold text-gray-900 dark:text-white">Image URL</label>
+                <input
+                  value={image}
+                  onChange={(e) => {
+                    const next = e.target.value
+                    if (uploadedObjectUrl && next !== uploadedObjectUrl) {
+                      URL.revokeObjectURL(uploadedObjectUrl)
+                      setUploadedObjectUrl(null)
+                      setUploadedImageFile(null)
+                    }
+                    setImage(next)
+                  }}
+                  disabled={saving}
+                  placeholder="https://..."
+                  className={cn(
+                    'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
+                    saving && 'opacity-60 cursor-not-allowed'
+                  )}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="sm:col-span-2">
             <label className="block text-sm font-semibold text-gray-900 dark:text-white">Title</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               disabled={saving}
               className={cn(
-                "mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow",
+                'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
                 saving && 'opacity-60 cursor-not-allowed'
               )}
             />
@@ -1301,7 +1514,7 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
               onChange={(e) => setDate(e.target.value)}
               disabled={saving}
               className={cn(
-                "mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow",
+                'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
                 saving && 'opacity-60 cursor-not-allowed'
               )}
             />
@@ -1316,34 +1529,90 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
               placeholder="e.g. 19:00"
               disabled={saving}
               className={cn(
-                "mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow",
+                'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
                 saving && 'opacity-60 cursor-not-allowed'
               )}
             />
           </div>
 
-          {/*<div>
-            <label className="block text-sm font-semibold text-gray-900 dark:text-white">Location</label>
-            <input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow"
-            />
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 dark:text-white">Type</label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value as 'physical' | 'virtual')}
+              disabled={saving}
+              className={cn(
+                'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
+                saving && 'opacity-60 cursor-not-allowed'
+              )}
+            >
+              <option value="physical">Physical</option>
+              <option value="virtual">Virtual</option>
+            </select>
           </div>
 
+          {type === 'virtual' ? (
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 dark:text-white">Event link</label>
+              <input
+                value={eventLink}
+                onChange={(e) => setEventLink(e.target.value)}
+                disabled={saving}
+                placeholder="https://meet.google.com/..."
+                className={cn(
+                  'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
+                  saving && 'opacity-60 cursor-not-allowed'
+                )}
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 dark:text-white">Location</label>
+              <input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                disabled={saving}
+                placeholder="Street, City, State"
+                className={cn(
+                  'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
+                  saving && 'opacity-60 cursor-not-allowed'
+                )}
+              />
+            </div>
+          )}
+
           <div>
-            <Select
-                label="Category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
+            <label className="block text-sm font-semibold text-gray-900 dark:text-white">Category</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              disabled={saving}
+              className={cn(
+                'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
+                saving && 'opacity-60 cursor-not-allowed'
+              )}
             >
+              {!categories.includes(category) ? <option value={category}>{category}</option> : null}
               {categories.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
+                <option key={c} value={c}>{c}</option>
               ))}
-            </Select>
-          </div>*/}
+            </select>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-semibold text-gray-900 dark:text-white">Tags</label>
+            <input
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              disabled={saving}
+              placeholder="music, networking, startup"
+              className={cn(
+                'mt-1 w-full rounded-xl bg-white/60 dark:bg-slate-900/50 border border-black/10 dark:border-white/10 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow',
+                saving && 'opacity-60 cursor-not-allowed'
+              )}
+            />
+            <p className="mt-1 text-xs text-text-muted-light dark:text-text-muted-dark">Separate tags with commas.</p>
+          </div>
         </div>
 
         <div className="mt-5 flex items-center justify-end gap-2">
@@ -1352,7 +1621,7 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
             onClick={onReset}
             disabled={saving}
             className={cn(
-              "rounded-xl bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-white/20",
+              'rounded-xl bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-white/20',
               saving && 'opacity-60 cursor-not-allowed'
             )}
           >
@@ -1363,11 +1632,11 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
             onClick={onSave}
             disabled={saving}
             className={cn(
-              "rounded-xl bg-brand-teal px-4 py-2 text-sm font-semibold text-white hover:opacity-95",
+              'rounded-xl bg-brand-teal px-4 py-2 text-sm font-semibold text-white hover:opacity-95',
               saving && 'opacity-60 cursor-not-allowed'
             )}
           >
-            {saving ? 'Saving…' : 'Save changes'}
+            {saving ? 'Saving...' : 'Save changes'}
           </button>
         </div>
       </div>
