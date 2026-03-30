@@ -178,11 +178,9 @@ export default function SignupForm() {
     if (state.step === 'verify') {
         return (
             <div className="space-y-6">
-                <div
-                    className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/50 p-4">
-                    <div className="flex items-start gap-3">
-                        <div
-                            className="mt-0.5 h-10 w-10 rounded-full bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center shrink-0">
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/50 p-4">
+                    <div className="flex flex-col sm:flex-row items-start gap-4">
+                        <div className="mt-0.5 h-10 w-10 rounded-full bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center shrink-0">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none"
                                  stroke="currentColor" strokeWidth="1.8">
                                 <path
@@ -191,14 +189,12 @@ export default function SignupForm() {
                             </svg>
                         </div>
 
-                        <div className="space-y-4">
-                            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Check your
-                                email</h2>
+                        <div className="space-y-8">
+                            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Check your email</h2>
                             <p className="text-sm text-slate-600 dark:text-slate-300">
-                                We sent a verification link to <span
-                                className="font-semibold">{state.values.email}</span>.
+                                We sent a verification link to <span className="font-semibold">{state.values.email}</span>.
                             </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Tip: check your <u>spam/promotions</u> folder if you do not see it in your inbox.</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Tip: <b className="text-red-500">check your spam folder</b> if you do not see it in your inbox.</p>
                         </div>
                     </div>
                 </div>

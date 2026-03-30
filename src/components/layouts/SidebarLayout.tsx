@@ -112,9 +112,9 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           <DialogBackdrop className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
           <div className="fixed inset-0 flex items-center justify-center p-4">
             <DialogPanel className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900">
-              <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">Check your email</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">Check your inbox</DialogTitle>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                We sent a new verification link to <strong>{user?.email ?? 'your email address'}.</strong> If you don't see the email, please check your spam folder or try resending the verification link.
+                We sent a new verification link to <strong>{user?.email ?? 'your email address'}.</strong> If you don't see it in your inbox, <b className="text-red-500">please check your spam folder</b> or try resending the verification link.
               </p>
               <div className="mt-5 flex justify-end">
                 <button
