@@ -47,7 +47,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
   }
 
-  const description = stripHtml(event.description) ?? 'View details and book tickets for the selected event.'
+  const rawDescription = stripHtml(event.description)
+  const description = rawDescription
+    ? sanitizeMetadataDescription(rawDescription)
+    : 'View details and book tickets for the selected event.'
   const pageUrl = buildAbsoluteUrl(`/events/${event.id}`, baseUrl)
   const imageUrl = resolveImageUrl(event.image, baseUrl)
 
@@ -93,6 +96,16 @@ function buildAbsoluteUrl(value: string, baseUrl: string | null): string {
 function resolveImageUrl(image: string | undefined, baseUrl: string | null): string {
   const normalized = image?.trim() || '/images/placeholder-event.svg'
   return buildAbsoluteUrl(normalized, baseUrl)
+}
+
+function sanitizeMetadataDescription(input: string): string {
+  return input
+    .replace(/&amp;nbsp;/gi, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&#160;/gi, ' ')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function EventNotFound() {
