@@ -140,7 +140,11 @@ export interface RecentTransaction {
     id: string;
     reference: string;
     event_name: string;
-    email?: string;
+    customer: {
+        fullname: string;
+        email: string;
+        phone: string;
+    };
     amount: number;
     currency: any;
     status: string;

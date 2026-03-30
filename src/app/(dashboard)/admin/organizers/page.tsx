@@ -7,7 +7,7 @@ import DataTable, {type DataTableColumn} from '../../../../components/DataTable'
 import {useTableSearch} from '../../../../hooks/useTableSearch'
 import {exportToCsv} from '@lib/csv'
 import HTTP from '@lib/HTTP'
-import {cn, formatDate, getCookie, getEndpoint, getErrorMessage, setCookie} from '@lib/utils'
+import {cn, getCookie, getEndpoint, getErrorMessage, setCookie} from '@lib/utils'
 import type {ApiData} from '@lib/types'
 import AdminOrganizersShimmer from '../../../../components/dashboard/AdminOrganizersShimmer'
 import { errorToast, successToast } from '@components/Toast'
@@ -18,6 +18,7 @@ type AdminOrganizer = {
     email: string
     phone: any
     created_at: string
+    email_verified_at: string
     status: string
 }
 
@@ -44,6 +45,7 @@ type OrganizerRow = {
     email: string
     phone: string
     createdAt: string
+    emailVerifiedAt: string
     status: string
     isActive: boolean
 }
@@ -60,11 +62,12 @@ function toOrganizerRow(raw: AdminOrganizer): OrganizerRow {
     const isActive = s === 'active' || s === 'enabled' || s === 'approved' || s === 'verified'
 
     return {
-        id: String(raw?.id ?? ''),
-        businessName: String(raw?.business_name ?? '—'),
-        email: String(raw?.email ?? '—'),
-        phone: raw?.phone == null ? '—' : String(raw.phone),
-        createdAt: String(raw?.created_at ?? new Date().toISOString()),
+        id: raw.id || '',
+        businessName: raw.business_name || '—',
+        email: raw.email || '—',
+        phone: raw.phone || '—',
+        createdAt: raw.created_at,
+        emailVerifiedAt: raw.email_verified_at || '',
         status: status || '—',
         isActive,
     }
@@ -150,7 +153,15 @@ export default function AdminOrganizersPage() {
                 header: 'Date joined',
                 className: 'whitespace-nowrap',
                 render: (r: OrganizerRow) => (
-                    <span className="text-sm text-text-muted-light dark:text-text-muted-dark">{formatDate(r.createdAt)}</span>
+                    <span className="text-sm text-text-muted-light dark:text-text-muted-dark">{r.createdAt}</span>
+                ),
+            },
+            {
+                key: 'emailVerifiedAt',
+                header: 'Email verified',
+                className: 'whitespace-nowrap',
+                render: (r: OrganizerRow) => (
+                    <span className="text-sm text-text-muted-light dark:text-text-muted-dark">{r.emailVerifiedAt}</span>
                 ),
             },
             {
@@ -201,7 +212,7 @@ export default function AdminOrganizersPage() {
             businessName: r.businessName,
             email: r.email,
             phone: r.phone,
-            dateJoined: formatDate(r.createdAt),
+            dateJoined: r.createdAt,
             status: r.isActive ? 'Active' : r.status || 'Inactive',
         }))
 

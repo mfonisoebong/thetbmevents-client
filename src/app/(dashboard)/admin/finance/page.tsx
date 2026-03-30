@@ -23,7 +23,11 @@ type UiTransactionRow = {
   id: string
   reference: string
   eventName: string
-  email?: string
+  customer: {
+    full_name: string
+    email: string
+    phone: string
+  }
   amount: number
   currency: any
   status: string
@@ -57,7 +61,11 @@ function mapRecentTransaction(tx: RecentTransaction): UiTransactionRow {
     id: tx.id,
     reference: tx.reference,
     eventName: tx.event_name,
-    email: tx.email,
+    customer: {
+      full_name: tx.customer.fullname,
+      email: tx.customer.email,
+      phone: tx.customer.phone,
+    },
     amount: tx.amount,
     currency: tx.currency,
     status: normalizeTxStatus(tx.status),
@@ -118,10 +126,10 @@ export default function AdminFinancePage() {
   const columns = useMemo((): DataTableColumn<UiTransactionRow>[] => {
     return [
       {
-        key: 'id',
-        header: 'Order ID',
+        key: 'date',
+        header: 'Date',
         className: 'whitespace-nowrap',
-        render: (r) => <span className="font-semibold">{r.id}</span>,
+        render: (r) => <span className="font-semibold">{r.createdAt}</span>,
       },
       {
         key: 'event',
@@ -129,17 +137,21 @@ export default function AdminFinancePage() {
         render: (r) => <span className="text-gray-900 dark:text-white">{r.eventName}</span>,
       },
       {
-        key: 'email',
-        header: 'Email',
+        key: 'customer',
+        header: 'Customer',
         className: 'whitespace-nowrap',
-        render: (r) =>
-          r.email ? (
-            <a className="text-sky-700 dark:text-sky-300 hover:underline" href={`mailto:${r.email}`}>
-              {r.email}
-            </a>
-          ) : (
-            <span className="text-text-muted-light dark:text-text-muted-dark">—</span>
-          ),
+        render: (r) => (
+          <div className="flex flex-col">
+            <span className="font-semibold">{r.customer.full_name}</span>
+            <span className="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">{r.customer.email}</span>
+          </div>
+        ),
+      },
+      {
+        key: 'phone',
+        header: 'Phone',
+        className: 'whitespace-nowrap',
+        render: (r) => <span className="text-sm text-text-muted-light dark:text-text-muted-dark">{r.customer.phone}</span>,
       },
       {
         key: 'chargedAmount',
