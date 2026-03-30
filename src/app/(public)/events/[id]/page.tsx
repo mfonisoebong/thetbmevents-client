@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { headers as getRequestHeaders } from 'next/headers'
 import type { ReactElement } from 'react'
 import EventDetails from '../../../../components/events/EventDetails'
 import { stripHtml } from '@lib/utils'
@@ -28,18 +29,70 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { id } = await params
 
   const event = id ? await getEvent(id) : null
+  const baseUrl = await getBaseUrl()
 
   if (!event) {
     return {
       title: 'Event not found',
       description: "We couldn't find that event.",
+      openGraph: {
+        title: 'Event not found',
+        description: "We couldn't find that event.",
+      },
+      twitter: {
+        card: 'summary',
+        title: 'Event not found',
+        description: "We couldn't find that event.",
+      },
     }
   }
 
+  const description = stripHtml(event.description) ?? 'View details and book tickets for the selected event.'
+  const pageUrl = buildAbsoluteUrl(`/events/${event.id}`, baseUrl)
+  const imageUrl = resolveImageUrl(event.image, baseUrl)
+
   return {
     title: event.title,
-    description: stripHtml(event.description) ?? 'View details and book tickets for the selected event.',
+    description,
+    openGraph: {
+      title: event.title,
+      description,
+      type: 'website',
+      url: pageUrl,
+      images: imageUrl ? [{ url: imageUrl, alt: event.title }] : undefined,
+    },
+    twitter: {
+      card: imageUrl ? 'summary_large_image' : 'summary',
+      title: event.title,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
+    },
   }
+}
+
+async function getBaseUrl(): Promise<string | null> {
+  try {
+    const incoming = await getRequestHeaders()
+    const host = incoming.get('x-forwarded-host') || incoming.get('host')
+
+    if (!host) return null
+
+    const protocol = incoming.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https')
+    return `${protocol}://${host}`
+  } catch {
+    return null
+  }
+}
+
+function buildAbsoluteUrl(value: string, baseUrl: string | null): string {
+  if (/^https?:\/\//i.test(value) || !baseUrl) return value
+
+  return `${baseUrl}${value.startsWith('/') ? value : `/${value}`}`
+}
+
+function resolveImageUrl(image: string | undefined, baseUrl: string | null): string {
+  const normalized = image?.trim() || '/images/placeholder-event.svg'
+  return buildAbsoluteUrl(normalized, baseUrl)
 }
 
 function EventNotFound() {
