@@ -154,7 +154,7 @@ export default function AdminFinancePage() {
         render: (r) => <span className="text-sm text-text-muted-light dark:text-text-muted-dark">{r.customer.phone}</span>,
       },
       {
-        key: 'chargedAmount',
+        key: 'amount',
         header: 'Amount',
         className: 'whitespace-nowrap',
         render: (r) => (
