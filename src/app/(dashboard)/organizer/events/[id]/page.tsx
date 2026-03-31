@@ -749,7 +749,7 @@ export default function OrganizerEventDetailsPage() {
                       <span
                         className={cn(
                           'px-2 py-1 rounded-full text-xs font-semibold',
-                          String(o.status).toLowerCase().includes('refund') ? pillClass('warning') : pillClass('success')
+                          o.status === 'success' ? pillClass('success') : o.status === 'pending' ? pillClass('warning') : pillClass('danger')
                         )}
                       >
                         {o.status}
