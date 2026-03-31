@@ -98,6 +98,7 @@ export interface OrdersAndAttendees {
 
 export interface Order {
     id: string
+    reference: string
     items: string[]
     amount: number
     status: string

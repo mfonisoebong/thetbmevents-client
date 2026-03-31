@@ -37,6 +37,7 @@ type TabKey = 'overview' | 'tickets' | 'orders' | 'attendees' | 'settings'
 
 type OrderRow = {
   id: string
+  reference: string
   customerName: string
   customerEmail: string
   items: string
@@ -327,12 +328,13 @@ export default function OrganizerEventDetailsPage() {
 
     const oRows: OrderRow[] = (api?.orders ?? []).map((o) => ({
       id: o.id,
-      customerName: o.customer?.full_name ?? '',
-      customerEmail: o.customer?.email ?? '',
+      reference: o.reference,
+      customerName: o.customer.full_name ?? '',
+      customerEmail: o.customer.email ?? '',
       items: (o.items ?? []).join(', '),
-      qty: Number(o.quantity ?? 0),
-      amount: Number(o.amount ?? 0),
-      status: o.status ?? 'Paid',
+      qty: o.quantity,
+      amount: o.amount,
+      status: o.status,
       date: o.date,
     }))
 
@@ -722,7 +724,7 @@ export default function OrganizerEventDetailsPage() {
 
               <DataTable<OrderRow>
                 columns={[
-                  { key: 'id', header: 'Order ID', render: (o) => <span className="font-mono text-xs">{o.id}</span> },
+                  { key: 'ref', header: 'Reference', render: (o) => <span className="font-mono text-xs">{o.reference}</span> },
                   {
                     key: 'customer',
                     header: 'Customer',
