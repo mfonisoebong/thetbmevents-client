@@ -63,6 +63,7 @@ export interface OrganizerEvent {
     date: string
     time: string
     location: string
+    event_link: string|null
     category: string
     tags: any
     image: string
@@ -73,6 +74,7 @@ export interface OrganizerEvent {
     updated_at: string
     total_tickets_sold: number
     total_revenue: number
+    undisclosed: boolean
 }
 
 export interface Organizer {

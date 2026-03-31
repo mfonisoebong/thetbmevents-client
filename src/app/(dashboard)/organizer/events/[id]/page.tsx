@@ -264,7 +264,7 @@ export default function OrganizerEventDetailsPage() {
     }
 
     const list = resp.data?.data ?? []
-    const found = Array.isArray(list) ? list.find((e) => String(e.id) === String(id)) ?? null : null
+    const found = list.find((e) => e.id === id) ?? null
 
     dispatch({ type: 'SET_EVENT', payload: found })
     dispatch({ type: 'SET_LOADING_OVERVIEW', payload: false })
@@ -329,8 +329,8 @@ export default function OrganizerEventDetailsPage() {
     const oRows: OrderRow[] = (api?.orders ?? []).map((o) => ({
       id: o.id,
       reference: o.reference,
-      customerName: o.customer.full_name ?? '',
-      customerEmail: o.customer.email ?? '',
+      customerName: o.customer.full_name,
+      customerEmail: o.customer.email,
       items: (o.items ?? []).join(', '),
       qty: o.quantity,
       amount: o.amount,
@@ -339,12 +339,16 @@ export default function OrganizerEventDetailsPage() {
     }))
 
     const counts = new Map<string, { name: string; email: string; tickets: number }>()
+
     for (const o of (api?.orders ?? [])) {
-      const email = o.customer?.email ?? ''
+      const email = o.customer.email
+
       if (!email) continue
+
       const prev = counts.get(email)
-      if (prev) prev.tickets += Number(o.quantity ?? 0)
-      else counts.set(email, { name: o.customer?.full_name ?? '', email, tickets: Number(o.quantity ?? 0) })
+
+      if (prev) prev.tickets += o.quantity
+      else counts.set(email, { name: o.customer.full_name, email, tickets: o.quantity })
     }
 
     const top = Array.from(counts.values())
@@ -1298,6 +1302,7 @@ type SettingsState = {
   type: 'physical' | 'virtual'
   eventLink: string
   location: string
+  undisclosed: boolean
   category: string
   tagsInput: string
   uploadedImageFile: File | null
@@ -1307,7 +1312,7 @@ type SettingsState = {
 }
 
 type SettingsAction =
-  | { type: 'SET_FIELD'; field: keyof SettingsState; payload: string }
+  | { type: 'SET_FIELD'; field: keyof SettingsState; payload: string|boolean }
   | { type: 'SET_TYPE'; payload: 'physical' | 'virtual' }
   | { type: 'SET_SAVING'; payload: boolean }
   | { type: 'UPLOAD_IMAGE'; file: File; objectUrl: string }
@@ -1318,19 +1323,20 @@ type SettingsAction =
 function buildSettingsState(event: OrganizerEvent): SettingsState {
   return {
     title: event.title,
-    description: event.description ?? '',
+    description: event.description,
     date: event.date,
-    time: event.time ?? '',
-    image: event.image ?? '',
+    time: event.time,
+    image: event.image,
     type: event.isOnline ? 'virtual' : 'physical',
-    eventLink: (event as any).virtual_link ?? (event.isOnline ? event.location ?? '' : ''),
-    location: event.location ?? '',
+    eventLink: event.event_link || '',
+    location: event.location,
     category: event.category,
     tagsInput: normalizeTagsForInput(event.tags),
     uploadedImageFile: null,
     uploadedObjectUrl: null,
     saving: false,
     imageModified: false,
+    undisclosed: event.undisclosed,
   }
 }
 
@@ -1380,7 +1386,7 @@ function settingsReducer(state: SettingsState, action: SettingsAction): Settings
 
 function SettingsPanel({ event }: { event: OrganizerEvent }) {
   const [state, dispatch] = useReducer(settingsReducer, event, buildSettingsState)
-  const { title, description, date, time, image, type, eventLink, location, category, tagsInput, uploadedImageFile, uploadedObjectUrl, saving, imageModified } = state
+  const { title, description, date, time, image, type, eventLink, location, category, tagsInput, uploadedImageFile, uploadedObjectUrl, saving, imageModified, undisclosed } = state
 
   const categories = useMemo(() => (mockCategories ?? []).filter((c) => c !== 'All'), [])
 
@@ -1401,8 +1407,12 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
 
   const onReset = useCallback(() => {
     if (saving) return
+
     if (uploadedObjectUrl) URL.revokeObjectURL(uploadedObjectUrl)
+
     dispatch({ type: 'RESET', event })
+
+    successToast("Changes reset.")
   }, [event, saving, uploadedObjectUrl])
 
   const onSave = useCallback(async () => {
@@ -1453,6 +1463,8 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
       formData.append('location', normalizedLocation)
     }
 
+    formData.append('undisclosed', (undisclosed ? '1' : '0'))
+
     // Only send image data when the user has actually modified it
     if (imageModified) {
       if (uploadedImageFile) {
@@ -1479,7 +1491,7 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
 
     successToast(resp.data?.message ?? 'Changes saved.')
     dispatch({ type: 'SAVE_SUCCESS', nextImage: (resp.data?.data as any)?.image })
-  }, [category, date, description, event, eventLink, image, imageModified, location, tagsInput, time, title, type, uploadedImageFile, uploadedObjectUrl])
+  }, [category, date, description, event, eventLink, image, imageModified, location, tagsInput, time, title, type, uploadedImageFile, uploadedObjectUrl, undisclosed])
 
   return (
     <div className="space-y-4">
@@ -1635,6 +1647,10 @@ function SettingsPanel({ event }: { event: OrganizerEvent }) {
                   saving && 'opacity-60 cursor-not-allowed'
                 )}
               />
+              <label className="mt-3 ml-2 inline-flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                <input type="checkbox" checked={undisclosed} onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'undisclosed', payload: e.target.checked })}/>
+                <span className="text-xs">Disclose only to attendees</span>
+              </label>
             </div>
           )}
 

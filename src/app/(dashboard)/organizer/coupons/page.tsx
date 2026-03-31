@@ -90,7 +90,7 @@ export default function OrganizerCouponsPage() {
     }
 
     if (!eventsResp.ok) {
-      setCoupons(Array.isArray(couponsResp.data?.data) ? (couponsResp.data?.data ?? []) : [])
+      setCoupons(couponsResp.data?.data ?? [])
       setEvents([])
       setError(getErrorMessage(eventsResp.error))
       errorToast(getErrorMessage(eventsResp.error))
@@ -101,8 +101,8 @@ export default function OrganizerCouponsPage() {
     const listCoupons = couponsResp.data?.data ?? []
     const listEvents = eventsResp.data?.data ?? []
 
-    setCoupons(Array.isArray(listCoupons) ? listCoupons : [])
-    setEvents(Array.isArray(listEvents) ? listEvents : [])
+    setCoupons(listCoupons)
+    setEvents(listEvents)
     setLoading(false)
   }, [])
 
