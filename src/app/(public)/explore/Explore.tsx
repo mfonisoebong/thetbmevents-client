@@ -6,6 +6,7 @@ import SearchBar from '../../../components/explore/SearchBar'
 import CategoryPills from '../../../components/explore/CategoryPills'
 import EventCard from '../../../components/explore/EventCard'
 import EventsGridShimmer from '../../../components/explore/EventsGridShimmer'
+import LoadingSpinner from '@components/LoadingSpinner'
 import { categories as mockCategories } from '@lib/mockEvents'
 import type { ApiData, EventItem } from '@lib/types'
 import HTTP from '@lib/HTTP'
@@ -13,12 +14,17 @@ import {cn, getEndpoint, getErrorMessage} from '@lib/utils'
 
 type EventsApiResponse = ApiData<EventItem[]> | EventItem[]
 
+const PAGE_SIZE = 24
+
 export default function Explore(): ReactElement {
   const [query, setQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined)
 
   const [events, setEvents] = useState<EventItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const [noMoreFeedback, setNoMoreFeedback] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reloadToken, setReloadToken] = useState(0)
 
@@ -32,14 +38,30 @@ export default function Explore(): ReactElement {
     return () => clearTimeout(t)
   }, [query])
 
-  const fetchEvents = useCallback(async (category?: string) => {
+  const fetchEvents = useCallback(async ({
+    category,
+    offset = 0,
+    append = false,
+  }: {
+    category?: string
+    offset?: number
+    append?: boolean
+  }) => {
     const isAll = !category || category === 'All'
-    const endpoint = isAll ? '/events' : `/events/category/${encodeURIComponent(category)}`
+    const endpointBase = isAll ? '/events' : `/events/category/${encodeURIComponent(category)}`
+    const endpoint = offset > 0 ? `${endpointBase}?offset=${offset}` : endpointBase
 
     const requestId = ++requestIdRef.current
 
-    setLoading(true)
-    setError(null)
+    if (append) {
+      setIsLoadingMore(true)
+    } else {
+      setLoading(true)
+      setIsLoadingMore(false)
+      setHasMore(true)
+      setNoMoreFeedback(null)
+      setError(null)
+    }
 
     const resp = await HTTP<EventsApiResponse, undefined>({ url: getEndpoint(endpoint), method: 'get' })
 
@@ -47,22 +69,44 @@ export default function Explore(): ReactElement {
     if (requestId !== requestIdRef.current) return
 
     if (!resp.ok || !resp.data) {
-      setEvents([])
+      if (!append) setEvents([])
       setError(getErrorMessage(resp.error))
       setLoading(false)
+      setIsLoadingMore(false)
       return
     }
 
     const data = resp.data as EventsApiResponse
     const list = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : []
 
-    setEvents(list)
+    if (append) {
+      setEvents((prev) => [...prev, ...list])
+    } else {
+      setEvents(list)
+    }
+
+    const finished = list.length < PAGE_SIZE
+    setHasMore(!finished)
+
+    if (finished && (append || list.length > 0)) {
+      setNoMoreFeedback('You have reached the end of this list.')
+    } else {
+      setNoMoreFeedback(null)
+    }
+
     setLoading(false)
+    setIsLoadingMore(false)
   }, [])
 
   useEffect(() => {
-    fetchEvents(selectedCategory)
+    fetchEvents({ category: selectedCategory, offset: 0, append: false })
   }, [fetchEvents, selectedCategory, reloadToken])
+
+  const handleShowMore = useCallback(() => {
+    if (loading || isLoadingMore || !hasMore) return
+
+    fetchEvents({ category: selectedCategory, offset: events.length, append: true })
+  }, [events.length, fetchEvents, hasMore, isLoadingMore, loading, selectedCategory])
 
   const filtered = useMemo(() => {
     const q = debounced.trim().toLowerCase()
@@ -154,18 +198,44 @@ export default function Explore(): ReactElement {
           {loading ? (
             <EventsGridShimmer />
           ) : (
-            <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6", filtered.length === 0 ? '!grid-cols-1' : '')}>
-              {filtered.length === 0 ? (
-                <div className="lg:col-span-3 bg-white/10 dark:bg-slate-900/40 backdrop-blur-sm border border-white/10 rounded-2xl p-8 text-center">
-                  <h4 className="text-lg font-semibold dark:text-white">No events found</h4>
-                  <p className="text-text-muted-light dark:text-text-muted-dark mt-2">
-                    Try adjusting your search or choose a different category.
-                  </p>
+            <>
+              <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6", filtered.length === 0 ? '!grid-cols-1' : '')}>
+                {filtered.length === 0 ? (
+                  <div className="lg:col-span-3 bg-white/10 dark:bg-slate-900/40 backdrop-blur-sm border border-white/10 rounded-2xl p-8 text-center">
+                    <h4 className="text-lg font-semibold dark:text-white">No events found</h4>
+                    <p className="text-text-muted-light dark:text-text-muted-dark mt-2">
+                      Try adjusting your search or choose a different category.
+                    </p>
+                  </div>
+                ) : (
+                  filtered.map((ev: EventItem) => <EventCard key={ev.id} event={ev} />)
+                )}
+              </div>
+
+              {events.length > 0 ? (
+                <div className="mt-8 flex flex-col items-center gap-3">
+                  {hasMore ? (
+                    <button
+                      type="button"
+                      onClick={handleShowMore}
+                      disabled={isLoadingMore}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-sm font-medium disabled:opacity-70"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <LoadingSpinner size={16} label="Loading more events" className="text-current" />
+                          Loading more
+                        </>
+                      ) : (
+                        'Show more'
+                      )}
+                    </button>
+                  ) : (
+                    <p className="text-sm text-text-muted-light dark:text-text-muted-dark">{noMoreFeedback}</p>
+                  )}
                 </div>
-              ) : (
-                filtered.map((ev: EventItem) => <EventCard key={ev.id} event={ev} />)
-              )}
-            </div>
+              ) : null}
+            </>
           )}
         </div>
       </section>
