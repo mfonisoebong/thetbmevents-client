@@ -323,7 +323,7 @@ export default function OrganizerEventDetailsPage() {
       ticketType: a.ticket_name,
       ticketBoughtCount: a.tickets_bought_count,
       orderId: '',
-      checkedIn: Boolean(a.checked_in),
+      checkedIn: a.checked_in,
     }))
 
     const oRows: OrderRow[] = (api?.orders ?? []).map((o) => ({
@@ -344,6 +344,8 @@ export default function OrganizerEventDetailsPage() {
       const email = o.customer.email
 
       if (!email) continue
+
+      if (o.status !== 'success') continue
 
       const prev = counts.get(email)
 
@@ -407,12 +409,11 @@ export default function OrganizerEventDetailsPage() {
 
       // Generate data URL PNG
       const dataUrl = await QRCode.toDataURL(publicEventUrl, {
-        errorCorrectionLevel: 'M',
         margin: 2,
         scale: 8,
         type: 'image/png',
         color: {
-          dark: '#000000', // slate-900-ish
+          dark: '#000000',
           light: '#FFFFFF',
         },
       })
