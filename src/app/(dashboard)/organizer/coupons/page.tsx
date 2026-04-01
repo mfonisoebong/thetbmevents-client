@@ -40,6 +40,8 @@ type CreateCouponPayload = {
   event_id: string
   start_date_time: string
   end_date_time: string
+  referral_name?: string
+  referral_email?: string
 }
 
 export default function OrganizerCouponsPage() {
@@ -63,6 +65,8 @@ export default function OrganizerCouponsPage() {
     value: 0,
     eventId: '',
     limit: -1,
+    referralName: '',
+    referralEmail: '',
   })
 
   const load = useCallback(async () => {
@@ -245,12 +249,17 @@ export default function OrganizerCouponsPage() {
       value: 0,
       eventId: eventOptions[0]?.id ?? '',
       limit: -1,
+      referralName: '',
+      referralEmail: '',
     })
     setIsOpen(true)
   }
 
   async function onCreate() {
     setCreateError(null)
+
+    const referralName = form.referralName.trim()
+    const referralEmail = form.referralEmail.trim()
 
     const payload: CreateCouponPayload = {
       code: form.code.trim(),
@@ -260,6 +269,8 @@ export default function OrganizerCouponsPage() {
       event_id: String(form.eventId),
       start_date_time: form.startAt,
       end_date_time: form.endAt,
+      ...(referralName ? { referral_name: referralName } : {}),
+      ...(referralEmail ? { referral_email: referralEmail } : {}),
     }
 
     if (!payload.code) {
@@ -272,6 +283,10 @@ export default function OrganizerCouponsPage() {
     }
     if (!payload.start_date_time || !payload.end_date_time) {
       setCreateError('Start and end date/time are required.')
+      return
+    }
+    if (referralEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(referralEmail)) {
+      setCreateError('Referral email must be a valid email address.')
       return
     }
 
@@ -407,6 +422,21 @@ export default function OrganizerCouponsPage() {
                     </option>
                   ))}
                 </Select>
+
+                <Input
+                  label="Referral name (optional)"
+                  value={form.referralName}
+                  onChange={(e) => setForm((p) => ({ ...p, referralName: e.target.value }))}
+                  placeholder="e.g. Jane Doe"
+                />
+
+                <Input
+                  label="Referral email (optional)"
+                  type="email"
+                  value={form.referralEmail}
+                  onChange={(e) => setForm((p) => ({ ...p, referralEmail: e.target.value }))}
+                  placeholder="e.g. jane@example.com"
+                />
               </div>
 
               <div className="mt-6 flex items-center justify-end gap-3">
