@@ -388,8 +388,10 @@ export default function CheckoutPage() {
         })
     }, [customer, attendees, ticketInstances.length])
 
-    // validation effect (existing) kept — run on relevant deps
+    // validation effect
     useEffect(() => {
+        if (!touchedAny) return
+
         const pErrs: PurchaserErrors = {}
 
         const fullErr = getPurchaserError('fullname', purchaser.fullname)
