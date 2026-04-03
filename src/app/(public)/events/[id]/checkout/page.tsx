@@ -617,7 +617,7 @@ export default function CheckoutPage() {
     }, [])
 
     return (
-        <div className="w-full max-w-7xl mx-auto px-6 py-12">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-12">
             <Stepper step={step}/>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -741,7 +741,7 @@ export default function CheckoutPage() {
 
                         {step === 3 && !isFreeCheckout && (
                             <section
-                                className={`bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 rounded-2xl p-6`}>
+                                className={`bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 rounded-2xl p-4 sm:p-6`}>
                                 <div className="flex items-center gap-3 mb-4">
                                     <button type="button" aria-label="Back to contact" onClick={goToStep2}
                                             className="text-slate-600 dark:text-slate-300">←
@@ -778,7 +778,7 @@ export default function CheckoutPage() {
                                                     )}
                                                 </div>
                                                 <div
-                                                    className="text-sm text-slate-600 dark:text-slate-300">{fee === 0 ? 'Free' : `${moneySymbol}${fee.toLocaleString()}`}</div>
+                                                    className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">{fee === 0 ? 'Free' : `${moneySymbol}${fee.toLocaleString()}`}</div>
                                             </label>
                                         )
                                     })}

@@ -145,7 +145,7 @@ export default function Explore(): ReactElement {
   }, [])
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-6 py-12">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-12">
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">Discover events</h1>

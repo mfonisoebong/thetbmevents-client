@@ -45,7 +45,7 @@ export default function Summary(
 
     return (
         <div
-            className="sticky top-6 bg-white/10 dark:bg-slate-900/40 backdrop-blur-sm border border-black/10 dark:border-white/10 rounded-2xl p-5">
+            className="sticky top-6 bg-white/10 dark:bg-slate-900/40 backdrop-blur-sm border border-black/10 dark:border-white/10 rounded-2xl p-4">
             <h3 className="text-sm text-slate-700 dark:text-slate-200">Your order</h3>
             <div className="mt-3 space-y-2">
                 {Object.entries(grouped).map(([k, v]) => (

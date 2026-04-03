@@ -71,7 +71,7 @@ export default function EventDetails({ event }: Props) {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-6 py-12">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-12">
       <div className="bg-white/10 dark:bg-slate-900/40 border border-black/10 dark:border-white/10 rounded-xl overflow-hidden">
         <div className="relative w-full h-72 sm:h-96 lg:h-[420px]">
           <img
@@ -104,7 +104,7 @@ export default function EventDetails({ event }: Props) {
           </div>
         </div>
 
-        <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
           <main className="lg:col-span-2">
             <section className="mb-6">
               <h2 className="text-lg font-semibold dark:text-white">About this event</h2>
