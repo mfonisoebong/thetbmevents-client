@@ -52,6 +52,7 @@ type CheckoutState = {
         error: string | null
     }
     gateway: PaymentGateway | null
+    manuallySelectedGateway: boolean
     processingPayment: boolean
 }
 
@@ -63,6 +64,7 @@ type CheckoutAction =
     | { type: 'TOGGLE_ATTENDEE_SEND_TO_ME'; idx: number; checked: boolean }
     | { type: 'SET_TOUCHED'; value: boolean }
     | { type: 'SET_GATEWAY'; value: PaymentGateway | null }
+    | { type: 'SET_GATEWAY_MANUAL'; value: PaymentGateway }
     | { type: 'SET_COUPON_CODE'; value: string }
     | { type: 'COUPON_APPLY_START' }
     | { type: 'COUPON_APPLY_SUCCESS'; payload: { discount: number; total: number } }
@@ -97,6 +99,7 @@ function makeInitialState(ticketCount: number): CheckoutState {
             error: null,
         },
         gateway: null,
+        manuallySelectedGateway: false,
         processingPayment: false,
     }
 }
@@ -164,6 +167,9 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
 
         case 'SET_GATEWAY':
             return {...state, gateway: action.value}
+
+        case 'SET_GATEWAY_MANUAL':
+            return {...state, gateway: action.value, manuallySelectedGateway: true}
 
         case 'SET_COUPON_CODE':
             return {
@@ -324,6 +330,22 @@ export default function CheckoutPage() {
 
     const platformFee = useMemo(() => roundToTwo(calculatePlatformFee(subtotal)), [subtotal])
 
+    const availableGateways: PaymentGateway[] = useMemo(() => ['paystack', 'flutterwave'], [])
+
+    const cheapestGateway = useMemo(() => {
+        const base = Math.max(0, subtotal + platformFee - couponDiscount)
+        let cheapest = availableGateways[0]
+        let cheapestFee = getGatewayFee(base, cheapest)
+        for (let i = 1; i < availableGateways.length; i++) {
+            const fee = getGatewayFee(base, availableGateways[i])
+            if (fee < cheapestFee) {
+                cheapestFee = fee
+                cheapest = availableGateways[i]
+            }
+        }
+        return cheapest
+    }, [subtotal, platformFee, couponDiscount, availableGateways])
+
     const feeForSelected = useMemo(() => {
         if (!gateway) return 0
         const base = Math.max(0, subtotal + platformFee - couponDiscount)
@@ -335,6 +357,13 @@ export default function CheckoutPage() {
     }, [subtotal, platformFee, feeForSelected, couponApplied, couponDiscount])
 
     const isFreeCheckout = step === 3 && totalWithFee <= 0
+
+    // Auto-select the cheapest gateway when arriving at step 3.
+    useEffect(() => {
+        if (step === 3 && !isFreeCheckout && !state.manuallySelectedGateway) {
+            dispatch({type: 'SET_GATEWAY', value: cheapestGateway})
+        }
+    }, [step, cheapestGateway, isFreeCheckout, state.manuallySelectedGateway])
 
     // Keep reducer state synced with TicketContext.
     useEffect(() => {
@@ -723,16 +752,28 @@ export default function CheckoutPage() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    {(['paystack', 'flutterwave', /*'chainpal'*/] as PaymentGateway[]).map((g) => {
+                                    {availableGateways.map((g) => {
                                         const fee = roundToTwo(getGatewayFee(Math.max(0, subtotal + platformFee - couponDiscount), g))
+                                        const isCheapest = g === cheapestGateway
                                         return (
                                             <label key={g}
-                                                   className="flex items-center justify-between gap-3 p-3 rounded-lg bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10">
+                                                   className={cn(
+                                                       "flex items-center justify-between gap-3 p-3 rounded-lg border",
+                                                       gateway === g
+                                                           ? "bg-brand-teal/10 border-brand-teal dark:bg-brand-teal/20"
+                                                           : "bg-black/5 dark:bg-black/30 border-black/10 dark:border-white/10"
+                                                   )}>
                                                 <div className="flex items-center gap-3 capitalize">
                                                     <input type="radio" name="gateway" checked={gateway === g}
-                                                           onChange={() => dispatch({type: 'SET_GATEWAY', value: g})}/>
-                                                    <div
-                                                        className="text-sm text-slate-700 dark:text-slate-200">{g === 'chainpal' ? 'ChainPal (crypto)' : g}</div>
+                                                           onChange={() => dispatch({type: 'SET_GATEWAY_MANUAL', value: g})}/>
+                                                    <div className="text-sm text-slate-700 dark:text-slate-200">
+                                                        {g === 'chainpal' ? 'ChainPal (crypto)' : g}
+                                                    </div>
+                                                    {isCheapest && (
+                                                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                                            Cheapest
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div
                                                     className="text-sm text-slate-600 dark:text-slate-300">{fee === 0 ? 'Free' : `${moneySymbol}${fee.toLocaleString()}`}</div>
