@@ -190,7 +190,7 @@ export default function SignupForm() {
                         </div>
 
                         <div className="space-y-8">
-                            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Check your email</h2>
+                            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Check your inbox/spam folder</h2>
                             <p className="text-sm text-slate-600 dark:text-slate-300">
                                 We sent a verification link to <span className="font-semibold">{state.values.email}</span>.
                             </p>
