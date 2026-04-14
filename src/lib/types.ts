@@ -149,6 +149,7 @@ export interface RecentTransaction {
         phone: string;
     };
     amount: number;
+    gateway: string;
     currency: any;
     status: string;
     created_at: string;

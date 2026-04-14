@@ -29,6 +29,7 @@ type UiTransactionRow = {
     phone: string
   }
   amount: number
+  gateway: string
   currency: any
   status: string
   createdAt: string
@@ -67,6 +68,7 @@ function mapRecentTransaction(tx: RecentTransaction): UiTransactionRow {
       phone: tx.customer.phone,
     },
     amount: tx.amount,
+    gateway: tx.gateway,
     currency: tx.currency,
     status: normalizeTxStatus(tx.status),
     createdAt: tx.created_at,
@@ -163,6 +165,12 @@ export default function AdminFinancePage() {
             {formatNumber(r.amount)}
           </span>
         ),
+      },
+      {
+        key: 'gateway',
+        header: 'Gateway',
+        className: 'whitespace-nowrap',
+        render: (r) => <span className="text-sm text-text-muted-light dark:text-text-muted-dark">{r.gateway}</span>,
       },
       {
         key: 'status',
