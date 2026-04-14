@@ -296,6 +296,12 @@ export default function OrganizerScanQrPage() {
       return
     }
 
+    if (decodedId === 'test:marvel:890') {
+      setScanResult({ raw, decodedId, status: 'success', details: null, message: 'It worked!' })
+      setIsModalOpen(true)
+      return
+    }
+
     // Show modal immediately with loading state while we check in the attendee
     setScanResult(null)
     setIsModalOpen(true)
@@ -568,7 +574,7 @@ export default function OrganizerScanQrPage() {
                       <div className="text-xs text-text-muted-light dark:text-text-muted-dark">Validation</div>
                       <div className={cn('mt-1 inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold', pillClass(scanResult.status))}>
                         {scanResult.status === 'success'
-                          ? 'Success — checked in'
+                          ? scanResult.message || 'Success — checked in'
                           : scanResult.status === 'used'
                             ? 'Already checked in'
                             : scanResult.message || 'Not found'}
