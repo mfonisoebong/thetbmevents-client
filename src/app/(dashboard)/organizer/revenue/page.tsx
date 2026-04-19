@@ -6,9 +6,12 @@ import type { ApiData, OrganizerEvent } from '@lib/types'
 import { cn, currencySymbol, formatNumber, getEndpoint, getErrorMessage } from '@lib/utils'
 import Link from 'next/link'
 import { ArrowTrendingUpIcon, ArrowsUpDownIcon, CalendarDaysIcon, SparklesIcon } from '@heroicons/react/24/outline'
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import GlassCard from '../../../../components/GlassCard'
 import HTTP from '@lib/HTTP'
 import OrganizerRevenueShimmer from '../../../../components/dashboard/OrganizerRevenueShimmer'
+import Input from '../../../../components/Input'
+import { successToast } from '@components/Toast'
 
 type SortKey = 'ticketsSold' | 'revenue'
 
@@ -19,6 +22,9 @@ type MonthPoint = {
   label: string
   value: number
 }
+
+const PAYOUT_ACCOUNT_NUMBER_STORAGE_KEY = 'organizer.payout.account_number'
+const PAYOUT_BANK_NAME_STORAGE_KEY = 'organizer.payout.bank_name'
 
 function StatCard({
   title,
@@ -222,6 +228,11 @@ export default function OrganizerRevenuePage() {
 
   const [sortKey, setSortKey] = useState<SortKey>('ticketsSold')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
+  const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false)
+  const [accountNumber, setAccountNumber] = useState('')
+  const [bankName, setBankName] = useState('')
+  const [requestingPayout, setRequestingPayout] = useState(false)
+  const [payoutError, setPayoutError] = useState<string | null>(null)
 
   const sortedEvents = useMemo(() => {
     const rows = [...eventRows]
@@ -245,6 +256,48 @@ export default function OrganizerRevenuePage() {
     }
     return { label: monthLabel(idx), value: max === -Infinity ? 0 : max }
   }, [monthlyValues])
+
+  useEffect(() => {
+    setAccountNumber(localStorage.getItem(PAYOUT_ACCOUNT_NUMBER_STORAGE_KEY) ?? '')
+    setBankName(localStorage.getItem(PAYOUT_BANK_NAME_STORAGE_KEY) ?? '')
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem(PAYOUT_ACCOUNT_NUMBER_STORAGE_KEY, accountNumber)
+  }, [accountNumber])
+
+  useEffect(() => {
+    localStorage.setItem(PAYOUT_BANK_NAME_STORAGE_KEY, bankName)
+  }, [bankName])
+
+  function openPayoutModal() {
+    setPayoutError(null)
+    setIsPayoutModalOpen(true)
+  }
+
+  const onRequestPayout = useCallback(async () => {
+    setPayoutError(null)
+    setRequestingPayout(true)
+
+    const resp = await HTTP<ApiData<unknown>, { account_number: string; bank_name: string }>({
+      url: getEndpoint('/dashboard/organizer/request-payout'),
+      method: 'post',
+      data: {
+        account_number: accountNumber,
+        bank_name: bankName,
+      },
+    })
+
+    if (!resp.ok) {
+      setPayoutError(getErrorMessage(resp.error))
+      setRequestingPayout(false)
+      return
+    }
+
+    successToast(resp.data?.message ?? 'Payout request submitted successfully.')
+    setRequestingPayout(false)
+    setIsPayoutModalOpen(false)
+  }, [accountNumber, bankName])
 
   if (loading) {
     return (
@@ -311,7 +364,7 @@ export default function OrganizerRevenuePage() {
             </Link>
             <button
               type="button"
-              onClick={() => console.log('Payouts coming soon')}
+              onClick={openPayoutModal}
               className="rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white"
             >
               Request payout
@@ -491,6 +544,63 @@ export default function OrganizerRevenuePage() {
             ))}
           </div>
         </GlassCard>
+
+        <Dialog
+          open={isPayoutModalOpen}
+          onClose={(open) => {
+            if (!open && !requestingPayout) setIsPayoutModalOpen(false)
+          }}
+          transition
+          className="relative z-50 transition-opacity data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in"
+        >
+          <DialogBackdrop className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+
+          <div className="fixed inset-0 flex items-center justify-center p-4">
+            <DialogPanel className="w-full max-w-md rounded-2xl bg-white/80 dark:bg-slate-950/70 border border-black/10 dark:border-white/10 backdrop-blur-xl shadow-xl p-6">
+              <DialogTitle className="text-lg font-extrabold text-gray-900 dark:text-white">Request payout</DialogTitle>
+              <p className="mt-1 text-sm text-text-muted-light dark:text-text-muted-dark">Enter your bank details to request a payout.</p>
+
+              {payoutError ? (
+                <div className="mt-4 rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50/80 dark:bg-red-950/30 px-4 py-3 text-sm text-red-800 dark:text-red-200">
+                  {payoutError}
+                </div>
+              ) : null}
+
+              <div className={cn('mt-5 grid grid-cols-1 gap-4', requestingPayout && 'opacity-60 pointer-events-none')}>
+                <Input
+                  label="Account number"
+                  value={accountNumber}
+                  onChange={(e) => setAccountNumber(e.target.value)}
+                  placeholder="e.g. 0123456789"
+                  maxLength={10}
+                />
+                <Input label="Bank name" value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g. Access Bank" />
+              </div>
+
+              <div className="mt-6 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsPayoutModalOpen(false)}
+                  disabled={requestingPayout}
+                  className={cn(
+                    'rounded-xl bg-white/10 dark:bg-white/5 border border-black/10 dark:border-white/10 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white hover:bg-white/20',
+                    requestingPayout && 'opacity-60 cursor-not-allowed'
+                  )}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={onRequestPayout}
+                  disabled={requestingPayout}
+                  className={cn('rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white', requestingPayout && 'opacity-60 cursor-not-allowed')}
+                >
+                  {requestingPayout ? 'Submitting...' : 'Submit request'}
+                </button>
+              </div>
+            </DialogPanel>
+          </div>
+        </Dialog>
       </div>
     </SidebarLayout>
   )

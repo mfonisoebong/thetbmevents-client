@@ -2,10 +2,10 @@ import { getCookie } from "./utils";
 import axios from "./axios";
 import type { AxiosRequestConfig, Method } from "axios";
 
-export type HTTPArgs<TData> = {
+export type HTTPArgs<RequestData> = {
   url: string;
   method?: Method;
-  data?: TData;
+  data?: RequestData;
   headers?: Record<string, string>;
 };
 
@@ -15,13 +15,13 @@ export type HTTPResponse<TResponse> = {
   error: any;
 };
 
-export default async function HTTP<TResponse, TData>({
+export default async function HTTP<Response, RequestData>({
   url,
   method = "post",
   data,
   headers,
-}: HTTPArgs<TData>): Promise<HTTPResponse<TResponse>> {
-  const resp: HTTPResponse<TResponse> = {
+}: HTTPArgs<RequestData>): Promise<HTTPResponse<Response>> {
+  const resp: HTTPResponse<Response> = {
     ok: true,
     data: null,
     error: null,
@@ -42,7 +42,7 @@ export default async function HTTP<TResponse, TData>({
 
   try {
     const response = await axios(config);
-    resp.data = response.data as TResponse;
+    resp.data = response.data as Response;
   } catch (err) {
     resp.ok = false;
     resp.error = err;
