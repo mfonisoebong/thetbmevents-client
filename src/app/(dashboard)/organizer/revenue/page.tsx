@@ -24,6 +24,7 @@ type MonthPoint = {
 }
 
 const PAYOUT_ACCOUNT_NUMBER_STORAGE_KEY = 'organizer.payout.account_number'
+const PAYOUT_ACCOUNT_NAME_STORAGE_KEY = 'organizer.payout.account_name'
 const PAYOUT_BANK_NAME_STORAGE_KEY = 'organizer.payout.bank_name'
 
 function StatCard({
@@ -229,10 +230,12 @@ export default function OrganizerRevenuePage() {
   const [sortKey, setSortKey] = useState<SortKey>('ticketsSold')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false)
+  const [accountName, setAccountName] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
   const [bankName, setBankName] = useState('')
   const [requestingPayout, setRequestingPayout] = useState(false)
   const [payoutError, setPayoutError] = useState<string | null>(null)
+  const [payoutDetailsLoaded, setPayoutDetailsLoaded] = useState(false)
 
   const sortedEvents = useMemo(() => {
     const rows = [...eventRows]
@@ -258,17 +261,19 @@ export default function OrganizerRevenuePage() {
   }, [monthlyValues])
 
   useEffect(() => {
+    setAccountName(localStorage.getItem(PAYOUT_ACCOUNT_NAME_STORAGE_KEY) ?? '')
     setAccountNumber(localStorage.getItem(PAYOUT_ACCOUNT_NUMBER_STORAGE_KEY) ?? '')
     setBankName(localStorage.getItem(PAYOUT_BANK_NAME_STORAGE_KEY) ?? '')
+    setPayoutDetailsLoaded(true)
   }, [])
 
   useEffect(() => {
-    localStorage.setItem(PAYOUT_ACCOUNT_NUMBER_STORAGE_KEY, accountNumber)
-  }, [accountNumber])
+    if (!payoutDetailsLoaded) return
 
-  useEffect(() => {
+    localStorage.setItem(PAYOUT_ACCOUNT_NAME_STORAGE_KEY, accountName)
+    localStorage.setItem(PAYOUT_ACCOUNT_NUMBER_STORAGE_KEY, accountNumber)
     localStorage.setItem(PAYOUT_BANK_NAME_STORAGE_KEY, bankName)
-  }, [bankName])
+  }, [accountName, accountNumber, bankName, payoutDetailsLoaded])
 
   function openPayoutModal() {
     setPayoutError(null)
@@ -279,10 +284,11 @@ export default function OrganizerRevenuePage() {
     setPayoutError(null)
     setRequestingPayout(true)
 
-    const resp = await HTTP<ApiData<unknown>, { account_number: string; bank_name: string }>({
+    const resp = await HTTP<ApiData<unknown>, { account_name: string; account_number: string; bank_name: string }>({
       url: getEndpoint('/dashboard/organizer/request-payout'),
       method: 'post',
       data: {
+        account_name: accountName,
         account_number: accountNumber,
         bank_name: bankName,
       },
@@ -297,7 +303,7 @@ export default function OrganizerRevenuePage() {
     successToast(resp.data?.message ?? 'Payout request submitted successfully.')
     setRequestingPayout(false)
     setIsPayoutModalOpen(false)
-  }, [accountNumber, bankName])
+  }, [accountName, accountNumber, bankName])
 
   if (loading) {
     return (
@@ -567,6 +573,7 @@ export default function OrganizerRevenuePage() {
               ) : null}
 
               <div className={cn('mt-5 grid grid-cols-1 gap-4', requestingPayout && 'opacity-60 pointer-events-none')}>
+                <Input label="Account name" value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="e.g. John Doe" />
                 <Input
                   label="Account number"
                   value={accountNumber}
