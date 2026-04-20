@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import SidebarLayout from '../../../../components/layouts/SidebarLayout'
-import { cn, getEndpoint, getErrorMessage } from '@lib/utils'
+import {cn, getEndpoint, getErrorMessage, isIOS} from '@lib/utils'
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import {
   CheckCircleIcon,
@@ -131,6 +131,7 @@ export default function OrganizerScanQrPage() {
 
   const scannerRef = useRef<any>(null)
   const qrLibRef = useRef<QrLib | null>(null)
+  const appliedConstraintsRef = useRef<boolean>(false)
   const regionId = 'tbm-qr-reader'
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -247,7 +248,13 @@ export default function OrganizerScanQrPage() {
           onDecoded(decodedText)
         },
         () => {
-          // ignore per-frame failures
+          if (isIOS() && !appliedConstraintsRef.current) {
+              appliedConstraintsRef.current = true
+              inst.applyVideoConstraints({
+                focusMode: "continuous",
+                advanced: [{ zoom: 2.0 }],
+              });
+          }
         }
       )
 

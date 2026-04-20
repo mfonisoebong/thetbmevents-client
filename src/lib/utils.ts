@@ -266,3 +266,9 @@ export function normalizeStatus(status?: string): EventStatus {
     if (s === 'ended' || s === 'past') return 'Ended'
     return (status as any) ?? 'Published'
 }
+
+export function isIOS() {
+    if (typeof window === 'undefined') return false;
+
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+}
