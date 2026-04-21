@@ -2,7 +2,9 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import SidebarLayout from '../../../../components/layouts/SidebarLayout'
-import {cn, getEndpoint, getErrorMessage, isIOS} from '@lib/utils'
+import { Scanner } from '@yudiel/react-qr-scanner'
+import jsQR from 'jsqr'
+import {cn, getEndpoint, getErrorMessage} from '@lib/utils'
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import {
   CheckCircleIcon,
@@ -82,11 +84,6 @@ function useIsMobile() {
 
 type StartMode = 'camera' | 'upload' | 'paste'
 
-type QrLib = {
-  Html5Qrcode: any
-  Html5QrcodeSupportedFormats?: any
-}
-
 function canUseCameraStreaming() {
   if (typeof window === 'undefined') return false
 
@@ -129,11 +126,6 @@ export default function OrganizerScanQrPage() {
   const [startMode, setStartMode] = useState<StartMode>('camera')
   const [isCheckingIn, setIsCheckingIn] = useState(false)
 
-  const scannerRef = useRef<any>(null)
-  const qrLibRef = useRef<QrLib | null>(null)
-  const appliedConstraintsRef = useRef<boolean>(false)
-  const regionId = 'tbm-qr-reader'
-
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [pasteValue, setPasteValue] = useState('')
 
@@ -166,38 +158,6 @@ export default function OrganizerScanQrPage() {
     setIsCheckingIn(false)
   }, [])
 
-  async function stopScanner() {
-    const inst = scannerRef.current
-    if (!inst) return
-
-    try {
-      if (typeof inst.isScanning === 'boolean' && !inst.isScanning) return
-      await inst.stop?.()
-    } catch {
-      // ignore
-    }
-
-    try {
-      await inst.clear?.()
-    } catch {
-      // ignore
-    }
-
-    scannerRef.current = null
-    setIsScanning(false)
-  }
-
-  async function ensureQrLib(): Promise<QrLib> {
-    if (qrLibRef.current) return qrLibRef.current
-    const mod = (await import('html5-qrcode')) as any
-    const lib: QrLib = {
-      Html5Qrcode: mod.Html5Qrcode,
-      Html5QrcodeSupportedFormats: mod.Html5QrcodeSupportedFormats,
-    }
-    qrLibRef.current = lib
-    return lib
-  }
-
   async function startScanner() {
     setScannerError(null)
     setScannerHelp([])
@@ -218,74 +178,34 @@ export default function OrganizerScanQrPage() {
       return
     }
 
-    try {
-      const { Html5Qrcode } = await ensureQrLib()
-
-      await stopScanner()
-
-      const inst = new Html5Qrcode(regionId)
-      scannerRef.current = inst
-      setIsScanning(true)
-
-      // Try multiple strategies:
-      // 1) pick the "back" camera if possible
-      // 2) fallback to facingMode
-      const devices = (await Html5Qrcode.getCameras?.()) ?? []
-      const back = devices.find((d: any) => /back|rear|environment/i.test(String(d.label ?? '')))
-
-      const cameraConfig = back?.id ? { deviceId: { exact: back.id } } : { facingMode: 'environment' }
-
-      await inst.start(
-        cameraConfig,
-        {
-          fps: 10,
-          qrbox: { width: 300, height: 300 },
-          aspectRatio: 1.0,
-        },
-        async (decodedText: string) => {
-          navigator.vibrate(100)
-          await stopScanner()
-          onDecoded(decodedText)
-        },
-        () => {
-          if (isIOS() && !appliedConstraintsRef.current) {
-              appliedConstraintsRef.current = true
-              inst.applyVideoConstraints({
-                focusMode: "continuous",
-                advanced: [{ zoom: 2.0 }],
-              });
-          }
-        }
-      )
-
-      setStartMode('camera')
-    } catch (e: any) {
-      console.error('scanner start error', e)
-      setIsScanning(false)
-
-      // Provide a more helpful error and immediately offer upload fallback.
-      const msg = String(e?.message ?? '').trim() || 'Unable to start camera scanner.'
-      setScannerError(msg)
-      setScannerHelp(friendlyCameraHelp())
-      setStartMode('upload')
-    }
+    setIsScanning(true)
+    setStartMode('camera')
   }
 
   async function onUploadFile(file: File) {
     try {
-      const { Html5Qrcode } = await ensureQrLib()
-      await stopScanner()
-
-      const inst = new Html5Qrcode(regionId)
-      scannerRef.current = inst
-      setIsScanning(false)
-
-      // html5-qrcode supports scanning from image file.
-      const decodedText = await inst.scanFile(file, true)
-      await inst.clear?.()
-      scannerRef.current = null
-
-      onDecoded(decodedText)
+      setScannerError(null)
+      const url = URL.createObjectURL(file)
+      const img = new Image()
+      img.src = url
+      await new Promise((resolve, reject) => {
+        img.onload = resolve
+        img.onerror = reject
+      })
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('Could not create canvas context')
+      ctx.drawImage(img, 0, 0)
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      const code = jsQR(imageData.data, imageData.width, imageData.height)
+      if (code) {
+        onDecoded(code.data)
+      } else {
+        throw new Error('No QR code found in image.')
+      }
+      URL.revokeObjectURL(url)
     } catch (e: any) {
       console.error('scan file error', e)
       setScannerError(e?.message ?? 'Unable to scan that image. Try a clearer photo of the QR code.')
@@ -332,7 +252,7 @@ export default function OrganizerScanQrPage() {
     }
 
     return () => {
-      stopScanner()
+      setIsScanning(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobile])
@@ -376,7 +296,7 @@ export default function OrganizerScanQrPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setStartMode('camera')}
+                      onClick={() => { setStartMode('camera'); setIsScanning(false); }}
                       className={cn(
                         'inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold border',
                         startMode === 'camera'
@@ -435,17 +355,38 @@ export default function OrganizerScanQrPage() {
                   <div className="flex flex-col gap-3">
                     <button
                       type="button"
-                      onClick={startScanner}
+                      onClick={() => setIsScanning(true)}
                       className="w-fit rounded-xl bg-brand-yellow px-4 py-2 text-sm font-semibold text-white"
                     >
                       {isScanning ? 'Scanning...' : 'Start camera scan'}
                     </button>
 
                     <div>
-                      <div
-                        id={regionId}
-                        className="w-full overflow-hidden rounded-2xl bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10"
-                      />
+                      {isScanning ? (
+                        <div className="w-full overflow-hidden rounded-2xl bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10">
+                          <Scanner
+                            onScan={(detected: any[]) => {
+                              if (detected && detected.length > 0) {
+                                setIsScanning(false);
+                                onDecoded(detected[0].rawValue);
+                              }
+                            }}
+                            onError={(error: any) => {
+                               console.error('scanner error', error);
+                               setIsScanning(false);
+                               setScannerError('Unable to start camera.');
+                               setScannerHelp(friendlyCameraHelp());
+                               setStartMode('upload');
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          className="w-full h-64 overflow-hidden rounded-2xl bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10 flex items-center justify-center p-3 text-center text-sm text-text-muted-light dark:text-text-muted-dark"
+                        >
+                          Camera inactive
+                        </div>
+                      )}
                       <div className="mt-2 text-xs text-text-muted-light dark:text-text-muted-dark">
                         If the camera doesn’t load, confirm site permissions and try the upload/paste options.
                       </div>
@@ -474,9 +415,10 @@ export default function OrganizerScanQrPage() {
 
                     <div className="mt-4">
                       <div
-                        id={regionId}
-                        className="w-full overflow-hidden rounded-2xl bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10"
-                      />
+                        className="w-full h-40 overflow-hidden flex items-center justify-center rounded-2xl bg-black/5 dark:bg-black/30 border border-black/10 dark:border-white/10 text-sm text-text-muted-light dark:text-text-muted-dark"
+                      >
+                         No image uploaded. Find the QR Code result above.
+                      </div>
                     </div>
                   </div>
                 ) : null}
