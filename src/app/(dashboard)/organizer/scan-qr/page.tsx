@@ -185,26 +185,33 @@ export default function OrganizerScanQrPage() {
   async function onUploadFile(file: File) {
     try {
       setScannerError(null)
+
       const url = URL.createObjectURL(file)
       const img = new Image()
       img.src = url
+
       await new Promise((resolve, reject) => {
         img.onload = resolve
         img.onerror = reject
       })
+
       const canvas = document.createElement('canvas')
       canvas.width = img.width
       canvas.height = img.height
+
       const ctx = canvas.getContext('2d')
       if (!ctx) throw new Error('Could not create canvas context')
       ctx.drawImage(img, 0, 0)
+
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
       const code = jsQR(imageData.data, imageData.width, imageData.height)
+
       if (code) {
         onDecoded(code.data)
       } else {
         throw new Error('No QR code found in image.')
       }
+
       URL.revokeObjectURL(url)
     } catch (e: any) {
       console.error('scan file error', e)
@@ -378,6 +385,7 @@ export default function OrganizerScanQrPage() {
                                setScannerHelp(friendlyCameraHelp());
                                setStartMode('upload');
                             }}
+                            formats={['qr_code']}
                           />
                         </div>
                       ) : (
