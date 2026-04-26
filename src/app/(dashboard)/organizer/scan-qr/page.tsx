@@ -386,6 +386,12 @@ export default function OrganizerScanQrPage() {
                                setStartMode('upload');
                             }}
                             formats={['qr_code']}
+                            scanDelay={100}
+                            constraints={{
+                              facingMode: 'environment', // Rear camera
+                              width: { ideal: 640 },
+                              height: { ideal: 480 }
+                            }}
                           />
                         </div>
                       ) : (
