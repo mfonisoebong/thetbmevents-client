@@ -1,5 +1,7 @@
 "use client"
 
+/* todo new development means the temporary fix applied to beat planpadi, our competitor*/
+
 import React, {useEffect, useMemo, useCallback, useReducer} from 'react'
 import {useRouter, useParams, useSearchParams, usePathname} from 'next/navigation'
 import {useTicketContext} from '../../../../../contexts/TicketContext'
@@ -328,7 +330,8 @@ export default function CheckoutPage() {
     const subtotal = useMemo(() => ticketInstances.reduce((s, t) => s + (t.price ?? 0), 0), [ticketInstances])
     const moneySymbol = useMemo(() => currencySymbol(ticketInstances[0]?.currency), [ticketInstances])
 
-    const platformFee = useMemo(() => roundToTwo(calculatePlatformFee(subtotal)), [subtotal])
+    // todo: new development
+    const platformFee = 100 //useMemo(() => roundToTwo(calculatePlatformFee(subtotal)), [subtotal])
 
     const availableGateways: PaymentGateway[] = useMemo(() => ['paystack', 'flutterwave'], [])
 
@@ -358,10 +361,17 @@ export default function CheckoutPage() {
 
     const isFreeCheckout = step === 3 && totalWithFee <= 0
 
-    // Auto-select the cheapest gateway when arriving at step 3.
-    useEffect(() => {
+    // Auto-select the cheapest gateway when arriving at step 3. todo: new development
+    /*useEffect(() => {
         if (step === 3 && !isFreeCheckout && !state.manuallySelectedGateway) {
             dispatch({type: 'SET_GATEWAY', value: cheapestGateway})
+        }
+    }, [step, cheapestGateway, isFreeCheckout, state.manuallySelectedGateway])*/
+
+    /*todo: new development*/
+    useEffect(() => {
+        if (step === 3 && !isFreeCheckout && !state.manuallySelectedGateway) {
+            dispatch({type: 'SET_GATEWAY', value: 'paystack'})
         }
     }, [step, cheapestGateway, isFreeCheckout, state.manuallySelectedGateway])
 
@@ -749,9 +759,9 @@ export default function CheckoutPage() {
                                     <h2 className="text-lg font-semibold dark:text-white">Payment</h2>
                                 </div>
 
-                                <div className="text-sm text-slate-700 dark:text-slate-200 mb-3">Choose a payment method
+                                {/* todo: new development <div className="text-sm text-slate-700 dark:text-slate-200 mb-3">Choose a payment method
                                     — fees shown to help you pick the cheapest.
-                                </div>
+                                </div>*/}
 
                                 <div className="space-y-3">
                                     {availableGateways.map((g) => {
@@ -771,14 +781,13 @@ export default function CheckoutPage() {
                                                     <div className="text-sm text-slate-700 dark:text-slate-200">
                                                         {g === 'chainpal' ? 'ChainPal (crypto)' : g}
                                                     </div>
-                                                    {isCheapest && (
+                                                    {/* todo: new development isCheapest && (
                                                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
                                                             Cheapest
                                                         </span>
-                                                    )}
+                                                    )*/}
                                                 </div>
-                                                <div
-                                                    className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">{fee === 0 ? 'Free' : `${moneySymbol}${fee.toLocaleString()}`}</div>
+                                                {/* todo: new development <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">{fee === 0 ? 'Free' : `${moneySymbol}${fee.toLocaleString()}`}</div>*/}
                                             </label>
                                         )
                                     })}

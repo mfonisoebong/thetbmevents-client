@@ -108,6 +108,9 @@ export const currencySymbol = (code?: string) => {
 }
 
 export function getGatewayFee(amount: number, gateway: PaymentGateway): number {
+    // todo: new development
+    return 0;
+
     const calcPaystackCharges = (price: number): number => {
         const flatFee = price >= 2500 ? 100 : 0;
         const feeCap = 2000;
